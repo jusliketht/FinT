@@ -1,0 +1,24 @@
+{
+  "name": "fint",
+  "version": "1.0.0",
+  "description": "Financial management system with Indian accounting standards",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "server": "nodemon server/index.js",
+    "client": "cd client && npm start",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install-server": "cd server && npm install",
+    "install-client": "cd client && npm install",
+    "install-all": "npm install && npm run install-server && npm run install-client"
+  },
+  "keywords": ["finance", "accounting", "india", "mern", "react", "mongodb", "express"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "concurrently": "^8.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+} 
