@@ -1,0 +1,155 @@
+// This file defines your database schema using Prisma Schema Language.
+// You need to install Prisma (@prisma/client, prisma) and run `npx prisma init --datasource-provider postgresql`
+
+generator client {
+ provider = "prisma-client-js"
+}
+
+datasource db {
+ provider = "postgresql"
+ url      = env("DATABASE_URL") // Comes from your .env file (Supabase connection string)
+}
+
+model User {
+ id            String       @id @default(uuid())
+ name          String
+ email         String       @unique
+ password      String // Hashing logic needs to be handled in your service/controller layer
+ role          Role         @default(viewer)
+ organizationId String?      // Optional link to Organization
+ organization  Organization? @relation(fields: [organizationId], references: [id])
+ createdAt     DateTime     @default(now())
+ accounts      Account[]
+ transactions  Transaction[]
+ journalEntries JournalEntry[]
+ rules         Rule[]
+
+ // Add indexes for frequently queried fields
+ @@index([organizationId])
+}
+
+enum Role {
+ admin
+ accountant
+ viewer
+}
+
+model Organization {
+ id          String       @id @default(uuid())
+ name        String
+ users       User[]
+ accounts    Account[]
+ transactions Transaction[]
+ journalEntries JournalEntry[]
+ rules       Rule[]
+ createdAt   DateTime     @default(now())
+
+ // Add index for frequently queried field
+ @@index([name])
+}
+
+model Account {
+ id            String       @id @default(uuid())
+ name          String
+ type          AccountType
+ code          String
+ description   String?
+ parentAccountId String?
+ parentAccount Account?     @relation("AccountHierarchy", fields: [parentAccountId], references: [id])
+ childAccounts Account[]    @relation("AccountHierarchy")
+ isActive      Boolean      @default(true)
+ createdById   String
+ createdBy     User         @relation(fields: [createdById], references: [id])
+ organizationId String?
+ organization  Organization? @relation(fields: [organizationId], references: [id])
+ createdAt     DateTime     @default(now())
+ debitEntries  JournalEntry[] @relation("DebitAccount")
+ creditEntries JournalEntry[] @relation("CreditAccount")
+
+ // Add indexes for frequently queried fields and enforce unique code per organization
+ @@unique([code, organizationId], name: "codeOrganizationUnique")
+ @@index([createdById])
+ @@index([organizationId])
+ @@index([type])
+ @@index([isActive])
+ @@index([parentAccountId])
+}
+
+enum AccountType {
+ Asset
+ Liability
+ Equity
+ Revenue
+ Expense
+}
+
+model Transaction {
+ id            String       @id @default(uuid())
+ date          DateTime
+ amount        Float // Consider using Decimal type if precision is critical (Prisma supports Decimal)
+ description   String
+ category      String       @default("Uncategorized")
+ bank          String
+ transactionType String // Consider enum: Credit, Debit
+ sourceFile    String
+ createdById   String
+ createdBy     User         @relation(fields: [createdById], references: [id])
+ organizationId String?
+ organization  Organization? @relation(fields: [organizationId], references: [id])
+ createdAt     DateTime     @default(now())
+
+ // Add indexes for frequently queried fields (date ranges, filtering by category, etc.)
+ @@index([date])
+ @@index([category])
+ @@index([transactionType])
+ @@index([createdById])
+ @@index([organizationId])
+ @@index([bank])
+ @@index([sourceFile])
+}
+
+model JournalEntry {
+ id            String       @id @default(uuid())
+ date          DateTime
+ debitAccountId String
+ debitAccount  Account      @relation("DebitAccount", fields: [debitAccountId], references: [id])
+ creditAccountId String
+ creditAccount Account      @relation("CreditAccount", fields: [creditAccountId], references: [id])
+ amount        Float // Consider using Decimal type
+ description   String
+ voucherNo     String
+ createdById   String
+ createdBy     User         @relation(fields: [createdById], references: [id])
+ organizationId String?
+ organization  Organization? @relation(fields: [organizationId], references: [id])
+ createdAt     DateTime     @default(now())
+
+ // Add indexes for frequently queried fields
+ @@index([date])
+ @@index([voucherNo])
+ @@index([debitAccountId])
+ @@index([creditAccountId])
+ @@index([createdById])
+ @@index([organizationId])
+}
+
+model Rule {
+ id            String       @id @default(uuid())
+ pattern       String
+ category      String
+ createdById   String
+ createdBy     User         @relation(fields: [createdById], references: [id])
+ organizationId String?
+ organization  Organization? @relation(fields: [organizationId], references: [id])
+ createdAt     DateTime     @default(now())
+
+ // Add indexes
+ @@index([category])
+ @@index([createdById])
+ @@index([organizationId])
+ @@index([pattern]) // This might help with pattern matching, though regex queries might not use this index
+}
+
+// Note: Password hashing (bcrypt) needs to be implemented *before* saving the user data,
+// typically in your authentication service or user creation logic, not directly in the schema.
+// Prisma hooks or middleware can be used for this.

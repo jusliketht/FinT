@@ -6,6 +6,7 @@ const pdfParser = require('../services/pdfParser');
 const excelParser = require('../services/excelParser');
 const ocrService = require('../services/ocrService');
 const ruleEngine = require('../services/ruleEngine');
+const fileProcessingQueue = require('../queues/fileProcessingQueue');
 
 // Set up multer storage
 const storage = multer.diskStorage({
@@ -91,22 +92,40 @@ const uploadFiles = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    // Process the file
+    // Get file info
     const filePath = req.file.path;
     const fileName = req.file.filename;
-    
-    // Queue the file for processing (this would normally be done with Bull.js)
-    // For simplicity in MVP, we'll process synchronously
-    const transactions = await processFile(filePath, fileName, req.user._id);
+    const userId = req.user._id; // Assuming user info is attached by auth middleware
 
-    res.status(200).json({
-      message: 'File uploaded and processed successfully',
+    // Add job to the queue instead of processing synchronously
+    const job = await fileProcessingQueue.add({
+      filePath,
+      fileName,
+      userId,
+      // You could include organizationId as well if needed
+      ...(req.user.organizationId && { organizationId: req.user.organizationId })
+    });
+
+    console.log(`Job added to queue: ${job.id} for file ${fileName}`);
+
+    // Return a 202 Accepted response
+    res.status(202).json({
+      message: 'File upload accepted for processing',
       fileName: fileName,
-      transactionsCount: transactions.length
+      jobId: job.id,
+      status: 'processing'
     });
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ message: 'Error uploading file', error: error.message });
+    
+    // Clean up the uploaded file if queueing fails
+    if (req.file && req.file.path) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error("Error deleting file after upload failure:", err);
+      });
+    }
+    
+    res.status(500).json({ message: 'Error queueing file for processing', error: error.message });
   }
 };
 

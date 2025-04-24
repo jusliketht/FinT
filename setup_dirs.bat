@@ -20,5 +20,6 @@ mkdir server\services
 mkdir server\utils
 mkdir server\middleware
 mkdir server\uploads
+mkdir server\db
 
 echo Directory structure created successfully! 

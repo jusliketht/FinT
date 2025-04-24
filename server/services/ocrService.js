@@ -1,8 +1,13 @@
-const fs = require('fs');
-const path = require('path');
 const Tesseract = require('tesseract.js');
-const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const { v4: uuidv4 } = require('uuid');
 const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+const sharp = require('sharp');
+
+// We'll use a temp directory for any necessary intermediate files
+const tempDir = os.tmpdir();
 
 /**
  * Process a scanned PDF using OCR
@@ -11,136 +16,158 @@ const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
  */
 const processScannedPDF = async (filePath) => {
   try {
-    const transactions = [];
-    
-    // Create a temporary directory for extracted images
-    const tempDir = path.join(__dirname, '../uploads/temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-    
-    // Load the PDF document
     const data = new Uint8Array(fs.readFileSync(filePath));
-    const loadingTask = pdfjsLib.getDocument({ data });
-    const pdfDocument = await loadingTask.promise;
+    const pdfDocument = await pdfjsLib.getDocument({ data }).promise;
+    const numPages = pdfDocument.numPages;
     
-    // Determine bank type (if possible)
+    const transactions = [];
     let bankType = 'UNKNOWN';
     
-    // Convert PDF pages to images and perform OCR
-    for (let i = 1; i <= pdfDocument.numPages; i++) {
-      // Get the page
-      const page = await pdfDocument.getPage(i);
-      
-      // Render the page to an image
-      const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      
-      await page.render({
-        canvasContext: context,
-        viewport: viewport
-      }).promise;
-      
-      // Save the canvas as an image
-      const imgPath = path.join(tempDir, `page-${i}.png`);
-      const imgData = canvas.toDataURL('image/png');
-      const base64Data = imgData.replace(/^data:image\/png;base64,/, "");
-      fs.writeFileSync(imgPath, Buffer.from(base64Data, 'base64'));
-      
-      // Preprocess the image for better OCR results
-      await preprocessImage(imgPath);
-      
-      // Perform OCR
-      const { data: { text } } = await Tesseract.recognize(imgPath, 'eng');
-      
-      // If bank type not determined yet, try to detect from OCR text
-      if (bankType === 'UNKNOWN' && i === 1) {
-        bankType = detectBankFromText(text);
+    // Generate a unique working directory within the temp folder
+    const workingDirId = uuidv4();
+    const workingDir = path.join(tempDir, workingDirId);
+    
+    if (!fs.existsSync(workingDir)) {
+      fs.mkdirSync(workingDir, { recursive: true });
+    }
+    
+    try {
+      // Process each page
+      for (let i = 1; i <= numPages; i++) {
+        // Progress update
+        console.log(`Processing page ${i} of ${numPages}`);
+        
+        const page = await pdfDocument.getPage(i);
+        const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
+        
+        // PDF.js can render to a PNG buffer using node-canvas (would require that package)
+        // For simplicity here, we'll use a direct method: render to a temporary file
+        // This is not the most efficient approach but works reliably
+        
+        // Create a temporary file for this page
+        const tempImgPath = path.join(workingDir, `page-${i}.png`);
+        
+        // Use pdf.js native rendering to SVG
+        const opList = await page.getOperatorList();
+        const svgGfx = new pdfjsLib.SVGGraphics(page.commonObjs, page.objs);
+        const svg = await svgGfx.getSVG(opList, viewport);
+        
+        // Convert SVG to string
+        const svgString = svg.toString();
+        
+        // Write SVG to file
+        const tempSvgPath = path.join(workingDir, `page-${i}.svg`);
+        fs.writeFileSync(tempSvgPath, svgString);
+        
+        // Use sharp to convert SVG to PNG
+        await sharp(tempSvgPath)
+          .png()
+          .toFile(tempImgPath);
+        
+        // Preprocess the image for better OCR
+        const processedImgPath = await preprocessImage(tempImgPath);
+        
+        // Use the processed image or original if processing failed
+        const imgToOcr = processedImgPath || tempImgPath;
+        
+        // Perform OCR
+        const { data: { text } } = await Tesseract.recognize(imgToOcr, 'eng');
+        
+        // If bank type not determined yet, try to detect from OCR text
+        if (bankType === 'UNKNOWN' && i === 1) {
+          bankType = detectBankFromText(text);
+        }
+        
+        // Parse text based on bank type
+        const pageTransactions = parseOCRText(text, bankType);
+        transactions.push(...pageTransactions);
+        
+        // Clean up temporary files for this page
+        try {
+          fs.unlinkSync(tempImgPath);
+          fs.unlinkSync(tempSvgPath);
+          if (processedImgPath && processedImgPath !== tempImgPath) {
+            fs.unlinkSync(processedImgPath);
+          }
+        } catch (cleanupError) {
+          console.warn(`Error cleaning up temp files for page ${i}:`, cleanupError);
+        }
       }
-      
-      // Parse text based on bank type
-      const pageTransactions = parseOCRText(text, bankType);
-      transactions.push(...pageTransactions);
-      
-      // Clean up temporary image
-      fs.unlinkSync(imgPath);
+    } finally {
+      // Clean up the working directory
+      try {
+        // This is a safer approach than using recursive deletion
+        const files = fs.readdirSync(workingDir);
+        files.forEach(file => {
+          try {
+            fs.unlinkSync(path.join(workingDir, file));
+          } catch (e) {
+            console.warn(`Failed to delete file ${file}:`, e);
+          }
+        });
+        fs.rmdirSync(workingDir);
+      } catch (cleanupError) {
+        console.warn('Error cleaning up working directory:', cleanupError);
+      }
     }
     
     return transactions;
   } catch (error) {
     console.error('Error processing scanned PDF:', error);
     throw new Error(`Failed to process scanned PDF: ${error.message}`);
-  } finally {
-    // Clean up temp directory
-    const tempDir = path.join(__dirname, '../uploads/temp');
-    if (fs.existsSync(tempDir)) {
-      try {
-        fs.rmdirSync(tempDir, { recursive: true });
-      } catch (e) {
-        console.error('Error cleaning up temp directory:', e);
-      }
-    }
   }
 };
 
 /**
  * Preprocess an image to improve OCR quality
  * @param {string} imagePath - Path to the image file
- * @returns {Promise<void>}
+ * @returns {Promise<string|null>} Path to the processed image, or null if processing failed
  */
 const preprocessImage = async (imagePath) => {
   try {
-    // Read the image
-    const imageBuffer = fs.readFileSync(imagePath);
+    const outputPath = `${imagePath.replace(/\.\w+$/, '')}-processed.png`;
     
-    // Process the image: grayscale, increase contrast, sharpen
-    const processedBuffer = await sharp(imageBuffer)
-      .grayscale()
-      .normalize()
-      .sharpen()
-      .toBuffer();
+    // Use sharp for image preprocessing (much better than canvas for Node.js)
+    await sharp(imagePath)
+      .grayscale()           // Convert to grayscale
+      .normalize()           // Normalize the image (auto contrast)
+      .sharpen()             // Sharpen the image
+      .threshold(128)        // Optional: Apply binary threshold for cleaner text
+      .toFile(outputPath);
     
-    // Write back the processed image
-    fs.writeFileSync(imagePath, processedBuffer);
+    return outputPath;
   } catch (error) {
     console.error('Error preprocessing image:', error);
-    // Don't throw - if preprocessing fails, we'll use the original image
+    return null; // Return null on error, we'll use the original image
   }
 };
 
 /**
- * Detect bank type from OCR text
- * @param {string} text - The OCR text from the first page
- * @returns {string} The detected bank type
+ * Detect bank name from OCR text
+ * @param {string} text - The OCR-extracted text
+ * @returns {string} Detected bank type
  */
 const detectBankFromText = (text) => {
-  // Simplified detection based on text content
-  const upperText = text.toUpperCase();
+  const textLower = text.toLowerCase();
   
-  if (upperText.includes('HDFC BANK') || upperText.includes('HDFC')) {
+  if (textLower.includes('hdfc bank') || textLower.includes('hdfc')) {
     return 'HDFC';
-  } else if (upperText.includes('ICICI BANK') || upperText.includes('ICICI')) {
+  } else if (textLower.includes('icici bank') || textLower.includes('icici')) {
     return 'ICICI';
-  } else if (upperText.includes('STATE BANK OF INDIA') || upperText.includes('SBI')) {
+  } else if (textLower.includes('state bank of india') || textLower.includes('sbi')) {
     return 'SBI';
+  } else {
+    return 'UNKNOWN';
   }
-  
-  return 'UNKNOWN';
 };
 
 /**
- * Parse OCR text to extract transactions
- * @param {string} text - The OCR text
- * @param {string} bankType - The bank type
+ * Parse OCR text based on bank type
+ * @param {string} text - The OCR-extracted text
+ * @param {string} bankType - The detected bank type
  * @returns {Array} Array of transaction objects
  */
 const parseOCRText = (text, bankType) => {
-  const transactions = [];
-  
-  // Choose the appropriate parser based on bank type
   switch(bankType) {
     case 'HDFC':
       return parseHDFCOCRText(text);
@@ -155,153 +182,113 @@ const parseOCRText = (text, bankType) => {
 
 /**
  * Parse HDFC Bank OCR text
- * @param {string} text - The OCR text
+ * @param {string} text - The OCR-extracted text
  * @returns {Array} Array of transaction objects
  */
 const parseHDFCOCRText = (text) => {
   const transactions = [];
+  const lines = text.split('\n').filter(line => line.trim().length > 0);
   
-  // Split text into lines
-  const lines = text.split('\n');
+  // Regular expressions for HDFC format (simplified example)
+  const datePattern = /(\d{2}[\/\-]\d{2}[\/\-]\d{2,4})/;
+  const amountPattern = /(\d+[,\d]*\.\d{2})/;
+  const debitCreditPattern = /(CR|DR)/i;
   
-  // HDFC date format is typically DD/MM/YY or DD/MM/YYYY
-  const dateRegex = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/;
-  const amountRegex = /(\d+,?)+\.\d{2}/;
-  
-  let currentDate = null;
-  
-  for (const line of lines) {
-    // If line contains a date, update current date
-    const dateMatch = line.match(dateRegex);
-    if (dateMatch) {
-      const day = parseInt(dateMatch[1]);
-      const month = parseInt(dateMatch[2]) - 1; // Months are 0-indexed in JS
-      let year = parseInt(dateMatch[3]);
-      if (year < 100) year += 2000; // Assume 20XX for 2-digit years
-      
-      currentDate = new Date(year, month, day);
+  // Process each line
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Extract date
+    const dateMatch = line.match(datePattern);
+    if (!dateMatch) continue;
+    
+    const dateStr = dateMatch[1];
+    
+    // Extract amount
+    const amountMatch = line.match(amountPattern);
+    if (!amountMatch) continue;
+    
+    let amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+    
+    // Determine transaction type
+    let transactionType = 'debit'; // Default
+    const typeMatch = line.match(debitCreditPattern);
+    if (typeMatch) {
+      transactionType = typeMatch[1].toLowerCase() === 'cr' ? 'credit' : 'debit';
     }
     
-    // If we have a date and the line contains an amount, try to extract a transaction
-    if (currentDate && amountRegex.test(line)) {
-      const amountMatch = line.match(amountRegex);
-      if (amountMatch) {
-        const amountStr = amountMatch[0].replace(/,/g, '');
-        const amount = parseFloat(amountStr);
-        
-        // Determine if credit or debit
-        // For HDFC, we'll check if the line contains these indicators
-        const isCredit = line.toLowerCase().includes('cr') || line.toLowerCase().includes('credit');
-        const transactionType = isCredit ? 'credit' : 'debit';
-        
-        // Extract description from text before amount
-        const amountIndex = line.indexOf(amountMatch[0]);
-        let description = line.substring(0, amountIndex).trim();
-        
-        // If description is too short, it might be a continuation of previous transaction
-        // For simplicity, we'll use a default if it's too short
-        if (description.length < 3) {
-          description = 'Transaction on ' + currentDate.toLocaleDateString();
-        }
-        
-        // Add transaction
-        transactions.push({
-          date: currentDate,
-          description,
-          amount,
-          transactionType,
-          bank: 'HDFC'
-        });
-      }
+    // Extract description (simplified)
+    const parts = line.split(/\s+/);
+    const descIndex = parts.findIndex(part => part.match(datePattern));
+    const description = parts.slice(descIndex + 1).join(' ').replace(amountPattern, '').replace(debitCreditPattern, '').trim();
+    
+    // Convert date string to Date object
+    let date;
+    try {
+      const [day, month, year] = dateStr.split(/[\/\-]/);
+      const fullYear = year.length === 2 ? '20' + year : year;
+      date = new Date(`${fullYear}-${month}-${day}`);
+    } catch (e) {
+      date = new Date(); // Fallback to current date if parsing fails
     }
+    
+    transactions.push({
+      date,
+      description: description || `Transaction on ${dateStr}`,
+      amount,
+      transactionType,
+      bank: 'HDFC'
+    });
   }
   
   return transactions;
 };
 
-/**
- * Parse ICICI Bank OCR text - simplified implementation
- * @param {string} text - The OCR text
- * @returns {Array} Array of transaction objects
- */
+// Other bank-specific parsing functions would follow similar patterns
 const parseICICIOCRText = (text) => {
-  // Similar to HDFC parser but with ICICI format
-  // This is a placeholder implementation
+  // Implementation for ICICI would go here, similar to HDFC
   return parseGenericOCRText(text, 'ICICI');
 };
 
-/**
- * Parse SBI Bank OCR text - simplified implementation
- * @param {string} text - The OCR text
- * @returns {Array} Array of transaction objects
- */
 const parseSBIOCRText = (text) => {
-  // Similar to HDFC parser but with SBI format
-  // This is a placeholder implementation
+  // Implementation for SBI would go here, similar to HDFC
   return parseGenericOCRText(text, 'SBI');
 };
 
-/**
- * Generic OCR text parser
- * @param {string} text - The OCR text
- * @param {string} bankName - Bank name to use in the transactions
- * @returns {Array} Array of transaction objects
- */
-const parseGenericOCRText = (text, bankName) => {
+const parseGenericOCRText = (text, bankName = 'UNKNOWN') => {
   const transactions = [];
+  const lines = text.split('\n').filter(line => line.trim().length > 0);
   
-  // Split text into lines
-  const lines = text.split('\n');
+  // Generic patterns
+  const datePattern = /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/;
+  const amountPattern = /(\d+[,\d]*\.\d{2})/;
   
-  // Generic date format detection
-  const dateRegex = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/;
-  const amountRegex = /(\d+,?)+\.\d{2}/;
-  
-  for (const line of lines) {
-    // Check if line contains both a date and an amount
-    const dateMatch = line.match(dateRegex);
-    const amountMatch = line.match(amountRegex);
+  // Process each line
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    const dateMatch = line.match(datePattern);
+    const amountMatch = line.match(amountPattern);
     
     if (dateMatch && amountMatch) {
-      // Parse date
-      const day = parseInt(dateMatch[1]);
-      const month = parseInt(dateMatch[2]) - 1; // Months are 0-indexed in JS
-      let year = parseInt(dateMatch[3]);
-      if (year < 100) year += 2000; // Assume 20XX for 2-digit years
+      const dateStr = dateMatch[1];
+      let amount = parseFloat(amountMatch[1].replace(/,/g, ''));
       
-      const date = new Date(year, month, day);
-      
-      // Parse amount
-      const amountStr = amountMatch[0].replace(/,/g, '');
-      const amount = parseFloat(amountStr);
-      
-      // Extract description
-      // Use text between date and amount as description
-      const dateIndex = line.indexOf(dateMatch[0]);
-      const amountIndex = line.indexOf(amountMatch[0]);
-      
-      let description = '';
-      if (dateIndex < amountIndex) {
-        description = line.substring(dateIndex + dateMatch[0].length, amountIndex).trim();
-      } else {
-        description = line.substring(0, dateIndex).trim();
+      // Convert date string to Date object
+      let date;
+      try {
+        const [day, month, year] = dateStr.split(/[\/\-\.]/);
+        const fullYear = year.length === 2 ? '20' + year : year;
+        date = new Date(`${fullYear}-${month}-${day}`);
+      } catch (e) {
+        date = new Date(); // Fallback to current date if parsing fails
       }
       
-      // If description is too short, use a default
-      if (description.length < 3) {
-        description = 'Transaction on ' + date.toLocaleDateString();
-      }
-      
-      // For generic parser, we can't reliably determine transaction type
-      // We'll randomly assign for demo purposes
-      const transactionType = Math.random() > 0.5 ? 'credit' : 'debit';
-      
-      // Add transaction
       transactions.push({
         date,
-        description,
+        description: `Transaction on ${dateStr}`,
         amount,
-        transactionType,
+        transactionType: Math.random() > 0.5 ? 'credit' : 'debit', // Randomly assign for generic parsing
         bank: bankName
       });
     }
@@ -311,5 +298,9 @@ const parseGenericOCRText = (text, bankName) => {
 };
 
 module.exports = {
-  processScannedPDF
+  processScannedPDF,
+  // Export other functions if they need to be used externally
+  preprocessImage,
+  detectBankFromText,
+  parseOCRText
 }; 

@@ -1,9 +1,13 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const compression = require('compression');
+const helmet = require('helmet');
 require('dotenv').config();
+
+// Import database client
+const prisma = require('./db');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -16,6 +20,8 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(compression()); // Add compression for all responses
+app.use(helmet()); // Add security headers
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -23,13 +29,19 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/fint', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.error('MongoDB connection error:', err));
+// Test database connection
+async function testConnection() {
+  try {
+    // Simple query to test connection
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('PostgreSQL database connected');
+  } catch (err) {
+    console.error('PostgreSQL connection error:', err);
+  }
+}
+
+// Run connection test
+testConnection();
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -46,6 +58,11 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// Clean up Prisma connection on exit
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
 });
 
 module.exports = app; 

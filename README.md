@@ -31,7 +31,8 @@ A comprehensive financial management system built with the MERN stack (MongoDB, 
 ## Tech Stack
 
 - **Frontend**: React, Redux Toolkit, Ant Design
-- **Backend**: Node.js, Express.js, MongoDB
+- **Backend**: Node.js, Express.js, Supabase (PostgreSQL)
+- **Database ORM/Client**: Prisma (or Sequelize/pg, specify chosen one)
 - **Authentication**: JWT, bcrypt
 - **File Processing**: PDF.js, ExcelJS, Tesseract.js (OCR)
 - **Reporting**: pdfmake (PDF generation)
@@ -41,7 +42,7 @@ A comprehensive financial management system built with the MERN stack (MongoDB, 
 ### Prerequisites
 
 - Node.js (v14+)
-- MongoDB (local or Atlas URI)
+- PostgreSQL Database (e.g., via Supabase account or local installation)
 
 ### Server Setup
 
@@ -58,13 +59,22 @@ npm install
 3. Create a `.env` file with the following variables:
 ```
 PORT=5000
-MONGO_URI=mongodb://localhost:27017/fint
+# Replace MONGO_URI with your Supabase/PostgreSQL connection string
+DATABASE_URL="postgresql://user:password@host:port/database"
 JWT_SECRET=your_jwt_secret_change_this_in_production
 FILE_UPLOAD_PATH=./uploads
 NODE_ENV=development
+# Add any other necessary Supabase keys if needed (e.g., ANON_KEY, SERVICE_ROLE_KEY)
+# SUPABASE_URL=your_supabase_url
+# SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-4. Start the server:
+4. Set up the database schema (Example using Prisma):
+   - Install Prisma CLI: `npm install prisma --save-dev`
+   - Initialize Prisma: `npx prisma init --datasource-provider postgresql` (if not already done, configure `prisma/schema.prisma`)
+   - Push schema changes to the database: `npx prisma db push` (for development) or `npx prisma migrate dev` (for migrations)
+
+5. Start the server:
 ```
 npm run dev
 ```
@@ -117,6 +127,7 @@ fint/
 ├── client/                  # React frontend
 │   ├── public/
 │   └── src/
+│       ├── assets/
 │       ├── components/      # Reusable UI components
 │       ├── pages/           # Page components
 │       ├── redux/           # Redux store and slices
@@ -124,12 +135,14 @@ fint/
 │       └── styles/          # CSS files
 │
 └── server/                  # Node.js backend
-    ├── config/              # Configuration
+    ├── config/              # Configuration (JWT keys, etc.)
     ├── controllers/         # Route controllers
-    ├── middleware/          # Custom middleware
-    ├── models/              # MongoDB models
+    ├── db/                  # Database connection, migrations, seeds
+    ├── middleware/          # Custom middleware (auth, roles)
+    ├── models/              # ORM models (e.g., Prisma schema location or Sequelize models)
     ├── routes/              # API routes
-    ├── services/            # Business logic
+    ├── services/            # Business logic (incl. DB interactions)
+    ├── uploads/             # Temporary file uploads
     └── utils/               # Utility functions
 ```
 
