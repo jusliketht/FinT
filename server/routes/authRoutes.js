@@ -1,30 +1,70 @@
 const express = require('express');
-const { check } = require('express-validator');
-const { registerUser, loginUser, getUserProfile } = require('../controllers/authController');
-const { protect } = require('../middleware/auth');
-
 const router = express.Router();
+const { body } = require('express-validator');
+const {
+  registerUser,
+  loginUser,
+  getUserProfile,
+  forgotPassword,
+  resetPassword,
+} = require('../controllers/authController');
+const { protect } = require('../middleware/authMiddleware');
 
-// @route   POST /api/auth/register
+// @route   POST /register
 // @desc    Register a new user
 // @access  Public
-router.post('/register', [
-  check('name', 'Name is required').not().isEmpty(),
-  check('email', 'Please include a valid email').isEmail(),
-  check('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 })
-], registerUser);
+router.post(
+  '/register',
+  [
+    body('name').notEmpty().trim().withMessage('Name is required'),
+    body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
+    body('password')
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters long')
+  ],
+  registerUser
+);
 
-// @route   POST /api/auth/login
+// @route   POST /login
 // @desc    Login user
 // @access  Public
-router.post('/login', [
-  check('email', 'Please include a valid email').isEmail(),
-  check('password', 'Password is required').exists()
-], loginUser);
+router.post(
+  '/login',
+  [
+    body('email').isEmail().normalizeEmail(),
+    body('password').exists()
+  ],
+  loginUser
+);
 
-// @route   GET /api/auth/profile
+// @route   GET /profile
 // @desc    Get user profile
 // @access  Private
 router.get('/profile', protect, getUserProfile);
+
+// @route   POST /forgot-password
+// @desc    Request password reset
+// @access  Public
+router.post(
+  '/forgot-password',
+  [
+    body('email').isEmail().normalizeEmail()
+  ],
+  forgotPassword
+);
+
+// @route   POST /reset-password
+// @desc    Reset password
+// @access  Public
+router.post(
+  '/reset-password',
+  [
+    body('token').exists(),
+    body('password')
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters long')
+  ],
+  resetPassword
+);
 
 module.exports = router; 

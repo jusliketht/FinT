@@ -1,18 +1,19 @@
-const JournalEntry = require('../models/JournalEntry');
-const Account = require('../models/Account');
-const Transaction = require('../models/Transaction');
+const prisma = require('../db');
 const pdfGenerator = require('../services/pdfGenerator');
 const { calculateGST } = require('../utils/gstCalculator');
 
 // Helper to get account balances
 const getAccountBalances = async (startDate, endDate, userId) => {
   try {
-    const accounts = await Account.find({ createdBy: userId });
+    const accounts = await prisma.account.findMany({
+      where: { userId }
+    });
+    
     const accountBalances = {};
     
     // Initialize all accounts with zero balance
     accounts.forEach(account => {
-      accountBalances[account._id] = {
+      accountBalances[account.id] = {
         name: account.name,
         type: account.type,
         code: account.code,
@@ -21,28 +22,33 @@ const getAccountBalances = async (startDate, endDate, userId) => {
     });
 
     // Get all journal entries in date range
-    const journalEntries = await JournalEntry.find({
-      createdBy: userId,
-      date: { $gte: startDate, $lte: endDate }
+    const journalEntries = await prisma.journalEntry.findMany({
+      where: {
+        userId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
     });
 
     // Calculate balances
     journalEntries.forEach(entry => {
       // For debit entries
-      if (accountBalances[entry.debitAccount]) {
-        if (['Asset', 'Expense'].includes(accountBalances[entry.debitAccount].type)) {
-          accountBalances[entry.debitAccount].balance += entry.amount;
+      if (accountBalances[entry.debitAccountId]) {
+        if (['Asset', 'Expense'].includes(accountBalances[entry.debitAccountId].type)) {
+          accountBalances[entry.debitAccountId].balance += entry.amount;
         } else {
-          accountBalances[entry.debitAccount].balance -= entry.amount;
+          accountBalances[entry.debitAccountId].balance -= entry.amount;
         }
       }
       
       // For credit entries
-      if (accountBalances[entry.creditAccount]) {
-        if (['Liability', 'Equity', 'Revenue'].includes(accountBalances[entry.creditAccount].type)) {
-          accountBalances[entry.creditAccount].balance += entry.amount;
+      if (accountBalances[entry.creditAccountId]) {
+        if (['Liability', 'Equity', 'Revenue'].includes(accountBalances[entry.creditAccountId].type)) {
+          accountBalances[entry.creditAccountId].balance += entry.amount;
         } else {
-          accountBalances[entry.creditAccount].balance -= entry.amount;
+          accountBalances[entry.creditAccountId].balance -= entry.amount;
         }
       }
     });
@@ -140,10 +146,18 @@ const generateCashFlow = async (req, res) => {
     const end = endDate ? new Date(endDate) : new Date();
     
     // Get transactions within date range
-    const transactions = await Transaction.find({
-      createdBy: req.user._id,
-      date: { $gte: start, $lte: end }
-    }).sort({ date: 1 });
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        userId: req.user.id,
+        date: {
+          gte: start,
+          lte: end
+        }
+      },
+      orderBy: {
+        date: 'asc'
+      }
+    });
     
     // Categorize cash flows
     const cashFlow = {

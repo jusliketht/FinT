@@ -1,26 +1,17 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
-const Transaction = require('../models/Transaction');
+const { PrismaClient } = require('@prisma/client');
 const pdfParser = require('../services/pdfParser');
 const excelParser = require('../services/excelParser');
 const ocrService = require('../services/ocrService');
 const ruleEngine = require('../services/ruleEngine');
 const fileProcessingQueue = require('../queues/fileProcessingQueue');
+const { uploadFile } = require('../utils/supabaseUtils');
 
-// Set up multer storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
+const prisma = new PrismaClient();
+
+// Set up multer storage in memory
+const storage = multer.memoryStorage();
 
 // Set up file filter
 const fileFilter = (req, file, cb) => {
@@ -42,38 +33,41 @@ const upload = multer({
 });
 
 // Helper function to handle file processing
-const processFile = async (filePath, fileName, userId) => {
+const processFile = async (fileBuffer, fileName, userId) => {
   try {
     let transactions = [];
     const fileExt = path.extname(fileName).toLowerCase();
 
+    // Upload file to Supabase Storage
+    const uploadResult = await uploadFile(fileBuffer, fileName);
+    const filePath = uploadResult.path;
+
     // Process based on file type
     if (fileExt === '.pdf') {
-      // Check if it's a digital PDF or scanned PDF (simplified check)
-      const buffer = fs.readFileSync(filePath);
-      const isDigital = buffer.includes('%PDF');
+      // Check if it's a digital PDF or scanned PDF
+      const isDigital = fileBuffer.includes('%PDF');
 
       if (isDigital) {
-        transactions = await pdfParser.parsePDF(filePath);
+        transactions = await pdfParser.parsePDFBuffer(fileBuffer);
       } else {
         // Use OCR for scanned PDFs
-        transactions = await ocrService.processScannedPDF(filePath);
+        transactions = await ocrService.processScannedPDFBuffer(fileBuffer);
       }
     } else if (fileExt === '.xlsx' || fileExt === '.xls') {
-      transactions = await excelParser.parseExcel(filePath);
+      transactions = await excelParser.parseExcelBuffer(fileBuffer);
     }
 
     // Apply rules to categorize transactions
     const categorizedTransactions = await ruleEngine.categorizeTransactions(transactions);
 
-    // Save transactions to database
-    const savedTransactions = await Transaction.insertMany(
-      categorizedTransactions.map(transaction => ({
+    // Save transactions to database using Prisma
+    const savedTransactions = await prisma.transaction.createMany({
+      data: categorizedTransactions.map(transaction => ({
         ...transaction,
-        sourceFile: fileName,
-        createdBy: userId
+        sourceFile: filePath, // Store Supabase path instead of local file path
+        createdById: userId
       }))
-    );
+    });
 
     return savedTransactions;
   } catch (error) {
@@ -93,13 +87,13 @@ const uploadFiles = async (req, res) => {
     }
 
     // Get file info
-    const filePath = req.file.path;
-    const fileName = req.file.filename;
-    const userId = req.user._id; // Assuming user info is attached by auth middleware
+    const fileBuffer = req.file.buffer;
+    const fileName = req.file.originalname;
+    const userId = req.user.id;
 
     // Add job to the queue instead of processing synchronously
     const job = await fileProcessingQueue.add({
-      filePath,
+      fileBuffer,
       fileName,
       userId,
       // You could include organizationId as well if needed
@@ -117,14 +111,6 @@ const uploadFiles = async (req, res) => {
     });
   } catch (error) {
     console.error('Upload error:', error);
-    
-    // Clean up the uploaded file if queueing fails
-    if (req.file && req.file.path) {
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.error("Error deleting file after upload failure:", err);
-      });
-    }
-    
     res.status(500).json({ message: 'Error queueing file for processing', error: error.message });
   }
 };

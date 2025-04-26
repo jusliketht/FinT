@@ -1,13 +1,13 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { PrismaClient } = require('@prisma/client');
 
-// Middleware to check if the user is authenticated
-const protect = async (req, res, next) => {
-  let token;
+const prisma = new PrismaClient();
 
-  // Check if token exists in headers
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
+const auth = async (req, res, next) => {
+  try {
+    let token;
+
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       // Get token from header
       token = req.headers.authorization.split(' ')[1];
 
@@ -15,28 +15,31 @@ const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // Get user from token
-      req.user = await User.findById(decoded.id).select('-password');
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true
+        }
+      });
 
+      if (!user) {
+        throw new Error('Not authorized');
+      }
+
+      req.user = user;
       next();
-    } catch (error) {
-      console.error(error);
-      res.status(401).json({ message: 'Not authorized, token failed' });
     }
-  }
 
-  if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token' });
+    if (!token) {
+      res.status(401).json({ message: 'Not authorized, no token' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(401).json({ message: 'Not authorized' });
   }
 };
 
-// Middleware to check user role
-const checkRole = (roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied, insufficient role' });
-    }
-    next();
-  };
-};
-
-module.exports = { protect, checkRole }; 
+module.exports = auth; 

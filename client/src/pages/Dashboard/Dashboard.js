@@ -1,34 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  Row,
-  Col,
-  Card,
-  Typography,
-  Statistic,
-  Table,
-  Upload,
+  Box,
+  Grid,
+  Heading,
+  Text,
   Button,
-  message,
+  useToast,
   Divider,
   Alert,
-  Tag
-} from 'antd';
-import {
-  FileExcelOutlined,
-  FilePdfOutlined,
-  InboxOutlined,
-  CloudUploadOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined
-} from '@ant-design/icons';
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Tag,
+  VStack,
+  HStack,
+  SimpleGrid,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatArrow,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  useColorModeValue,
+  Icon,
+} from '@chakra-ui/react';
+import { TriangleUpIcon, TriangleDownIcon } from '@chakra-ui/icons';
 import { getTransactions, uploadFile, resetUploadSuccess, clearError } from '../../redux/slices/transactionSlice';
-
-const { Title, Text } = Typography;
-const { Dragger } = Upload;
 
 const Dashboard = () => {
   const dispatch = useDispatch();
+  const toast = useToast();
   const { transactions, loading, uploadLoading, error, uploadSuccess } = useSelector(
     (state) => state.transactions
   );
@@ -42,12 +48,18 @@ const Dashboard = () => {
   
   useEffect(() => {
     if (uploadSuccess) {
-      message.success('File uploaded and processed successfully');
+      toast({
+        title: 'Success',
+        description: 'File uploaded and processed successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
       setFileList([]);
       dispatch(getTransactions());
       dispatch(resetUploadSuccess());
     }
-  }, [uploadSuccess, dispatch]);
+  }, [uploadSuccess, dispatch, toast]);
   
   // Calculate stats
   const calculateStats = () => {
@@ -84,50 +96,52 @@ const Dashboard = () => {
   
   const stats = calculateStats();
   
-  // Upload props
-  const uploadProps = {
-    name: 'file',
-    multiple: false,
-    fileList,
-    accept: '.pdf,.xlsx,.xls',
-    beforeUpload: (file) => {
-      // Check file type
-      const isPDF = file.type === 'application/pdf';
-      const isExcel = 
-        file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
-        file.type === 'application/vnd.ms-excel';
-      
-      if (!isPDF && !isExcel) {
-        message.error('You can only upload PDF or Excel files!');
-        return Upload.LIST_IGNORE;
-      }
-      
-      // Check file size (50MB max)
-      const isLessThan50MB = file.size / 1024 / 1024 < 50;
-      if (!isLessThan50MB) {
-        message.error('File must be smaller than 50MB!');
-        return Upload.LIST_IGNORE;
-      }
-      
-      setFileList([file]);
-      return false; // Prevent automatic upload
-    },
-    onRemove: () => {
-      setFileList([]);
-    },
-    progress: {
-      strokeColor: {
-        '0%': '#108ee9',
-        '100%': '#87d068',
-      },
-      strokeWidth: 3,
-      format: (percent) => `${parseFloat(percent.toFixed(2))}%`,
-    },
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Check file type
+    const isPDF = file.type === 'application/pdf';
+    const isExcel = 
+      file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+      file.type === 'application/vnd.ms-excel';
+    
+    if (!isPDF && !isExcel) {
+      toast({
+        title: 'Invalid file type',
+        description: 'You can only upload PDF or Excel files!',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+    
+    // Check file size (50MB max)
+    const isLessThan50MB = file.size / 1024 / 1024 < 50;
+    if (!isLessThan50MB) {
+      toast({
+        title: 'File too large',
+        description: 'File must be smaller than 50MB!',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+    
+    setFileList([file]);
   };
   
   const handleUpload = () => {
     if (fileList.length === 0) {
-      message.warning('Please select a file first');
+      toast({
+        title: 'No file selected',
+        description: 'Please select a file first',
+        status: 'warning',
+        duration: 5000,
+        isClosable: true,
+      });
       return;
     }
     
@@ -136,161 +150,159 @@ const Dashboard = () => {
     
     dispatch(uploadFile(formData));
   };
-  
-  // Table columns
-  const columns = [
-    {
-      title: 'Date',
-      dataIndex: 'date',
-      key: 'date',
-      render: (text) => new Date(text).toLocaleDateString(),
-      sorter: (a, b) => new Date(a.date) - new Date(b.date),
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-      render: (text) => <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px', display: 'block' }}>{text}</span>,
-    },
-    {
-      title: 'Category',
-      dataIndex: 'category',
-      key: 'category',
-      render: (text) => <Tag color="blue">{text}</Tag>,
-      filters: Object.keys(stats.categoryCounts).map(category => ({
-        text: category,
-        value: category,
-      })),
-      onFilter: (value, record) => record.category === value,
-    },
-    {
-      title: 'Bank',
-      dataIndex: 'bank',
-      key: 'bank',
-    },
-    {
-      title: 'Amount',
-      dataIndex: 'amount',
-      key: 'amount',
-      render: (text, record) => (
-        <span style={{ color: record.transactionType === 'credit' ? '#3f8600' : '#cf1322' }}>
-          {record.transactionType === 'credit' ? '+' : '-'}
-          ₹{text.toFixed(2)}
-        </span>
-      ),
-      sorter: (a, b) => {
-        const aValue = a.transactionType === 'credit' ? a.amount : -a.amount;
-        const bValue = b.transactionType === 'credit' ? b.amount : -b.amount;
-        return aValue - bValue;
-      },
-    },
-  ];
+
+  const cardBg = useColorModeValue('white', 'gray.700');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
   
   return (
-    <div>
-      <Title level={2}>Dashboard</Title>
-      
-      {error && (
-        <Alert
-          message="Error"
-          description={error}
-          type="error"
-          showIcon
-          closable
-          onClose={() => dispatch(clearError())}
-          style={{ marginBottom: 16 }}
-        />
-      )}
-      
-      <Row gutter={16}>
-        <Col xs={24} sm={8}>
-          <Card className="dashboard-card">
-            <Statistic
-              title="Total Credits"
-              value={stats.totalCredits}
-              precision={2}
-              valueStyle={{ color: '#3f8600' }}
-              prefix="₹"
-              suffix={<ArrowUpOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card className="dashboard-card">
-            <Statistic
-              title="Total Debits"
-              value={stats.totalDebits}
-              precision={2}
-              valueStyle={{ color: '#cf1322' }}
-              prefix="₹"
-              suffix={<ArrowDownOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card className="dashboard-card">
-            <Statistic
-              title="Balance"
-              value={stats.balance}
-              precision={2}
-              valueStyle={{ color: stats.balance >= 0 ? '#3f8600' : '#cf1322' }}
-              prefix="₹"
-              suffix={stats.balance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-            />
-          </Card>
-        </Col>
-      </Row>
+    <VStack spacing={8} align="stretch">
+      <Box>
+        <Heading size="lg" mb={6}>Dashboard</Heading>
+        
+        {error && (
+          <Alert status="error" mb={6}>
+            <AlertIcon />
+            <Box flex="1">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription display="block">
+                {error}
+              </AlertDescription>
+            </Box>
+          </Alert>
+        )}
+        
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+          <Stat
+            p={6}
+            bg={cardBg}
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor={borderColor}
+            boxShadow="sm"
+          >
+            <StatLabel>Total Credits</StatLabel>
+            <StatNumber color="green.500">
+              ₹{stats.totalCredits.toFixed(2)}
+              <StatArrow type="increase" />
+            </StatNumber>
+          </Stat>
+          
+          <Stat
+            p={6}
+            bg={cardBg}
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor={borderColor}
+            boxShadow="sm"
+          >
+            <StatLabel>Total Debits</StatLabel>
+            <StatNumber color="red.500">
+              ₹{stats.totalDebits.toFixed(2)}
+              <StatArrow type="decrease" />
+            </StatNumber>
+          </Stat>
+          
+          <Stat
+            p={6}
+            bg={cardBg}
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor={borderColor}
+            boxShadow="sm"
+          >
+            <StatLabel>Balance</StatLabel>
+            <StatNumber color={stats.balance >= 0 ? "green.500" : "red.500"}>
+              ₹{stats.balance.toFixed(2)}
+              <StatArrow type={stats.balance >= 0 ? "increase" : "decrease"} />
+            </StatNumber>
+          </Stat>
+        </SimpleGrid>
+      </Box>
       
       {/* Show upload section only to admin and accountant */}
       {user && ['admin', 'accountant'].includes(user.role) && (
-        <>
-          <Divider orientation="left">Upload Statement</Divider>
-          <div className="upload-container">
-            <Dragger {...uploadProps}>
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined />
-              </p>
-              <p className="ant-upload-text">Click or drag file to this area to upload</p>
-              <p className="ant-upload-hint">
-                Support for PDF bank statements or Excel files. Files will be processed and transactions will be extracted.
-              </p>
-              <div style={{ marginTop: 16 }}>
-                <Tag icon={<FilePdfOutlined />} color="blue">
-                  PDF Statement
-                </Tag>
-                <Tag icon={<FileExcelOutlined />} color="green">
-                  Excel File
-                </Tag>
-              </div>
-            </Dragger>
-            <div style={{ marginTop: 16, textAlign: 'center' }}>
-              <Button
-                type="primary"
-                onClick={handleUpload}
-                loading={uploadLoading}
-                icon={<CloudUploadOutlined />}
-                disabled={fileList.length === 0}
-              >
-                Upload and Process
-              </Button>
-            </div>
-          </div>
-        </>
+        <Box>
+          <Divider my={6} />
+          <VStack
+            spacing={4}
+            p={6}
+            bg={cardBg}
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor={borderColor}
+            boxShadow="sm"
+          >
+            <Heading size="md">Upload Statement</Heading>
+            <Text color="gray.600">
+              Drag and drop your PDF or Excel file here, or click to select
+            </Text>
+            <input
+              type="file"
+              accept=".pdf,.xlsx,.xls"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+              id="file-upload"
+            />
+            <Button
+              as="label"
+              htmlFor="file-upload"
+              colorScheme="brand"
+              size="lg"
+              width="full"
+              height="150px"
+              cursor="pointer"
+              border="2px dashed"
+              borderColor="gray.300"
+              _hover={{
+                borderColor: 'brand.500',
+              }}
+            >
+              {fileList.length > 0 ? fileList[0].name : 'Click to upload or drag and drop'}
+            </Button>
+            <Button
+              colorScheme="brand"
+              onClick={handleUpload}
+              isLoading={uploadLoading}
+              loadingText="Uploading..."
+              isDisabled={fileList.length === 0}
+              width="full"
+            >
+              Upload File
+            </Button>
+          </VStack>
+        </Box>
       )}
       
-      <Divider orientation="left">Recent Transactions</Divider>
-      <Table
-        columns={columns}
-        dataSource={transactions.map(transaction => ({ ...transaction, key: transaction._id }))}
-        loading={loading}
-        pagination={{ 
-          pageSize: 10,
-          showSizeChanger: true, 
-          pageSizeOptions: ['10', '20', '50'],
-          showTotal: (total) => `Total ${total} transactions`
-        }}
-      />
-    </div>
+      <Box overflowX="auto">
+        <Table variant="simple">
+          <Thead>
+            <Tr>
+              <Th>Date</Th>
+              <Th>Description</Th>
+              <Th>Category</Th>
+              <Th>Bank</Th>
+              <Th isNumeric>Amount</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {transactions.map((transaction) => (
+              <Tr key={transaction._id}>
+                <Td>{new Date(transaction.date).toLocaleDateString()}</Td>
+                <Td maxW="250px" isTruncated>{transaction.description}</Td>
+                <Td>
+                  <Tag colorScheme="blue">{transaction.category}</Tag>
+                </Td>
+                <Td>{transaction.bank}</Td>
+                <Td isNumeric color={transaction.transactionType === 'credit' ? 'green.500' : 'red.500'}>
+                  {transaction.transactionType === 'credit' ? '+' : '-'}
+                  ₹{transaction.amount.toFixed(2)}
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </Box>
+    </VStack>
   );
 };
 

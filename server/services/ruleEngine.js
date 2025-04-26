@@ -1,4 +1,6 @@
-const Rule = require('../models/Rule');
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
 
 /**
  * Apply categorization rules to transactions
@@ -9,8 +11,10 @@ const Rule = require('../models/Rule');
 const categorizeTransactions = async (transactions, userId = null) => {
   try {
     // Get rules from database
-    const query = userId ? { createdBy: userId } : {};
-    const rules = await Rule.find(query).sort({ createdAt: -1 });
+    const rules = await prisma.rule.findMany({
+      where: userId ? { createdById: userId } : {},
+      orderBy: { createdAt: 'desc' }
+    });
     
     // Apply rules to each transaction
     const categorizedTransactions = transactions.map(transaction => {
@@ -80,48 +84,26 @@ const applyDefaultCategorization = (description, amount) => {
     { name: 'Bank Charges', keywords: ['fee', 'charge', 'interest', 'service charge', 'maintenance'] }
   ];
   
-  // Check for keyword matches
+  // Find matching category
   for (const category of categories) {
-    for (const keyword of category.keywords) {
-      if (description.includes(keyword.toLowerCase())) {
-        return category.name;
-      }
+    if (category.keywords.some(keyword => description.includes(keyword))) {
+      return category.name;
     }
   }
   
-  // If no matches found, classify by transaction amount
-  if (amount >= 10000) {
-    return 'Large Transaction';
-  } else if (amount >= 5000) {
-    return 'Medium Transaction';
-  } else {
-    return 'Small Transaction';
-  }
+  return 'Uncategorized';
 };
 
 /**
  * Create a new categorization rule
  * @param {Object} ruleData - Rule data (pattern, category)
- * @param {string} userId - User ID
  * @returns {Promise<Object>} Created rule
  */
-const createRule = async (ruleData, userId) => {
+const createRule = async (ruleData) => {
   try {
-    // Validate the regex pattern
-    try {
-      new RegExp(ruleData.pattern);
-    } catch (error) {
-      throw new Error('Invalid regex pattern');
-    }
-    
-    // Create rule
-    const rule = await Rule.create({
-      pattern: ruleData.pattern,
-      category: ruleData.category,
-      createdBy: userId,
-      organization: ruleData.organization
+    const rule = await prisma.rule.create({
+      data: ruleData
     });
-    
     return rule;
   } catch (error) {
     console.error('Error creating rule:', error);
@@ -136,9 +118,13 @@ const createRule = async (ruleData, userId) => {
  */
 const getRules = async (userId) => {
   try {
-    return await Rule.find({ createdBy: userId }).sort({ createdAt: -1 });
+    const rules = await prisma.rule.findMany({
+      where: { createdById: userId },
+      orderBy: { createdAt: 'desc' }
+    });
+    return rules;
   } catch (error) {
-    console.error('Error getting rules:', error);
+    console.error('Error fetching rules:', error);
     throw error;
   }
 };
@@ -151,8 +137,13 @@ const getRules = async (userId) => {
  */
 const deleteRule = async (ruleId, userId) => {
   try {
-    const result = await Rule.deleteOne({ _id: ruleId, createdBy: userId });
-    return result.deletedCount > 0;
+    const rule = await prisma.rule.delete({
+      where: {
+        id: ruleId,
+        createdById: userId
+      }
+    });
+    return rule;
   } catch (error) {
     console.error('Error deleting rule:', error);
     throw error;

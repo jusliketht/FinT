@@ -1,17 +1,15 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { Layout, Spin } from 'antd';
+import { useSelector } from 'react-redux';
+import { Spinner, Center } from '@chakra-ui/react';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Reports from './pages/Reports/Reports';
 import Settings from './pages/Settings/Settings';
-import Login from './pages/Auth/Login';
-import Register from './pages/Auth/Register';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import Landing from './pages/Landing/Landing';
 import MainLayout from './components/Layout/MainLayout';
-import { checkAuth } from './redux/slices/authSlice';
 import './styles/App.css';
-
-const { Content } = Layout;
 
 // Protected route component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -19,9 +17,15 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   
   if (loading) {
     return (
-      <div className="loading-container">
-        <Spin size="large" />
-      </div>
+      <Center h="100vh">
+        <Spinner
+          thickness="4px"
+          speed="0.65s"
+          emptyColor="gray.200"
+          color="brand.500"
+          size="xl"
+        />
+      </Center>
     );
   }
   
@@ -37,35 +41,39 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 };
 
 const App = () => {
-  const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.auth);
-  
-  useEffect(() => {
-    dispatch(checkAuth());
-  }, [dispatch]);
   
   if (loading) {
     return (
-      <div className="loading-container">
-        <Spin size="large" />
-      </div>
+      <Center h="100vh">
+        <Spinner
+          thickness="4px"
+          speed="0.65s"
+          emptyColor="gray.200"
+          color="brand.500"
+          size="xl"
+        />
+      </Center>
     );
   }
   
   return (
     <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       
+      {/* Protected Routes */}
       <Route
-        path="/"
+        path="/app"
         element={
           <ProtectedRoute>
             <MainLayout />
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/dashboard" />} />
+        <Route index element={<Navigate to="/app/dashboard" />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="reports" element={<Reports />} />
         <Route 
@@ -78,6 +86,7 @@ const App = () => {
         />
       </Route>
       
+      {/* Catch all route */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

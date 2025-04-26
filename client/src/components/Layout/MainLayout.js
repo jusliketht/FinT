@@ -1,161 +1,158 @@
-import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
-  Layout,
-  Menu,
+  Box,
+  Flex,
+  IconButton,
+  VStack,
+  HStack,
+  Text,
   Button,
-  theme,
-  Dropdown,
-  Avatar,
-  Space,
-  Typography
-} from 'antd';
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  useColorModeValue,
+} from '@chakra-ui/react';
 import {
-  PieChartOutlined,
-  FileOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-  UserOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-} from '@ant-design/icons';
-import { logoutUser } from '../../redux/slices/authSlice';
+  HamburgerIcon,
+  ViewIcon,
+  TimeIcon,
+  SettingsIcon,
+} from '@chakra-ui/icons';
+import { logout } from '../../redux/slices/authSlice';
 
-const { Header, Sider, Content } = Layout;
-const { Text } = Typography;
+const drawerWidth = '240px';
 
-const MainLayout = () => {
+const MainLayout = ({ children }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useSelector((state) => state.auth);
-  const [collapsed, setCollapsed] = useState(false);
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
 
-  // Find the active menu key based on current path
-  const getActiveMenuKey = () => {
-    const path = location.pathname;
-    if (path.includes('/dashboard')) return '1';
-    if (path.includes('/reports')) return '2';
-    if (path.includes('/settings')) return '3';
-    return '1'; // Default to dashboard
-  };
-
-  // Handle user logout
   const handleLogout = () => {
-    dispatch(logoutUser());
+    dispatch(logout());
     navigate('/login');
   };
 
-  // User dropdown menu items
-  const userMenuItems = [
-    {
-      key: '1',
-      label: 'Profile',
-      icon: <UserOutlined />,
-      onClick: () => navigate('/profile'),
-    },
-    {
-      key: '2',
-      label: 'Logout',
-      icon: <LogoutOutlined />,
-      onClick: handleLogout,
-    },
+  const menuItems = [
+    { text: 'Dashboard', icon: ViewIcon, path: '/app/dashboard' },
+    { text: 'Reports', icon: TimeIcon, path: '/app/reports' },
+    { text: 'Settings', icon: SettingsIcon, path: '/app/settings' },
   ];
 
-  return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider 
-        width={220} 
-        collapsible 
-        collapsed={collapsed}
-        onCollapse={(value) => setCollapsed(value)}
-        style={{
-          overflow: 'auto',
-          height: '100vh',
-          position: 'sticky',
-          top: 0,
-          left: 0,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 64, margin: '16px 0' }}>
-          <Typography.Title level={4} style={{ color: 'white', margin: 0 }}>
-            {collapsed ? 'FinT' : 'FinT Finance'}
-          </Typography.Title>
-        </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          defaultSelectedKeys={[getActiveMenuKey()]}
-          items={[
-            {
-              key: '1',
-              icon: <PieChartOutlined />,
-              label: 'Dashboard',
-              onClick: () => navigate('/dashboard'),
-            },
-            {
-              key: '2',
-              icon: <FileOutlined />,
-              label: 'Reports',
-              onClick: () => navigate('/reports'),
-            },
-            // Only show settings for admin and accountant
-            user && ['admin', 'accountant'].includes(user.role) && {
-              key: '3',
-              icon: <SettingOutlined />,
-              label: 'Settings',
-              onClick: () => navigate('/settings'),
-            },
-          ].filter(Boolean)}
-        />
-      </Sider>
-      <Layout>
-        <Header
-          style={{
-            padding: '0 16px',
-            background: colorBgContainer,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
-          }}
-        >
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  const SidebarContent = () => (
+    <VStack spacing={4} align="stretch" w="full">
+      <Box p={4} borderBottomWidth="1px" borderColor={borderColor}>
+        <Text fontSize="xl" fontWeight="bold" color="brand.500">
+          FinT
+        </Text>
+      </Box>
+      <VStack spacing={1} align="stretch" p={2}>
+        {menuItems.map((item) => (
           <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            style={{ fontSize: '16px', width: 64, height: 64 }}
-          />
-          <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-            <Space style={{ cursor: 'pointer' }}>
-              <Avatar style={{ backgroundColor: '#1890ff' }} icon={<UserOutlined />} />
-              <Space direction="vertical" size={0}>
-                <Text strong>{user?.name}</Text>
-                <Text type="secondary" style={{ fontSize: '12px' }}>
-                  {user?.role.charAt(0).toUpperCase() + user?.role.slice(1)}
-                </Text>
-              </Space>
-            </Space>
-          </Dropdown>
-        </Header>
-        <Content
-          style={{
-            margin: '24px 16px',
-            padding: 24,
-            minHeight: 280,
-            background: colorBgContainer,
-            borderRadius: borderRadiusLG,
-            overflow: 'auto',
-          }}
+            key={item.text}
+            variant="ghost"
+            justifyContent="flex-start"
+            leftIcon={<item.icon />}
+            onClick={() => navigate(item.path)}
+            py={6}
+            borderRadius="lg"
+            w="full"
+          >
+            {item.text}
+          </Button>
+        ))}
+      </VStack>
+    </VStack>
+  );
+
+  return (
+    <Box minH="100vh">
+      {/* Desktop Sidebar */}
+      <Box
+        position="fixed"
+        left={0}
+        w={drawerWidth}
+        h="full"
+        bg={bgColor}
+        borderRight="1px"
+        borderColor={borderColor}
+        display={{ base: 'none', md: 'block' }}
+      >
+        <SidebarContent />
+      </Box>
+
+      {/* Main Content */}
+      <Box ml={{ base: 0, md: drawerWidth }}>
+        {/* Header */}
+        <Flex
+          as="header"
+          align="center"
+          justify="space-between"
+          w="full"
+          px={4}
+          py={4}
+          bg={bgColor}
+          borderBottom="1px"
+          borderColor={borderColor}
+          position="fixed"
+          top={0}
+          zIndex={2}
         >
-          <Outlet />
-        </Content>
-      </Layout>
-    </Layout>
+          {/* Mobile Menu */}
+          <Menu>
+            <MenuButton
+              as={IconButton}
+              icon={<HamburgerIcon />}
+              variant="ghost"
+              aria-label="Open menu"
+              display={{ base: 'flex', md: 'none' }}
+            />
+            <MenuList>
+              {menuItems.map((item) => (
+                <MenuItem
+                  key={item.text}
+                  icon={<item.icon />}
+                  onClick={() => navigate(item.path)}
+                >
+                  {item.text}
+                </MenuItem>
+              ))}
+            </MenuList>
+          </Menu>
+
+          <HStack spacing={4} display={{ base: 'none', md: 'flex' }}>
+            <Text fontSize="lg" fontWeight="bold" color="brand.500">
+              FinT
+            </Text>
+          </HStack>
+
+          {user && (
+            <HStack spacing={4}>
+              <Text>Welcome, {user.name}</Text>
+              <Button variant="ghost" onClick={handleLogout}>
+                Logout
+              </Button>
+            </HStack>
+          )}
+        </Flex>
+
+        {/* Page Content */}
+        <Box
+          as="main"
+          p={8}
+          mt="72px"
+          minH="calc(100vh - 72px)"
+          bg={useColorModeValue('gray.50', 'gray.900')}
+        >
+          {children}
+        </Box>
+      </Box>
+    </Box>
   );
 };
 
