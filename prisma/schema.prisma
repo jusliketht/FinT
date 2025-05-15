@@ -4,36 +4,55 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres:postgres@localhost:5432/fint_db"
+  url      = env("DATABASE_URL")
 }
 
-model User {
-  id             String         @id @default(uuid())
-  email          String         @unique
-  password       String
-  name           String
-  role           Role           @default(VIEWER)
-  organizationId String?
-  resetToken     String?
-  resetTokenExpiry DateTime?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  accounts       Account[]
-  journalEntries JournalEntry[]
-  transactions   Transaction[]
+model AccountType {
+  id         String            @id @default(uuid())
+  value      String            @unique
+  label      String
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  accounts   Account[]
+  categories AccountCategory[]
+
+  @@index([value])
+}
+
+model AccountCategory {
+  id        String      @id @default(uuid())
+  name      String
+  typeId    String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  accounts  Account[]
+  type      AccountType @relation(fields: [typeId], references: [id])
+
+  @@unique([name, typeId])
+  @@index([typeId])
 }
 
 model Account {
-  id            String         @id @default(uuid())
+  id            String          @id @default(uuid())
+  code          String          @unique
   name          String
-  type          String
-  code          String         @unique
-  userId        String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  user          User           @relation(fields: [userId], references: [id])
-  creditEntries JournalEntry[] @relation("CreditAccount")
-  debitEntries  JournalEntry[] @relation("DebitAccount")
+  typeId        String
+  categoryId    String
+  description   String?
+  balance       Decimal         @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  type          AccountType     @relation(fields: [typeId], references: [id])
+  category      AccountCategory @relation(fields: [categoryId], references: [id])
+  creditEntries JournalEntry[]  @relation("CreditAccount")
+  debitEntries  JournalEntry[]  @relation("DebitAccount")
+  bankAccount   BankAccount?
+  creditCard    CreditCard?
+  userId        String?
+
+  @@index([typeId])
+  @@index([categoryId])
+  @@index([code])
 }
 
 model JournalEntry {
@@ -43,12 +62,10 @@ model JournalEntry {
   amount          Float
   debitAccountId  String
   creditAccountId String
-  userId          String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   creditAccount   Account  @relation("CreditAccount", fields: [creditAccountId], references: [id])
   debitAccount    Account  @relation("DebitAccount", fields: [debitAccountId], references: [id])
-  user            User     @relation(fields: [userId], references: [id])
 }
 
 model Transaction {
@@ -58,14 +75,39 @@ model Transaction {
   amount          Float
   category        String
   transactionType String
-  userId          String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id])
 }
 
-enum Role {
-  ADMIN
-  ACCOUNTANT
-  VIEWER
+model BankAccount {
+  id              String    @id @default(uuid())
+  accountId       String    @unique
+  account         Account   @relation(fields: [accountId], references: [id])
+  bankName        String
+  accountNumber   String
+  routingNumber   String?
+  accountType     String    // Checking, Savings, etc.
+  lastReconciled  DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([accountId])
+}
+
+model CreditCard {
+  id              String    @id @default(uuid())
+  accountId       String    @unique
+  account         Account   @relation(fields: [accountId], references: [id])
+  cardName        String
+  cardNumber      String    // Last 4 digits only
+  cardType        String    // Visa, Mastercard, etc.
+  creditLimit     Decimal
+  statementCycle  Int       // Day of month when statement is generated
+  dueDate         Int       // Days after statement date when payment is due
+  lastStatement   DateTime?
+  nextStatement   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([accountId])
 }

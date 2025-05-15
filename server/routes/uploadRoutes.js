@@ -1,30 +1,53 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const auth = require('../middleware/auth');
-const multer = require('multer');
+const multer = require("multer");
+const path = require("path");
 
-// Configure multer for file uploads
-const storage = multer.memoryStorage();
-const upload = multer({ 
-  storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
+// Configure multer for file upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
 });
 
-// Upload route
-router.post('/', auth, upload.single('file'), async (req, res) => {
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [".csv", ".xlsx", ".pdf"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedTypes.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid file type"));
+    }
+  },
+});
+
+router.post("/", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      return res.status(400).json({
+        status: "error",
+        message: "No file uploaded",
+      });
     }
 
-    // Handle file upload logic here
-    // For now, just return success
-    res.status(200).json({ message: 'File uploaded successfully' });
+    res.status(200).json({
+      status: "success",
+      data: {
+        filename: req.file.filename,
+        path: req.file.path,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
   }
 });
 
-module.exports = router; 
+module.exports = router;

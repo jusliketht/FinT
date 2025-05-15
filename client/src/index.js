@@ -2,27 +2,36 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
-import { ChakraProvider, PortalManager } from '@chakra-ui/react';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+
+// Styles
+import './index.css';
+
+// Local imports
+import { store } from './redux/store';
+import { theme } from './theme';
 import App from './App';
-import store from './redux/store';
-import theme from './theme';
-import { checkAuth } from './redux/slices/authSlice';
-import './styles/index.css';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import LoadingScreen from './components/common/LoadingScreen';
 
-// Check authentication status on app load
-store.dispatch(checkAuth());
-
+// Initialize app
 const root = ReactDOM.createRoot(document.getElementById('root'));
+
+// Render app with providers
 root.render(
   <React.StrictMode>
-    <Provider store={store}>
-      <BrowserRouter>
-        <ChakraProvider theme={theme}>
-          <PortalManager>
-            <App />
-          </PortalManager>
-        </ChakraProvider>
-      </BrowserRouter>
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <BrowserRouter>
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <React.Suspense fallback={<LoadingScreen />}>
+              <App />
+            </React.Suspense>
+          </ThemeProvider>
+        </BrowserRouter>
+      </Provider>
+    </ErrorBoundary>
   </React.StrictMode>
 ); 

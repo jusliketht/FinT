@@ -1,158 +1,224 @@
-# FinT - Financial Management System
+# FinT - Financial Tracking Application
 
-A comprehensive financial management system built with the MERN stack (MongoDB, Express, React, Node.js), tailored for personal, business, and enterprise use in India. The system prioritizes Indian accounting standards (Ind AS) and multi-role access.
+A modern financial tracking application for managing journal entries, bookkeeping, statements, and bank/credit card management.
 
 ## Features
 
-- **User Management & Roles**
-  - Admin, Accountant, and Viewer roles with appropriate permissions
-  - Secure authentication using JWT and bcrypt
-
-- **File Upload & Processing**
-  - Upload bank statements (PDF/Excel)
-  - Automatic transaction extraction using digital PDF parsing, OCR for scanned PDFs, and Excel parsing
-  - Support for HDFC, ICICI, and SBI bank statement formats
-
-- **Transaction Categorization**
-  - Rule-based categorization using regular expressions
-  - Default categories aligned with Indian GST/HSN codes
-  - Manual override for uncategorized transactions
-
-- **Financial Reporting**
-  - Balance Sheet
-  - Profit & Loss Statement
-  - Cash Flow Statement
-  - PDF export of all reports
-
-- **GST Compliance**
-  - GST calculation with SGST/CGST components
-  - Support for different GST rates (5%, 12%, 18%, etc.)
+- Account management and categorization
+- Transaction tracking and reconciliation
+- Journal entries and double-entry accounting
+- Bank account and credit card management
+- Financial reporting and analytics
+- File upload for bank statements
+- Modern, responsive UI
 
 ## Tech Stack
 
-- **Frontend**: React, Redux Toolkit, Ant Design
-- **Backend**: Node.js, Express.js, Supabase (PostgreSQL)
-- **Database ORM/Client**: Prisma (or Sequelize/pg, specify chosen one)
-- **Authentication**: JWT, bcrypt
-- **File Processing**: PDF.js, ExcelJS, Tesseract.js (OCR)
-- **Reporting**: pdfmake (PDF generation)
+### Frontend
+- React
+- Material-UI
+- Redux Toolkit
+- React Router
+- Axios
 
-## Installation
+### Backend
+- Node.js
+- Express
+- Prisma
+- PostgreSQL
 
-### Prerequisites
-
-- Node.js (v14+)
-- PostgreSQL Database (e.g., via Supabase account or local installation)
-
-### Server Setup
-
-1. Navigate to the server directory:
-```
-cd server
-```
-
-2. Install dependencies:
-```
-npm install
-```
-
-3. Create a `.env` file with the following variables:
-```
-PORT=5000
-# Replace MONGO_URI with your Supabase/PostgreSQL connection string
-DATABASE_URL="postgresql://user:password@host:port/database"
-JWT_SECRET=your_jwt_secret_change_this_in_production
-FILE_UPLOAD_PATH=./uploads
-NODE_ENV=development
-# Add any other necessary Supabase keys if needed (e.g., ANON_KEY, SERVICE_ROLE_KEY)
-# SUPABASE_URL=your_supabase_url
-# SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-4. Set up the database schema (Example using Prisma):
-   - Install Prisma CLI: `npm install prisma --save-dev`
-   - Initialize Prisma: `npx prisma init --datasource-provider postgresql` (if not already done, configure `prisma/schema.prisma`)
-   - Push schema changes to the database: `npx prisma db push` (for development) or `npx prisma migrate dev` (for migrations)
-
-5. Start the server:
-```
-npm run dev
-```
-
-### Client Setup
-
-1. Navigate to the client directory:
-```
-cd client
-```
-
-2. Install dependencies:
-```
-npm install
-```
-
-3. Start the client:
-```
-npm start
-```
-
-The application will be available at http://localhost:3000
-
-## Usage
-
-1. **Register/Login**: Create an account or log in with existing credentials.
-
-2. **Dashboard**: View financial statistics and recent transactions.
-
-3. **Upload Statements**: 
-   - Click on the "Upload Statement" section in the Dashboard.
-   - Drag and drop or select a PDF or Excel file.
-   - Click "Upload and Process" to extract transactions.
-
-4. **Generate Reports**:
-   - Navigate to the Reports page.
-   - Select the desired report type and date range.
-   - Click "Generate" to download the PDF report.
-
-5. **Manage Rules**:
-   - Navigate to the Settings page.
-   - Create, edit, or delete categorization rules.
-
-## Development
-
-### Project Structure
+## Project Structure
 
 ```
 fint/
-├── client/                  # React frontend
-│   ├── public/
-│   └── src/
-│       ├── assets/
-│       ├── components/      # Reusable UI components
-│       ├── pages/           # Page components
-│       ├── redux/           # Redux store and slices
-│       ├── services/        # API service
-│       └── styles/          # CSS files
+├── client/                 # React frontend
+│   ├── src/
+│   │   ├── components/    # Reusable UI components
+│   │   ├── pages/        # Page components
+│   │   ├── services/     # API services
+│   │   ├── redux/        # State management
+│   │   └── utils/        # Utility functions
+│   └── public/           # Static assets
 │
-└── server/                  # Node.js backend
-    ├── config/              # Configuration (JWT keys, etc.)
-    ├── controllers/         # Route controllers
-    ├── db/                  # Database connection, migrations, seeds
-    ├── middleware/          # Custom middleware (auth, roles)
-    ├── models/              # ORM models (e.g., Prisma schema location or Sequelize models)
-    ├── routes/              # API routes
-    ├── services/            # Business logic (incl. DB interactions)
-    ├── uploads/             # Temporary file uploads
-    └── utils/               # Utility functions
+├── server/                # Express backend
+│   ├── controllers/      # Route controllers
+│   ├── routes/          # API routes
+│   ├── prisma/          # Database schema and migrations
+│   └── utils/           # Utility functions
+│
+└── docs/                 # Documentation
 ```
+
+## Development Guidelines
+
+### Code Organization
+
+1. **File Structure**
+   - Keep related files together (components, styles, tests)
+   - Use index files for clean exports
+   - Follow the established directory structure
+
+2. **Naming Conventions**
+   - Components: PascalCase (e.g., `JournalEntry.jsx`)
+   - Utilities: camelCase (e.g., `formatCurrency.js`)
+   - Constants: UPPER_SNAKE_CASE
+   - CSS Modules: `ComponentName.module.css`
+
+3. **Component Structure**
+   ```jsx
+   // Imports (external, internal, types)
+   import React from 'react';
+   import PropTypes from 'prop-types';
+   import { useDispatch } from 'react-redux';
+   
+   // Local imports
+   import { Button } from '@/components/common';
+   import { useAuth } from '@/hooks';
+   
+   // Component
+   export const ComponentName = ({ prop1, prop2 }) => {
+     // Hooks
+     const dispatch = useDispatch();
+     
+     // State
+     const [state, setState] = useState();
+     
+     // Effects
+     useEffect(() => {
+       // Effect logic
+     }, []);
+     
+     // Handlers
+     const handleClick = () => {
+       // Handler logic
+     };
+     
+     // Render
+     return (
+       <div>
+         {/* Component JSX */}
+       </div>
+     );
+   };
+   
+   // PropTypes
+   ComponentName.propTypes = {
+     prop1: PropTypes.string.isRequired,
+     prop2: PropTypes.number
+   };
+   ```
+
+### Code Style
+
+1. **Formatting**
+   - Use Prettier for consistent formatting
+   - Run `npm run format` before committing
+   - Line length: 100 characters max
+
+2. **Linting**
+   - Follow ESLint rules
+   - Run `npm run lint` before committing
+   - Fix issues with `npm run lint:fix`
+
+3. **Best Practices**
+   - Use functional components with hooks
+   - Keep components small and focused
+   - Implement proper error handling
+   - Write meaningful comments
+   - Use TypeScript for new features
+
+### Git Workflow
+
+1. **Branches**
+   - `main`: Production-ready code
+   - `develop`: Development branch
+   - `feature/*`: New features
+   - `bugfix/*`: Bug fixes
+   - `hotfix/*`: Urgent production fixes
+
+2. **Commits**
+   - Use conventional commits
+   - Format: `type(scope): description`
+   - Types: feat, fix, docs, style, refactor, test, chore
+
+3. **Pull Requests**
+   - Create from feature/bugfix branches
+   - Include description of changes
+   - Reference related issues
+   - Ensure CI passes
+
+### Testing
+
+1. **Unit Tests**
+   - Write tests for utilities and hooks
+   - Use Jest and React Testing Library
+   - Maintain good coverage
+
+2. **Integration Tests**
+   - Test component interactions
+   - Mock API calls
+   - Test user flows
+
+### Performance
+
+1. **Optimization**
+   - Use React.memo for expensive renders
+   - Implement proper code splitting
+   - Optimize images and assets
+   - Monitor bundle size
+
+2. **Monitoring**
+   - Track key performance metrics
+   - Monitor error rates
+   - Profile slow operations
+
+## Getting Started
+
+1. **Installation**
+   ```bash
+   npm install
+   ```
+
+2. **Development**
+   ```bash
+   npm run dev
+   ```
+
+3. **Building**
+   ```bash
+   npm run build
+   ```
+
+4. **Linting**
+   ```bash
+   npm run lint
+   npm run lint:fix
+   ```
+
+5. **Formatting**
+   ```bash
+   npm run format
+   ```
+
+## Available Scripts
+
+- `npm start`: Start production server
+- `npm run dev`: Start development servers
+- `npm run build`: Build for production
+- `npm run lint`: Run linter
+- `npm run format`: Format code
+- `npm run prisma:generate`: Generate Prisma client
+- `npm run prisma:migrate`: Run database migrations
+- `npm run prisma:studio`: Open Prisma Studio
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgements
-
-- [Ant Design](https://ant.design/) - UI Library
-- [Chart.js](https://www.chartjs.org/) - Charts
-- [PDF.js](https://mozilla.github.io/pdf.js/) - PDF Processing
-- [Tesseract.js](https://tesseract.projectnaptha.com/) - OCR Engine
+This project is licensed under the MIT License.

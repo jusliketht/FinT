@@ -1,29 +1,35 @@
-const { PrismaClient } = require('@prisma/client');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const { PrismaClient } = require("@prisma/client");
 
-// Create Prisma client instance
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+});
 
-// Function to initialize the database
+// Function to test database connection
 async function initializeDatabase() {
   try {
-    // Test database connection
     await prisma.$connect();
-    console.log('Successfully connected to PostgreSQL database');
-
-    // You can add any additional initialization here
-    // For example, creating default roles, admin user, etc.
-
+    console.log("Successfully connected to PostgreSQL database");
     return prisma;
   } catch (error) {
-    console.error('Error initializing database:', error);
+    console.error("Error initializing database:", error);
     throw error;
   }
 }
 
+// Graceful shutdown function
+const disconnect = async () => {
+  try {
+    await prisma.$disconnect();
+    console.log("Database connections closed");
+  } catch (error) {
+    console.error("Error during database disconnection:", error);
+    process.exit(1);
+  }
+};
+
 // Export the prisma client and initialization function
 module.exports = {
   prisma,
-  initializeDatabase
-}; 
+  initializeDatabase,
+  disconnect,
+};

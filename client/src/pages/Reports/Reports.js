@@ -24,7 +24,6 @@ import {
   generateBalanceSheet,
   generateProfitLoss,
   generateCashFlow,
-  clearError
 } from '../../redux/slices/transactionSlice';
 
 const Reports = () => {

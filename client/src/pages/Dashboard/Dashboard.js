@@ -2,19 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
-  Grid,
   Heading,
   Text,
   Button,
   useToast,
-  Divider,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
   Tag,
   VStack,
-  HStack,
   SimpleGrid,
   Stat,
   StatLabel,
@@ -26,19 +23,19 @@ import {
   Tr,
   Th,
   Td,
-  useColorModeValue,
-  Icon,
+  Divider,
 } from '@chakra-ui/react';
-import { TriangleUpIcon, TriangleDownIcon } from '@chakra-ui/icons';
-import { getTransactions, uploadFile, resetUploadSuccess, clearError } from '../../redux/slices/transactionSlice';
+import { getTransactions, uploadFile, resetUploadSuccess } from '../../redux/slices/transactionSlice';
+import { Card, useCommonColors } from '../../components/common/ChakraComponents';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
   const toast = useToast();
-  const { transactions, loading, uploadLoading, error, uploadSuccess } = useSelector(
+  const { transactions, uploadLoading, error, uploadSuccess } = useSelector(
     (state) => state.transactions
   );
   const { user } = useSelector((state) => state.auth);
+  const { } = useCommonColors();
   
   const [fileList, setFileList] = useState([]);
   
@@ -151,9 +148,6 @@ const Dashboard = () => {
     dispatch(uploadFile(formData));
   };
 
-  const cardBg = useColorModeValue('white', 'gray.700');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
-  
   return (
     <VStack spacing={8} align="stretch">
       <Box>
@@ -172,50 +166,35 @@ const Dashboard = () => {
         )}
         
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-          <Stat
-            p={6}
-            bg={cardBg}
-            borderRadius="lg"
-            borderWidth="1px"
-            borderColor={borderColor}
-            boxShadow="sm"
-          >
-            <StatLabel>Total Credits</StatLabel>
-            <StatNumber color="green.500">
-              ₹{stats.totalCredits.toFixed(2)}
-              <StatArrow type="increase" />
-            </StatNumber>
-          </Stat>
+          <Card>
+            <Stat>
+              <StatLabel>Total Credits</StatLabel>
+              <StatNumber color="green.500">
+                ₹{stats.totalCredits.toFixed(2)}
+                <StatArrow type="increase" />
+              </StatNumber>
+            </Stat>
+          </Card>
           
-          <Stat
-            p={6}
-            bg={cardBg}
-            borderRadius="lg"
-            borderWidth="1px"
-            borderColor={borderColor}
-            boxShadow="sm"
-          >
-            <StatLabel>Total Debits</StatLabel>
-            <StatNumber color="red.500">
-              ₹{stats.totalDebits.toFixed(2)}
-              <StatArrow type="decrease" />
-            </StatNumber>
-          </Stat>
+          <Card>
+            <Stat>
+              <StatLabel>Total Debits</StatLabel>
+              <StatNumber color="red.500">
+                ₹{stats.totalDebits.toFixed(2)}
+                <StatArrow type="decrease" />
+              </StatNumber>
+            </Stat>
+          </Card>
           
-          <Stat
-            p={6}
-            bg={cardBg}
-            borderRadius="lg"
-            borderWidth="1px"
-            borderColor={borderColor}
-            boxShadow="sm"
-          >
-            <StatLabel>Balance</StatLabel>
-            <StatNumber color={stats.balance >= 0 ? "green.500" : "red.500"}>
-              ₹{stats.balance.toFixed(2)}
-              <StatArrow type={stats.balance >= 0 ? "increase" : "decrease"} />
-            </StatNumber>
-          </Stat>
+          <Card>
+            <Stat>
+              <StatLabel>Balance</StatLabel>
+              <StatNumber color={stats.balance >= 0 ? "green.500" : "red.500"}>
+                ₹{stats.balance.toFixed(2)}
+                <StatArrow type={stats.balance >= 0 ? "increase" : "decrease"} />
+              </StatNumber>
+            </Stat>
+          </Card>
         </SimpleGrid>
       </Box>
       
@@ -223,53 +202,47 @@ const Dashboard = () => {
       {user && ['admin', 'accountant'].includes(user.role) && (
         <Box>
           <Divider my={6} />
-          <VStack
-            spacing={4}
-            p={6}
-            bg={cardBg}
-            borderRadius="lg"
-            borderWidth="1px"
-            borderColor={borderColor}
-            boxShadow="sm"
-          >
-            <Heading size="md">Upload Statement</Heading>
-            <Text color="gray.600">
-              Drag and drop your PDF or Excel file here, or click to select
-            </Text>
-            <input
-              type="file"
-              accept=".pdf,.xlsx,.xls"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-              id="file-upload"
-            />
-            <Button
-              as="label"
-              htmlFor="file-upload"
-              colorScheme="brand"
-              size="lg"
-              width="full"
-              height="150px"
-              cursor="pointer"
-              border="2px dashed"
-              borderColor="gray.300"
-              _hover={{
-                borderColor: 'brand.500',
-              }}
-            >
-              {fileList.length > 0 ? fileList[0].name : 'Click to upload or drag and drop'}
-            </Button>
-            <Button
-              colorScheme="brand"
-              onClick={handleUpload}
-              isLoading={uploadLoading}
-              loadingText="Uploading..."
-              isDisabled={fileList.length === 0}
-              width="full"
-            >
-              Upload File
-            </Button>
-          </VStack>
+          <Card>
+            <VStack spacing={4}>
+              <Heading size="md">Upload Statement</Heading>
+              <Text color="gray.600">
+                Drag and drop your PDF or Excel file here, or click to select
+              </Text>
+              <input
+                type="file"
+                accept=".pdf,.xlsx,.xls"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+                id="file-upload"
+              />
+              <Button
+                as="label"
+                htmlFor="file-upload"
+                colorScheme="brand"
+                size="lg"
+                width="full"
+                height="150px"
+                cursor="pointer"
+                border="2px dashed"
+                borderColor="gray.300"
+                _hover={{
+                  borderColor: 'brand.500',
+                }}
+              >
+                {fileList.length > 0 ? fileList[0].name : 'Click to upload or drag and drop'}
+              </Button>
+              <Button
+                colorScheme="brand"
+                onClick={handleUpload}
+                isLoading={uploadLoading}
+                loadingText="Uploading..."
+                isDisabled={fileList.length === 0}
+                width="full"
+              >
+                Upload File
+              </Button>
+            </VStack>
+          </Card>
         </Box>
       )}
       

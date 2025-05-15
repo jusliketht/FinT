@@ -1,6 +1,6 @@
-const express = require('express');
+const express = require("express");
+
 const router = express.Router();
-const { protect, authorize } = require('../middleware/authMiddleware');
 const {
   createAccountCategory,
   getAccountCategories,
@@ -11,38 +11,45 @@ const {
   createJournalEntry,
   getJournalEntries,
   postJournalEntry,
-  getLedgerEntries,
-  getTrialBalance
-} = require('../controllers/accountingController');
+  createTransaction,
+  getTransactions,
+  createAccount,
+  getAccounts,
+} = require("../controllers/accountingController");
 
 // Account Categories
-router.route('/categories')
-  .post(protect, authorize('admin'), createAccountCategory)
-  .get(protect, getAccountCategories);
+router
+  .route("/categories")
+  .post(createAccountCategory)
+  .get(getAccountCategories);
 
 // Account Heads
-router.route('/heads')
-  .post(protect, authorize('admin'), createAccountHead)
-  .get(protect, getAccountHeads);
+router
+  .route("/heads")
+  .post(createAccountHead)
+  .get(getAccountHeads);
 
-router.route('/heads/:id')
-  .get(protect, getAccountHeadById)
-  .put(protect, authorize('admin'), updateAccountHead);
+router
+  .route("/heads/:id")
+  .get(getAccountHeadById)
+  .put(updateAccountHead);
 
 // Journal Entries
-router.route('/journals')
-  .post(protect, createJournalEntry)
-  .get(protect, getJournalEntries);
+router
+  .route("/journal")
+  .get(getJournalEntries)
+  .post(postJournalEntry);
 
-router.route('/journals/:id/post')
-  .put(protect, authorize('admin'), postJournalEntry);
+// Transactions
+router
+  .route("/transactions")
+  .post(createTransaction)
+  .get(getTransactions);
 
-// Ledger
-router.route('/ledger/:accountId')
-  .get(protect, getLedgerEntries);
+// Accounts
+router
+  .route("/accounts")
+  .post(createAccount)
+  .get(getAccounts);
 
-// Reports
-router.route('/trial-balance')
-  .get(protect, getTrialBalance);
-
-module.exports = router; 
+module.exports = router;

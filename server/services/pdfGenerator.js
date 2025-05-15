@@ -1,15 +1,15 @@
-const PdfPrinter = require('pdfmake');
 const fs = require('fs');
 const path = require('path');
+const PdfPrinter = require('pdfmake');
 
 // Define default fallback font if custom fonts are not available
 const defaultFont = {
   Roboto: {
-    normal: 'Helvetica',
-    bold: 'Helvetica-Bold',
-    italics: 'Helvetica-Oblique',
-    bolditalics: 'Helvetica-BoldOblique'
-  }
+    normal: "Helvetica",
+    bold: "Helvetica-Bold",
+    italics: "Helvetica-Oblique",
+    bolditalics: "Helvetica-BoldOblique",
+  },
 };
 
 // Try to load custom fonts, fall back to default if not available
@@ -17,25 +17,23 @@ const getFonts = () => {
   try {
     // Check if custom fonts exist
     const fontPaths = {
-      normal: path.join(__dirname, '../assets/fonts/Roboto-Regular.ttf'),
-      bold: path.join(__dirname, '../assets/fonts/Roboto-Medium.ttf'),
-      italics: path.join(__dirname, '../assets/fonts/Roboto-Italic.ttf'),
-      bolditalics: path.join(__dirname, '../assets/fonts/Roboto-MediumItalic.ttf')
+      normal: path.join(__dirname, "../assets/fonts/Roboto-Regular.ttf"),
+      bold: path.join(__dirname, "../assets/fonts/Roboto-Medium.ttf"),
+      italics: path.join(__dirname, "../assets/fonts/Roboto-Italic.ttf"),
+      bolditalics: path.join(__dirname, "../assets/fonts/Roboto-MediumItalic.ttf")
     };
-    
+
     // Verify all fonts exist
     const allFontsExist = Object.values(fontPaths).every(fontPath => fs.existsSync(fontPath));
-    
+
     if (allFontsExist) {
-      return {
-        Roboto: fontPaths
-      };
+      return { Roboto: fontPaths };
     }
-    
-    console.warn('Custom fonts not found. Using default fonts.');
+
+    console.warn("Custom fonts not found. Using default fonts.");
     return defaultFont;
   } catch (error) {
-    console.error('Error loading fonts:', error);
+    console.error("Error loading fonts:", error);
     return defaultFont;
   }
 };
@@ -48,26 +46,22 @@ const printer = new PdfPrinter(getFonts());
  * @param {number} amount - Amount to format
  * @returns {string} Formatted amount
  */
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-IN', {
+const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
     minimumFractionDigits: 2
   }).format(amount);
-};
 
 /**
  * Format date
  * @param {Date} date - Date to format
  * @returns {string} Formatted date
  */
-const formatDate = (date) => {
-  return date.toLocaleDateString('en-IN', {
+const formatDate = (date) => date.toLocaleDateString('en-IN', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
   });
-};
 
 /**
  * Create header for reports
@@ -79,33 +73,33 @@ const formatDate = (date) => {
 const createHeader = (title, startDate = null, endDate = null) => {
   const header = [
     {
-      text: 'FinT Financial Management',
-      style: 'companyName'
+      text: "FinT Financial Management",
+      style: "companyName",
     },
     {
       text: title,
-      style: 'reportTitle'
-    }
+      style: "reportTitle",
+    },
   ];
-  
+
   if (startDate && endDate) {
     header.push({
       text: `Period: ${formatDate(startDate)} to ${formatDate(endDate)}`,
-      style: 'reportPeriod'
+      style: "reportPeriod",
     });
   } else if (startDate || endDate) {
     const date = startDate || endDate;
     header.push({
       text: `As of: ${formatDate(date)}`,
-      style: 'reportPeriod'
+      style: "reportPeriod",
     });
   }
-  
+
   header.push({
     text: `Generated on: ${formatDate(new Date())}`,
-    style: 'generatedDate'
+    style: "generatedDate",
   });
-  
+
   return header;
 };
 
@@ -118,121 +112,139 @@ const createHeader = (title, startDate = null, endDate = null) => {
 const generateBalanceSheetPDF = async (balanceSheet, asOfDate) => {
   const docDefinition = {
     content: [
-      ...createHeader('Balance Sheet', null, asOfDate),
-      { text: '', margin: [0, 20] },
-      
+      ...createHeader("Balance Sheet", null, asOfDate),
+      { text: "", margin: [0, 20] },
+
       // Assets section
-      { text: 'Assets', style: 'sectionHeader' },
+      { text: "Assets", style: "sectionHeader" },
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto'],
+          widths: ["*", "auto", "auto"],
           body: [
             [
-              { text: 'Account', style: 'tableHeader' },
-              { text: 'Code', style: 'tableHeader' },
-              { text: 'Balance', style: 'tableHeader' }
+              { text: "Account", style: "tableHeader" },
+              { text: "Code", style: "tableHeader" },
+              { text: "Balance", style: "tableHeader" },
             ],
-            ...balanceSheet.assets.map(account => [
+            ...balanceSheet.assets.map((account) => [
               account.name,
               account.code,
-              { text: formatCurrency(account.balance), alignment: 'right' }
+              { text: formatCurrency(account.balance), alignment: "right" },
             ]),
             [
-              { text: 'Total Assets', style: 'totalRow' },
-              '',
-              { text: formatCurrency(balanceSheet.totalAssets), style: 'totalRow', alignment: 'right' }
-            ]
-          ]
-        }
+              { text: "Total Assets", style: "totalRow" },
+              "",
+              {
+                text: formatCurrency(balanceSheet.totalAssets),
+                style: "totalRow",
+                alignment: "right",
+              },
+            ],
+          ],
+        },
       },
-      { text: '', margin: [0, 20] },
-      
+      { text: "", margin: [0, 20] },
+
       // Liabilities section
-      { text: 'Liabilities', style: 'sectionHeader' },
+      { text: "Liabilities", style: "sectionHeader" },
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto'],
+          widths: ["*", "auto", "auto"],
           body: [
             [
-              { text: 'Account', style: 'tableHeader' },
-              { text: 'Code', style: 'tableHeader' },
-              { text: 'Balance', style: 'tableHeader' }
+              { text: "Account", style: "tableHeader" },
+              { text: "Code", style: "tableHeader" },
+              { text: "Balance", style: "tableHeader" },
             ],
-            ...balanceSheet.liabilities.map(account => [
+            ...balanceSheet.liabilities.map((account) => [
               account.name,
               account.code,
-              { text: formatCurrency(account.balance), alignment: 'right' }
+              { text: formatCurrency(account.balance), alignment: "right" },
             ]),
             [
-              { text: 'Total Liabilities', style: 'totalRow' },
-              '',
-              { text: formatCurrency(balanceSheet.totalLiabilities), style: 'totalRow', alignment: 'right' }
-            ]
-          ]
-        }
+              { text: "Total Liabilities", style: "totalRow" },
+              "",
+              {
+                text: formatCurrency(balanceSheet.totalLiabilities),
+                style: "totalRow",
+                alignment: "right",
+              },
+            ],
+          ],
+        },
       },
-      { text: '', margin: [0, 20] },
-      
+      { text: "", margin: [0, 20] },
+
       // Equity section
-      { text: 'Equity', style: 'sectionHeader' },
+      { text: "Equity", style: "sectionHeader" },
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto'],
+          widths: ["*", "auto", "auto"],
           body: [
             [
-              { text: 'Account', style: 'tableHeader' },
-              { text: 'Code', style: 'tableHeader' },
-              { text: 'Balance', style: 'tableHeader' }
+              { text: "Account", style: "tableHeader" },
+              { text: "Code", style: "tableHeader" },
+              { text: "Balance", style: "tableHeader" },
             ],
-            ...balanceSheet.equity.map(account => [
+            ...balanceSheet.equity.map((account) => [
               account.name,
               account.code,
-              { text: formatCurrency(account.balance), alignment: 'right' }
+              { text: formatCurrency(account.balance), alignment: "right" },
             ]),
             [
-              { text: 'Total Equity', style: 'totalRow' },
-              '',
-              { text: formatCurrency(balanceSheet.totalEquity), style: 'totalRow', alignment: 'right' }
-            ]
-          ]
-        }
+              { text: "Total Equity", style: "totalRow" },
+              "",
+              {
+                text: formatCurrency(balanceSheet.totalEquity),
+                style: "totalRow",
+                alignment: "right",
+              },
+            ],
+          ],
+        },
       },
-      { text: '', margin: [0, 20] },
-      
+      { text: "", margin: [0, 20] },
+
       // Total liabilities and equity
       {
         table: {
           headerRows: 0,
-          widths: ['*', 'auto'],
+          widths: ["*", "auto"],
           body: [
             [
-              { text: 'Total Liabilities and Equity', style: 'grandTotal' },
-              { text: formatCurrency(balanceSheet.totalLiabilities + balanceSheet.totalEquity), style: 'grandTotal', alignment: 'right' }
-            ]
-          ]
-        }
-      }
+              { text: "Total Liabilities and Equity", style: "grandTotal" },
+              {
+                text: formatCurrency(
+                  balanceSheet.totalLiabilities + balanceSheet.totalEquity,
+                ),
+                style: "grandTotal",
+                alignment: "right",
+              },
+            ],
+          ],
+        },
+      },
     ],
-    styles: getDefaultStyles()
+    styles: getDefaultStyles(),
   };
-  
+
   const pdfDoc = printer.createPdfKitDocument(docDefinition);
-  
+
   return new Promise((resolve, reject) => {
     try {
       const chunks = [];
-      
-      pdfDoc.on('data', (chunk) => {
+
+      pdfDoc.on("data", (chunk) => {
         chunks.push(chunk);
       });
-      
-      pdfDoc.on('end', () => {
+
+      pdfDoc.on("end", () => {
         resolve(Buffer.concat(chunks));
       });
-      
+
       pdfDoc.end();
     } catch (error) {
       reject(error);
@@ -250,94 +262,106 @@ const generateBalanceSheetPDF = async (balanceSheet, asOfDate) => {
 const generateProfitLossPDF = async (profitLoss, startDate, endDate) => {
   const docDefinition = {
     content: [
-      ...createHeader('Profit & Loss Statement', startDate, endDate),
-      { text: '', margin: [0, 20] },
-      
+      ...createHeader("Profit & Loss Statement", startDate, endDate),
+      { text: "", margin: [0, 20] },
+
       // Revenue section
-      { text: 'Revenue', style: 'sectionHeader' },
+      { text: "Revenue", style: "sectionHeader" },
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto'],
+          widths: ["*", "auto", "auto"],
           body: [
             [
-              { text: 'Account', style: 'tableHeader' },
-              { text: 'Code', style: 'tableHeader' },
-              { text: 'Amount', style: 'tableHeader' }
+              { text: "Account", style: "tableHeader" },
+              { text: "Code", style: "tableHeader" },
+              { text: "Amount", style: "tableHeader" },
             ],
-            ...profitLoss.revenue.map(account => [
+            ...profitLoss.revenue.map((account) => [
               account.name,
               account.code,
-              { text: formatCurrency(account.balance), alignment: 'right' }
+              { text: formatCurrency(account.balance), alignment: "right" },
             ]),
             [
-              { text: 'Total Revenue', style: 'totalRow' },
-              '',
-              { text: formatCurrency(profitLoss.totalRevenue), style: 'totalRow', alignment: 'right' }
-            ]
-          ]
-        }
+              { text: "Total Revenue", style: "totalRow" },
+              "",
+              {
+                text: formatCurrency(profitLoss.totalRevenue),
+                style: "totalRow",
+                alignment: "right",
+              },
+            ],
+          ],
+        },
       },
-      { text: '', margin: [0, 20] },
-      
+      { text: "", margin: [0, 20] },
+
       // Expenses section
-      { text: 'Expenses', style: 'sectionHeader' },
+      { text: "Expenses", style: "sectionHeader" },
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto'],
+          widths: ["*", "auto", "auto"],
           body: [
             [
-              { text: 'Account', style: 'tableHeader' },
-              { text: 'Code', style: 'tableHeader' },
-              { text: 'Amount', style: 'tableHeader' }
+              { text: "Account", style: "tableHeader" },
+              { text: "Code", style: "tableHeader" },
+              { text: "Amount", style: "tableHeader" },
             ],
-            ...profitLoss.expenses.map(account => [
+            ...profitLoss.expenses.map((account) => [
               account.name,
               account.code,
-              { text: formatCurrency(account.balance), alignment: 'right' }
+              { text: formatCurrency(account.balance), alignment: "right" },
             ]),
             [
-              { text: 'Total Expenses', style: 'totalRow' },
-              '',
-              { text: formatCurrency(profitLoss.totalExpenses), style: 'totalRow', alignment: 'right' }
-            ]
-          ]
-        }
+              { text: "Total Expenses", style: "totalRow" },
+              "",
+              {
+                text: formatCurrency(profitLoss.totalExpenses),
+                style: "totalRow",
+                alignment: "right",
+              },
+            ],
+          ],
+        },
       },
-      { text: '', margin: [0, 20] },
-      
+      { text: "", margin: [0, 20] },
+
       // Net Income
       {
         table: {
           headerRows: 0,
-          widths: ['*', 'auto'],
+          widths: ["*", "auto"],
           body: [
             [
-              { text: 'Net Income', style: 'grandTotal' },
-              { text: formatCurrency(profitLoss.netIncome), style: 'grandTotal', alignment: 'right' }
-            ]
-          ]
-        }
-      }
+              { text: "Net Income", style: "grandTotal" },
+              {
+                text: formatCurrency(profitLoss.netIncome),
+                style: "grandTotal",
+                alignment: "right",
+              },
+            ],
+          ],
+        },
+      },
     ],
-    styles: getDefaultStyles()
+    styles: getDefaultStyles(),
   };
-  
+
   const pdfDoc = printer.createPdfKitDocument(docDefinition);
-  
+
   return new Promise((resolve, reject) => {
     try {
       const chunks = [];
-      
-      pdfDoc.on('data', (chunk) => {
+
+      pdfDoc.on("data", (chunk) => {
         chunks.push(chunk);
       });
-      
-      pdfDoc.on('end', () => {
+
+      pdfDoc.on("end", () => {
         resolve(Buffer.concat(chunks));
       });
-      
+
       pdfDoc.end();
     } catch (error) {
       reject(error);
@@ -355,130 +379,170 @@ const generateProfitLossPDF = async (profitLoss, startDate, endDate) => {
 const generateCashFlowPDF = async (cashFlow, startDate, endDate) => {
   const docDefinition = {
     content: [
-      ...createHeader('Cash Flow Statement', startDate, endDate),
-      { text: '', margin: [0, 20] },
-      
+      ...createHeader("Cash Flow Statement", startDate, endDate),
+      { text: "", margin: [0, 20] },
+
       // Operating Activities section
-      { text: 'Operating Activities', style: 'sectionHeader' },
+      { text: "Operating Activities", style: "sectionHeader" },
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto'],
+          widths: ["*", "auto", "auto"],
           body: [
             [
-              { text: 'Description', style: 'tableHeader' },
-              { text: 'Date', style: 'tableHeader' },
-              { text: 'Amount', style: 'tableHeader' }
+              { text: "Description", style: "tableHeader" },
+              { text: "Date", style: "tableHeader" },
+              { text: "Amount", style: "tableHeader" },
             ],
-            ...cashFlow.operating.map(transaction => [
+            ...cashFlow.operating.map((transaction) => [
               transaction.description,
               formatDate(transaction.date),
-              { 
-                text: formatCurrency(transaction.transactionType === 'credit' ? transaction.amount : -transaction.amount), 
-                alignment: 'right' 
-              }
+              {
+                text: formatCurrency(
+                  transaction.transactionType === "credit"
+                    ? transaction.amount
+                    : -transaction.amount,
+                ),
+                alignment: "right",
+              },
             ]),
             [
-              { text: 'Net Cash from Operating Activities', style: 'totalRow', colSpan: 2 },
+              {
+                text: "Net Cash from Operating Activities",
+                style: "totalRow",
+                colSpan: 2,
+              },
               {},
-              { text: formatCurrency(cashFlow.operatingTotal), style: 'totalRow', alignment: 'right' }
-            ]
-          ]
-        }
+              {
+                text: formatCurrency(cashFlow.operatingTotal),
+                style: "totalRow",
+                alignment: "right",
+              },
+            ],
+          ],
+        },
       },
-      { text: '', margin: [0, 20] },
-      
+      { text: "", margin: [0, 20] },
+
       // Investing Activities section
-      { text: 'Investing Activities', style: 'sectionHeader' },
+      { text: "Investing Activities", style: "sectionHeader" },
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto'],
+          widths: ["*", "auto", "auto"],
           body: [
             [
-              { text: 'Description', style: 'tableHeader' },
-              { text: 'Date', style: 'tableHeader' },
-              { text: 'Amount', style: 'tableHeader' }
+              { text: "Description", style: "tableHeader" },
+              { text: "Date", style: "tableHeader" },
+              { text: "Amount", style: "tableHeader" },
             ],
-            ...cashFlow.investing.map(transaction => [
+            ...cashFlow.investing.map((transaction) => [
               transaction.description,
               formatDate(transaction.date),
-              { 
-                text: formatCurrency(transaction.transactionType === 'credit' ? transaction.amount : -transaction.amount), 
-                alignment: 'right' 
-              }
+              {
+                text: formatCurrency(
+                  transaction.transactionType === "credit"
+                    ? transaction.amount
+                    : -transaction.amount,
+                ),
+                alignment: "right",
+              },
             ]),
             [
-              { text: 'Net Cash from Investing Activities', style: 'totalRow', colSpan: 2 },
+              {
+                text: "Net Cash from Investing Activities",
+                style: "totalRow",
+                colSpan: 2,
+              },
               {},
-              { text: formatCurrency(cashFlow.investingTotal), style: 'totalRow', alignment: 'right' }
-            ]
-          ]
-        }
+              {
+                text: formatCurrency(cashFlow.investingTotal),
+                style: "totalRow",
+                alignment: "right",
+              },
+            ],
+          ],
+        },
       },
-      { text: '', margin: [0, 20] },
-      
+      { text: "", margin: [0, 20] },
+
       // Financing Activities section
-      { text: 'Financing Activities', style: 'sectionHeader' },
+      { text: "Financing Activities", style: "sectionHeader" },
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto'],
+          widths: ["*", "auto", "auto"],
           body: [
             [
-              { text: 'Description', style: 'tableHeader' },
-              { text: 'Date', style: 'tableHeader' },
-              { text: 'Amount', style: 'tableHeader' }
+              { text: "Description", style: "tableHeader" },
+              { text: "Date", style: "tableHeader" },
+              { text: "Amount", style: "tableHeader" },
             ],
-            ...cashFlow.financing.map(transaction => [
+            ...cashFlow.financing.map((transaction) => [
               transaction.description,
               formatDate(transaction.date),
-              { 
-                text: formatCurrency(transaction.transactionType === 'credit' ? transaction.amount : -transaction.amount), 
-                alignment: 'right' 
-              }
+              {
+                text: formatCurrency(
+                  transaction.transactionType === "credit"
+                    ? transaction.amount
+                    : -transaction.amount,
+                ),
+                alignment: "right",
+              },
             ]),
             [
-              { text: 'Net Cash from Financing Activities', style: 'totalRow', colSpan: 2 },
+              {
+                text: "Net Cash from Financing Activities",
+                style: "totalRow",
+                colSpan: 2,
+              },
               {},
-              { text: formatCurrency(cashFlow.financingTotal), style: 'totalRow', alignment: 'right' }
-            ]
-          ]
-        }
+              {
+                text: formatCurrency(cashFlow.financingTotal),
+                style: "totalRow",
+                alignment: "right",
+              },
+            ],
+          ],
+        },
       },
-      { text: '', margin: [0, 20] },
-      
+      { text: "", margin: [0, 20] },
+
       // Net increase/decrease in cash
       {
         table: {
           headerRows: 0,
-          widths: ['*', 'auto'],
+          widths: ["*", "auto"],
           body: [
             [
-              { text: 'Net Increase/Decrease in Cash', style: 'grandTotal' },
-              { text: formatCurrency(cashFlow.netCashFlow), style: 'grandTotal', alignment: 'right' }
-            ]
-          ]
-        }
-      }
+              { text: "Net Increase/Decrease in Cash", style: "grandTotal" },
+              {
+                text: formatCurrency(cashFlow.netCashFlow),
+                style: "grandTotal",
+                alignment: "right",
+              },
+            ],
+          ],
+        },
+      },
     ],
-    styles: getDefaultStyles()
+    styles: getDefaultStyles(),
   };
-  
+
   const pdfDoc = printer.createPdfKitDocument(docDefinition);
-  
+
   return new Promise((resolve, reject) => {
     try {
       const chunks = [];
-      
-      pdfDoc.on('data', (chunk) => {
+
+      pdfDoc.on("data", (chunk) => {
         chunks.push(chunk);
       });
-      
-      pdfDoc.on('end', () => {
+
+      pdfDoc.on("end", () => {
         resolve(Buffer.concat(chunks));
       });
-      
+
       pdfDoc.end();
     } catch (error) {
       reject(error);
@@ -490,8 +554,7 @@ const generateCashFlowPDF = async (cashFlow, startDate, endDate) => {
  * Get default styles for PDFs
  * @returns {Object} Style definitions
  */
-const getDefaultStyles = () => {
-  return {
+const getDefaultStyles = () => ({
     companyName: {
       fontSize: 16,
       bold: true,
@@ -531,11 +594,10 @@ const getDefaultStyles = () => {
       bold: true,
       fontSize: 11
     }
-  };
-};
+  });
 
 module.exports = {
   generateBalanceSheetPDF,
   generateProfitLossPDF,
-  generateCashFlowPDF
-}; 
+  generateCashFlowPDF,
+};

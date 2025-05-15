@@ -15,13 +15,17 @@ model User {
   id              String        @id @default(uuid())
   name            String
   email           String        @unique
-  password        String
+  password        String?
+  googleId        String?       @unique
   role            String        @default("VIEWER") // ADMIN, ACCOUNTANT, VIEWER
   resetToken      String?
   resetTokenExpiry DateTime?
+  emailVerified   Boolean       @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   journalEntries  JournalEntry[]
+  transactions    Transaction[]
+  accounts        Account[]
 }
 
 // Account Head Category (Asset, Liability, Income, Expense, Equity)
@@ -57,20 +61,24 @@ model AccountHead {
 
 // Journal Entries
 model JournalEntry {
-  id          String        @id @default(uuid())
-  date        DateTime
-  reference   String        @unique // Reference number for the entry
-  description String
-  status      String        @default("draft") // draft, posted, void
-  items       JournalEntryItem[]
-  createdBy   String
-  user        User         @relation(fields: [createdBy], references: [id])
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id              String   @id @default(uuid())
+  date            DateTime
+  description     String
+  amount          Float
+  debitAccountId  String
+  creditAccountId String
+  userId          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  creditAccount   Account  @relation("CreditAccount", fields: [creditAccountId], references: [id])
+  debitAccount    Account  @relation("DebitAccount", fields: [debitAccountId], references: [id])
+  user            User     @relation(fields: [userId], references: [id])
+  items           JournalEntryItem[]
 
-  @@index([createdBy])
+  @@index([userId])
   @@index([date])
-  @@index([status])
+  @@index([debitAccountId])
+  @@index([creditAccountId])
 }
 
 // Journal Entry Items (individual debit/credit lines)
@@ -133,4 +141,39 @@ model CompanySettings {
   baseCurrency    String    @default("INR")
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+}
+
+model Transaction {
+  id              String   @id @default(uuid())
+  date            DateTime
+  description     String
+  amount          Float
+  category        String
+  transactionType String
+  userId          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([date])
+  @@index([category])
+  @@index([transactionType])
+}
+
+model Account {
+  id            String         @id @default(uuid())
+  name          String
+  type          String
+  code          String         @unique
+  userId        String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id])
+  creditEntries JournalEntry[] @relation("CreditAccount")
+  debitEntries  JournalEntry[] @relation("DebitAccount")
+
+  @@index([userId])
+  @@index([type])
+  @@index([code])
 } 

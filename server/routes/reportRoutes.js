@@ -1,22 +1,21 @@
-const express = require('express');
-const { generateBalanceSheet, generateProfitLoss, generateCashFlow } = require('../controllers/reportController');
-const auth = require('../middleware/auth');
-
+const express = require("express");
 const router = express.Router();
+const {
+  generateBalanceSheet,
+  generateProfitLoss,
+  generateCashFlow,
+} = require("../controllers/reportController");
 
-// @route   GET /api/reports/balance-sheet
-// @desc    Generate Balance Sheet
-// @access  Private
-router.get('/balance-sheet', auth, generateBalanceSheet);
+// Trial Balance (not implemented)
+// router.get("/trial-balance", getTrialBalance);
 
-// @route   GET /api/reports/profit-loss
-// @desc    Generate Profit & Loss Statement
-// @access  Private
-router.get('/profit-loss', auth, generateProfitLoss);
+// Balance Sheet
+router.get("/balance-sheet", generateBalanceSheet);
 
-// @route   GET /api/reports/cash-flow
-// @desc    Generate Cash Flow Statement
-// @access  Private
-router.get('/cash-flow', auth, generateCashFlow);
+// Income Statement
+router.get("/income-statement", generateProfitLoss);
 
-module.exports = router; 
+// Cash Flow
+router.get("/cash-flow", generateCashFlow);
+
+module.exports = router;

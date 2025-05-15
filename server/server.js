@@ -1,80 +1,70 @@
-const express = require('express');
-const cors = require('cors');
-const morgan = require('morgan');
-const path = require('path');
-const helmet = require('helmet');
-const compression = require('compression');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
-
-// Import database
-const db = require('./db/init');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const morgan = require("morgan");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 
 // Import routes
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
-const accountingRoutes = require('./routes/accountingRoutes');
+const accountCategoryRoutes = require("./routes/accountCategoryRoutes");
+const accountRoutes = require("./routes/accountRoutes");
+const accountTypeRoutes = require("./routes/accountTypeRoutes");
+const accountingRoutes = require("./routes/accountingRoutes");
+const bankAccountRoutes = require("./routes/bankAccountRoutes");
+const creditCardRoutes = require("./routes/creditCardRoutes");
+const journalEntryRoutes = require("./routes/journalEntryRoutes");
+const ledgerRoutes = require("./routes/ledgerRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const transactionRoutes = require("./routes/transactionRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
 
 const app = express();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(morgan('dev')); // HTTP request logger
-app.use(compression());
-app.use(helmet({
-  contentSecurityPolicy: false
+// Basic middleware
+app.use(cors({
+  origin: process.env.CLIENT_URL || "http://localhost:3000",
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type"],
 }));
 
-// API Routes - Make sure these come before static file serving
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/accounting', accountingRoutes);
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+app.use(morgan("dev"));
+app.use(helmet());
 
-// Basic health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+// Basic rate limiting
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many requests from this IP, please try again later.",
+}));
 
-// In development, let Create React App handle routing
-if (process.env.NODE_ENV === 'development') {
-  console.log('Running in development mode - API only');
-} else {
-  // Serve static files from the React frontend app in production
-  const buildPath = path.resolve(__dirname, '../client/build');
-  console.log('Static files directory:', buildPath);
-  app.use(express.static(buildPath));
+// API routes
+app.use("/api/accounting", accountingRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use("/api/account-types", accountTypeRoutes);
+app.use("/api/account-categories", accountCategoryRoutes);
+app.use("/api/accounts", accountRoutes);
+app.use("/api/journal-entries", journalEntryRoutes);
+app.use("/api/ledgers", ledgerRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/bank-accounts", bankAccountRoutes);
+app.use("/api/credit-cards", creditCardRoutes);
 
-  // Serve React App for any other routes in production
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(buildPath, 'index.html'));
-  });
-}
-
-// Error handling middleware
+// Basic error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
-  res.status(500).json({ 
-    error: 'Something broke!',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+  console.error(err.stack);
+  res.status(500).json({
+    status: "error",
+    message: "Something went wrong!"
   });
 });
 
-// Initialize database and start server
+// Start server
 const PORT = process.env.PORT || 5000;
-db.initializeDatabase()
-  .then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server is running at http://localhost:${PORT}`);
-      if (process.env.NODE_ENV === 'development') {
-        console.log('API server running - use Create React App dev server for frontend');
-      } else {
-        console.log('Production mode - serving static files');
-      }
-      console.log(`Health check endpoint: http://localhost:${PORT}/api/health`);
-      console.log('Environment:', process.env.NODE_ENV || 'development');
-    });
-  })
-  .catch(error => {
-    console.error('Failed to initialize database:', error);
-    process.exit(1);
-  }); 
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+module.exports = app;

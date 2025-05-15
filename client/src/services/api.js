@@ -1,32 +1,19 @@
 import axios from 'axios';
 
-// Clear any existing tokens on startup to ensure fresh state
-localStorage.removeItem('token');
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
-// Validate JWT token format
-const isValidJWT = (token) => {
-  if (!token) return false;
-  const parts = token.split('.');
-  return parts.length === 3 && parts.every(part => part.length > 0);
-};
-
-// Add a request interceptor to add the auth token to requests
+// Request interceptor
 api.interceptors.request.use(
   (config) => {
+    // Add authentication token if available
     const token = localStorage.getItem('token');
-    
-    // Debug token issues
-    if (token && !isValidJWT(token)) {
-      console.warn('Invalid token format detected:', token);
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-      return config;
-    }
-    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -37,20 +24,35 @@ api.interceptors.request.use(
   }
 );
 
-// Add a response interceptor to handle errors
+// Response interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Log detailed error information
-    if (error.response?.status === 401) {
-      console.error('Authentication error:', {
-        status: error.response.status,
-        message: error.response.data?.message,
-        headers: error.response.headers,
-      });
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+    const { response } = error;
+    
+    // Handle different error status codes
+    if (response) {
+      switch (response.status) {
+        case 400:
+          console.error('Bad Request:', response.data);
+          break;
+        case 401:
+          console.error('Unauthorized:', response.data);
+          break;
+        case 403:
+          console.error('Forbidden:', response.data);
+          break;
+        case 404:
+          console.error('Not Found:', response.data);
+          break;
+        case 500:
+          console.error('Server Error:', response.data);
+          break;
+        default:
+          console.error('API Error:', response.data);
+      }
     }
+    
     return Promise.reject(error);
   }
 );

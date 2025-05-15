@@ -1,110 +1,74 @@
-import { extendTheme } from '@chakra-ui/react';
+import { createTheme } from '@mui/material/styles';
 
-const colors = {
-  brand: {
-    50: '#E6F6FF',
-    100: '#BAE3FF',
-    200: '#7CC4FA',
-    300: '#47A3F3',
-    400: '#2186EB',
-    500: '#0967D2',  // primary brand color
-    600: '#0552B5',
-    700: '#03449E',
-    800: '#01337D',
-    900: '#002159',
-  },
-  accent: {
-    50: '#F0FDF4',
-    100: '#DCFCE7',
-    200: '#BBF7D0',
-    300: '#86EFAC',
-    400: '#4ADE80',
-    500: '#22C55E',  // success/accent color
-    600: '#16A34A',
-    700: '#15803D',
-    800: '#166534',
-    900: '#14532D',
-  },
-};
-
-const fonts = {
-  heading: '"Inter", sans-serif',
-  body: '"Inter", sans-serif',
-};
-
-const components = {
-  Button: {
-    baseStyle: {
-      fontWeight: 'semibold',
-      borderRadius: 'lg',
+// Theme configuration
+export const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+      light: '#42a5f5',
+      dark: '#1565c0'
     },
-    variants: {
-      solid: {
-        bg: 'brand.500',
-        color: 'white',
-        _hover: {
-          bg: 'brand.600',
-        },
-        _active: {
-          bg: 'brand.700',
-        },
-      },
-      outline: {
-        borderColor: 'brand.500',
-        color: 'brand.500',
-        _hover: {
-          bg: 'brand.50',
-        },
-      },
+    secondary: {
+      main: '#9c27b0',
+      light: '#ba68c8',
+      dark: '#7b1fa2'
     },
+    background: {
+      default: '#f5f5f5',
+      paper: '#ffffff'
+    }
   },
-  Card: {
-    baseStyle: {
-      container: {
-        borderRadius: 'xl',
-        boxShadow: 'lg',
-      },
+  typography: {
+    fontFamily: [
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      'Roboto',
+      '"Helvetica Neue"',
+      'Arial',
+      'sans-serif'
+    ].join(','),
+    h1: {
+      fontSize: '2.5rem',
+      fontWeight: 500
     },
+    h2: {
+      fontSize: '2rem',
+      fontWeight: 500
+    },
+    h3: {
+      fontSize: '1.75rem',
+      fontWeight: 500
+    },
+    h4: {
+      fontSize: '1.5rem',
+      fontWeight: 500
+    },
+    h5: {
+      fontSize: '1.25rem',
+      fontWeight: 500
+    },
+    h6: {
+      fontSize: '1rem',
+      fontWeight: 500
+    }
   },
-  Input: {
-    variants: {
-      filled: {
-        field: {
-          borderRadius: 'lg',
-          bg: 'gray.50',
-          _hover: {
-            bg: 'gray.100',
-          },
-          _focus: {
-            bg: 'white',
-            borderColor: 'brand.500',
-          },
-        },
-      },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: 8
+        }
+      }
     },
-    defaultProps: {
-      variant: 'filled',
-    },
-  },
-};
-
-const config = {
-  initialColorMode: 'light',
-  useSystemColorMode: false,
-};
-
-const theme = extendTheme({
-  colors,
-  fonts,
-  components,
-  config,
-  styles: {
-    global: {
-      body: {
-        bg: 'gray.50',
-      },
-    },
-  },
-});
-
-export default theme; 
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          boxShadow: '0 2px 12px 0 rgba(0,0,0,0.1)'
+        }
+      }
+    }
+  }
+}); 

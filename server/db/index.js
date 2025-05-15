@@ -2,10 +2,12 @@
 // Install: npm install @prisma/client
 // Generate client: npx prisma generate
 
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
+
+const config = require("../config");
 
 const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
+  log: ["query", "info", "warn", "error"],
 });
 
 // Optional: Add connection testing logic here
