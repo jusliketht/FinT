@@ -1,15 +1,13 @@
 import React from 'react';
-import { Box, Container } from '@mui/material';
-import { AccountsManager } from '../../components/features';
+import { Container } from '@chakra-ui/react';
+import FinancialAccountsPage from './FinancialAccountsPage';
 
 const AccountsPage = () => {
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ pt: 4, pb: 6 }}>
-        <AccountsManager />
-      </Box>
+    <Container maxW="container.xl" py={6}>
+      <FinancialAccountsPage />
     </Container>
   );
 };
 
-export default AccountsPage; 
+export default AccountsPage;

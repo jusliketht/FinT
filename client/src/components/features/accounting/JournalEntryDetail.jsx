@@ -1,150 +1,211 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
   Box,
-  Divider,
-  Grid,
+  Heading,
+  Text,
+  Button,
+  VStack,
+  HStack,
+  Badge,
+  Card,
+  SimpleGrid,
   Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip
-} from '@mui/material';
-import { formatCurrency, formatDate } from '../../../utils/format';
+  Alert,
+  IconButton
+} from '@chakra-ui/react';
+import { ArrowBackIcon, EditIcon } from '@chakra-ui/icons';
+import { useApi } from '../../../hooks/useApi';
+import { useToast } from '../../../contexts/ToastContext';
+import LoadingSpinner from '../../common/LoadingSpinner';
+import ErrorMessage from '../../common/ErrorMessage';
 
-const JournalEntryDetail = ({ open, onClose, entry }) => {
-  if (!entry) {
-    return null;
-  }
-
-  // Calculate totals
-  const totalDebits = entry.items?.reduce(
-    (sum, item) => sum + parseFloat(item.debitAmount || 0), 
-    0
-  ) || 0;
+const JournalEntryDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const api = useApi();
+  const { showToast } = useToast();
   
-  const totalCredits = entry.items?.reduce(
-    (sum, item) => sum + parseFloat(item.creditAmount || 0), 
-    0
-  ) || 0;
+  const [entry, setEntry] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchEntryDetails();
+  }, [id]);
+
+  const fetchEntryDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/journal-entries/${id}`);
+      setEntry(response.data);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch journal entry details');
+      showToast('Failed to fetch journal entry details', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = () => {
+    navigate(`/journal-entries/${id}/edit`);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'posted': return 'green';
+      case 'draft': return 'yellow';
+      case 'pending': return 'orange';
+      case 'cancelled': return 'red';
+      default: return 'gray';
+    }
+  };
+
+  const calculateTotals = () => {
+    if (!entry || !entry.entries) return { debit: 0, credit: 0 };
+    
+    return entry.entries.reduce((acc, item) => {
+      acc.debit += item.debit || 0;
+      acc.credit += item.credit || 0;
+      return acc;
+    }, { debit: 0, credit: 0 });
+  };
+
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage message={error} />;
+  if (!entry) return <ErrorMessage message="Journal entry not found" />;
+
+  const totals = calculateTotals();
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      maxWidth="md" 
-      fullWidth
-      aria-labelledby="journal-entry-detail-title"
-    >
-      <DialogTitle id="journal-entry-detail-title">
-        Journal Entry Details
-      </DialogTitle>
-      <DialogContent>
-        <Box sx={{ mb: 3 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" color="text.secondary">Reference</Typography>
-              <Typography variant="body1">{entry.reference || '-'}</Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" color="text.secondary">Date</Typography>
-              <Typography variant="body1">{formatDate(entry.date)}</Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" color="text.secondary">Status</Typography>
-              <Chip
-                label={entry.status?.charAt(0).toUpperCase() + entry.status?.slice(1) || 'Unknown'}
-                size="small"
-                color={entry.status === 'posted' ? 'success' : 'warning'}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" color="text.secondary">Description</Typography>
-              <Typography variant="body1">{entry.description || '-'}</Typography>
-            </Grid>
-          </Grid>
-        </Box>
+    <VStack spacing={6} align="stretch">
+      <HStack justify="space-between">
+        <HStack>
+          <IconButton
+            icon={<ArrowBackIcon />}
+            onClick={() => navigate('/journal-entries')}
+            variant="ghost"
+            aria-label="Go back"
+          />
+          <Heading size="lg">Journal Entry #{entry.entryNumber}</Heading>
+        </HStack>
+        <Button
+          leftIcon={<EditIcon />}
+          colorScheme="brand"
+          onClick={handleEdit}
+        >
+          Edit Entry
+        </Button>
+      </HStack>
 
-        <Divider sx={{ my: 2 }} />
-        
-        <Typography variant="h6" gutterBottom>Line Items</Typography>
-        
-        <TableContainer component={Paper} variant="outlined">
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Account</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell align="right">Debit</TableCell>
-                <TableCell align="right">Credit</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {entry.items && entry.items.length > 0 ? (
-                <>
-                  {entry.items.map((item, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        {item.accountCode ? `${item.accountCode} - ${item.accountName}` : item.accountName || item.accountId}
-                      </TableCell>
-                      <TableCell>{item.description || entry.description}</TableCell>
-                      <TableCell align="right">
-                        {item.debitAmount > 0 ? formatCurrency(item.debitAmount) : ''}
-                      </TableCell>
-                      <TableCell align="right">
-                        {item.creditAmount > 0 ? formatCurrency(item.creditAmount) : ''}
-                      </TableCell>
-                    </TableRow>
+      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+        <Card>
+          <VStack spacing={4} align="stretch">
+            <Heading size="md">Entry Information</Heading>
+            
+            <Box>
+              <Text fontWeight="bold" color="gray.600">Entry Number</Text>
+              <Text>{entry.entryNumber}</Text>
+            </Box>
+            
+            <Box>
+              <Text fontWeight="bold" color="gray.600">Date</Text>
+              <Text>{new Date(entry.date).toLocaleDateString()}</Text>
+            </Box>
+            
+            <Box>
+              <Text fontWeight="bold" color="gray.600">Status</Text>
+              <Badge colorScheme={getStatusColor(entry.status)}>
+                {entry.status}
+              </Badge>
+            </Box>
+            
+            <Box>
+              <Text fontWeight="bold" color="gray.600">Reference</Text>
+              <Text>{entry.reference || 'N/A'}</Text>
+            </Box>
+            
+            {entry.description && (
+              <Box>
+                <Text fontWeight="bold" color="gray.600">Description</Text>
+                <Text>{entry.description}</Text>
+              </Box>
+            )}
+          </VStack>
+        </Card>
+
+        <Card>
+          <VStack spacing={4} align="stretch">
+            <Heading size="md">Financial Summary</Heading>
+            
+            <Box>
+              <Text fontWeight="bold" color="gray.600">Total Debits</Text>
+              <Text fontSize="lg" color="red.500">₹{totals.debit.toFixed(2)}</Text>
+            </Box>
+            
+            <Box>
+              <Text fontWeight="bold" color="gray.600">Total Credits</Text>
+              <Text fontSize="lg" color="green.500">₹{totals.credit.toFixed(2)}</Text>
+            </Box>
+            
+            <Box borderBottom="1px" borderColor="gray.200" />
+            
+            <Box>
+              <Text fontWeight="bold" color="gray.600">Balance</Text>
+              <Text fontSize="lg" color={Math.abs(totals.debit - totals.credit) < 0.01 ? "green.500" : "red.500"}>
+                ₹{(totals.debit - totals.credit).toFixed(2)}
+              </Text>
+            </Box>
+            
+            {Math.abs(totals.debit - totals.credit) >= 0.01 && (
+              <Alert status="error">
+                Entry is not balanced
+              </Alert>
+            )}
+          </VStack>
+        </Card>
+      </SimpleGrid>
+
+      <Card>
+        <VStack spacing={4} align="stretch">
+          <Heading size="md">Entry Lines</Heading>
+          
+          {entry.entries && entry.entries.length > 0 ? (
+            <Box overflowX="auto">
+              <Table variant="simple">
+                <thead>
+                  <tr>
+                    <th>Account</th>
+                    <th>Description</th>
+                    <th style={{ textAlign: 'right' }}>Debit</th>
+                    <th style={{ textAlign: 'right' }}>Credit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entry.entries.map((item, index) => (
+                    <tr key={index}>
+                      <td>{item.account?.name || item.accountCode}</td>
+                      <td>{item.description || '-'}</td>
+                      <td style={{ color: item.debit > 0 ? 'red' : 'gray', textAlign: 'right' }}>
+                        {item.debit > 0 ? `₹${item.debit.toFixed(2)}` : '-'}
+                      </td>
+                      <td style={{ color: item.credit > 0 ? 'green' : 'gray', textAlign: 'right' }}>
+                        {item.credit > 0 ? `₹${item.credit.toFixed(2)}` : '-'}
+                      </td>
+                    </tr>
                   ))}
-                  <TableRow>
-                    <TableCell colSpan={2} align="right" sx={{ fontWeight: 'bold' }}>
-                      TOTALS
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                      {formatCurrency(totalDebits)}
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                      {formatCurrency(totalCredits)}
-                    </TableCell>
-                  </TableRow>
-                </>
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} align="center">No line items found</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        
-        {entry.createdBy && (
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-            <Typography variant="caption" color="text.secondary">
-              Created by {entry.createdBy} on {formatDate(entry.createdAt)}
-            </Typography>
-          </Box>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Close</Button>
-      </DialogActions>
-    </Dialog>
+                </tbody>
+              </Table>
+            </Box>
+          ) : (
+            <Alert status="info">
+              No entry lines found
+            </Alert>
+          )}
+        </VStack>
+      </Card>
+    </VStack>
   );
-};
-
-JournalEntryDetail.propTypes = {
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  entry: PropTypes.object
 };
 
 export default JournalEntryDetail; 

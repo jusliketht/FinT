@@ -1,214 +1,218 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
   Box,
-  Grid,
-  Chip,
-  Divider,
+  Heading,
+  Text,
+  Button,
+  VStack,
+  HStack,
+  Badge,
   Card,
-  CardContent
-} from '@mui/material';
-import { DataTable, NotFound } from '../../../components/common';
-import { formatCurrency, formatDate } from '../../../utils/format';
+  SimpleGrid,
+  Stat,
+  StatLabel,
+  Table,
+  Alert,
+  IconButton
+} from '@chakra-ui/react';
+import { ArrowBackIcon, EditIcon } from '@chakra-ui/icons';
+import { useApi } from '../../../hooks/useApi';
+import { useToast } from '../../../contexts/ToastContext';
+import LoadingSpinner from '../../common/LoadingSpinner';
+import ErrorMessage from '../../common/ErrorMessage';
 
-const AccountDetail = ({
-  open,
-  onClose,
-  account,
-  transactions,
-  totalCount,
-  page,
-  rowsPerPage,
-  onPageChange,
-  onRowsPerPageChange
-}) => {
-  const columns = [
-    {
-      id: 'date',
-      label: 'Date',
-      minWidth: 120,
-      render: (row) => formatDate(row.date)
-    },
-    {
-      id: 'description',
-      label: 'Description',
-      minWidth: 200
-    },
-    {
-      id: 'reference',
-      label: 'Reference',
-      minWidth: 120
-    },
-    {
-      id: 'debit',
-      label: 'Debit',
-      minWidth: 120,
-      align: 'right',
-      render: (row) => row.debit ? formatCurrency(row.debit) : '-'
-    },
-    {
-      id: 'credit',
-      label: 'Credit',
-      minWidth: 120,
-      align: 'right',
-      render: (row) => row.credit ? formatCurrency(row.credit) : '-'
-    },
-    {
-      id: 'balance',
-      label: 'Balance',
-      minWidth: 120,
-      align: 'right',
-      render: (row) => formatCurrency(row.balance)
+const AccountDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const api = useApi();
+  const { showToast } = useToast();
+  
+  const [account, setAccount] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchAccountDetails();
+  }, [id]);
+
+  const fetchAccountDetails = async () => {
+    try {
+      setLoading(true);
+      const [accountResponse, transactionsResponse] = await Promise.all([
+        api.get(`/accounts/${id}`),
+        api.get(`/accounts/${id}/transactions`)
+      ]);
+
+      setAccount(accountResponse.data);
+      setTransactions(transactionsResponse.data);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch account details');
+      showToast('Failed to fetch account details', 'error');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  if (!account) return null;
+  const handleEdit = () => {
+    navigate(`/accounts/${id}/edit`);
+  };
+
+  const getAccountStatusColor = (status) => {
+    switch (status) {
+      case 'active': return 'green';
+      case 'inactive': return 'red';
+      case 'pending': return 'yellow';
+      default: return 'gray';
+    }
+  };
+
+  const getAccountTypeColor = (type) => {
+    switch (type) {
+      case 'asset': return 'blue';
+      case 'liability': return 'red';
+      case 'equity': return 'purple';
+      case 'revenue': return 'green';
+      case 'expense': return 'orange';
+      default: return 'gray';
+    }
+  };
+
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage message={error} />;
+  if (!account) return <ErrorMessage message="Account not found" />;
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="lg"
-      fullWidth
-    >
-      <DialogTitle>
-        Account Details
-      </DialogTitle>
-      <DialogContent>
-        <Grid container spacing={3}>
-          {/* Account Information */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Account Code
-                    </Typography>
-                    <Typography variant="body1" gutterBottom>
-                      {account.code}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Account Type
-                    </Typography>
-                    <Typography variant="body1" gutterBottom>
-                      {account.type.charAt(0).toUpperCase() + account.type.slice(1)}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Account Name
-                    </Typography>
-                    <Typography variant="body1" gutterBottom>
-                      {account.name}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Category
-                    </Typography>
-                    <Chip
-                      label={account.category.name}
-                      size="small"
-                      color={account.category.type === 'asset' ? 'primary' : 'secondary'}
-                      sx={{ mt: 0.5 }}
-                    />
-                  </Grid>
-                  {account.description && (
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Description
-                      </Typography>
-                      <Typography variant="body2">
-                        {account.description}
-                      </Typography>
-                    </Grid>
-                  )}
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 1 }} />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="subtitle1">
-                        Current Balance
-                      </Typography>
-                      <Typography
-                        variant="h6"
-                        color={account.balance >= 0 ? 'success.main' : 'error.main'}
-                      >
-                        {formatCurrency(account.balance)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Transaction History */}
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom>
-              Transaction History
-            </Typography>
-            <DataTable
-              columns={columns}
-              data={transactions}
-              page={page}
-              rowsPerPage={rowsPerPage}
-              totalCount={totalCount}
-              onPageChange={onPageChange}
-              onRowsPerPageChange={onRowsPerPageChange}
-            />
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>
-          Close
+    <VStack spacing={6} align="stretch">
+      <HStack justify="space-between">
+        <HStack>
+          <IconButton
+            icon={<ArrowBackIcon />}
+            onClick={() => navigate('/accounts')}
+            variant="ghost"
+            aria-label="Go back"
+          />
+          <Heading size="lg">{account.name}</Heading>
+        </HStack>
+        <Button
+          leftIcon={<EditIcon />}
+          colorScheme="brand"
+          onClick={handleEdit}
+        >
+          Edit Account
         </Button>
-      </DialogActions>
-    </Dialog>
+      </HStack>
+
+      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+        <Card>
+          <VStack spacing={4} align="stretch">
+            <Heading size="md">Account Information</Heading>
+            
+            <Box>
+              <Text fontWeight="bold" color="gray.600">Account Number</Text>
+              <Text>{account.accountNumber}</Text>
+            </Box>
+            
+            <Box>
+              <Text fontWeight="bold" color="gray.600">Type</Text>
+              <Badge colorScheme={getAccountTypeColor(account.type)}>
+                {account.type}
+              </Badge>
+            </Box>
+            
+            <Box>
+              <Text fontWeight="bold" color="gray.600">Category</Text>
+              <Text>{account.category}</Text>
+            </Box>
+            
+            <Box>
+              <Text fontWeight="bold" color="gray.600">Status</Text>
+              <Badge colorScheme={getAccountStatusColor(account.status)}>
+                {account.status}
+              </Badge>
+            </Box>
+            
+            {account.description && (
+              <Box>
+                <Text fontWeight="bold" color="gray.600">Description</Text>
+                <Text>{account.description}</Text>
+              </Box>
+            )}
+          </VStack>
+        </Card>
+
+        <Card>
+          <VStack spacing={4} align="stretch">
+            <Heading size="md">Financial Summary</Heading>
+            
+            <Stat>
+              <StatLabel>Current Balance</StatLabel>
+              <Text fontSize="2xl" fontWeight="bold" color={account.balance >= 0 ? "green.500" : "red.500"}>
+                ₹{account.balance?.toFixed(2)}{' '}
+                {account.balance >= 0 ? '↑' : '↓'}
+              </Text>
+            </Stat>
+            
+            <Box borderBottom="1px" borderColor="gray.200" />
+            
+            <Stat>
+              <StatLabel>Opening Balance</StatLabel>
+              <Text fontSize="2xl" fontWeight="bold">₹{account.openingBalance?.toFixed(2)}</Text>
+            </Stat>
+            
+            <Stat>
+              <StatLabel>Total Transactions</StatLabel>
+              <Text fontSize="2xl" fontWeight="bold">{transactions.length}</Text>
+            </Stat>
+          </VStack>
+        </Card>
+      </SimpleGrid>
+
+      <Card>
+        <VStack spacing={4} align="stretch">
+          <Heading size="md">Recent Transactions</Heading>
+          
+          {transactions.length === 0 ? (
+            <Alert status="info">
+              No transactions found for this account
+            </Alert>
+          ) : (
+            <Box overflowX="auto">
+              <Table variant="simple">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                    <th style={{ textAlign: 'right' }}>Amount</th>
+                    <th style={{ textAlign: 'right' }}>Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.slice(0, 10).map((transaction) => (
+                    <tr key={transaction.id}>
+                      <td>{new Date(transaction.date).toLocaleDateString()}</td>
+                      <td>{transaction.description}</td>
+                      <td>
+                        <Badge colorScheme={transaction.type === 'credit' ? 'green' : 'red'}>
+                          {transaction.type}
+                        </Badge>
+                      </td>
+                      <td style={{ color: transaction.type === 'credit' ? 'green' : 'red', textAlign: 'right' }}>
+                        {transaction.type === 'credit' ? '+' : '-'}₹{transaction.amount.toFixed(2)}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>₹{transaction.balance.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Box>
+          )}
+        </VStack>
+      </Card>
+    </VStack>
   );
 };
 
-AccountDetail.propTypes = {
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  account: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    code: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
-    type: PropTypes.string.isRequired,
-    category: PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      type: PropTypes.string.isRequired
-    }).isRequired,
-    description: PropTypes.string,
-    balance: PropTypes.number.isRequired
-  }),
-  transactions: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      date: PropTypes.string.isRequired,
-      description: PropTypes.string.isRequired,
-      reference: PropTypes.string,
-      debit: PropTypes.number,
-      credit: PropTypes.number,
-      balance: PropTypes.number.isRequired
-    })
-  ).isRequired,
-  totalCount: PropTypes.number.isRequired,
-  page: PropTypes.number.isRequired,
-  rowsPerPage: PropTypes.number.isRequired,
-  onPageChange: PropTypes.func.isRequired,
-  onRowsPerPageChange: PropTypes.func.isRequired
-};
-
-export default AccountDetail; 
+export default AccountDetail;

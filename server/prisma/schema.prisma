@@ -12,20 +12,22 @@ datasource db {
 
 // User model for authentication and authorization
 model User {
-  id              String        @id @default(uuid())
-  name            String
-  email           String        @unique
-  password        String?
-  googleId        String?       @unique
-  role            String        @default("VIEWER") // ADMIN, ACCOUNTANT, VIEWER
-  resetToken      String?
+  id               String         @id
+  name             String
+  email            String         @unique
+  password         String
+  role             String         @default("VIEWER")
+  resetToken       String?
   resetTokenExpiry DateTime?
-  emailVerified   Boolean       @default(false)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  journalEntries  JournalEntry[]
-  transactions    Transaction[]
-  accounts        Account[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime
+  Account          Account[]
+  JournalEntry     JournalEntry[]
+  Transaction      Transaction[]
+  UserBusiness     UserBusiness[]
+  OwnedBusinesses  Business[]     @relation("BusinessOwner")
+  CreditCards      CreditCard[]
+  CreditCardTransactions CreditCardTransaction[]
 }
 
 // Account Head Category (Asset, Liability, Income, Expense, Equity)
@@ -35,25 +37,25 @@ model AccountCategory {
   description String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  accountHeads AccountHead[]
+  AccountHead AccountHead[]
 }
 
 // Account Heads (e.g., Cash, Bank, Accounts Receivable, etc.)
 model AccountHead {
-  id              String        @id @default(uuid())
-  code            String        @unique // For standardized account codes
-  name            String
-  description     String?
-  categoryId      String
-  category        AccountCategory @relation(fields: [categoryId], references: [id])
-  isCustom        Boolean       @default(false) // To distinguish between standard and custom heads
-  parentId        String?       // For hierarchical account structure
-  parent          AccountHead?  @relation("SubAccounts", fields: [parentId], references: [id])
-  subAccounts     AccountHead[] @relation("SubAccounts")
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  journalEntries  JournalEntryItem[]
-  ledgerEntries   LedgerEntry[]
+  id                String             @id
+  code              String             @unique
+  name              String
+  description       String?
+  categoryId        String
+  isCustom          Boolean            @default(false)
+  parentId          String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime
+  AccountCategory   AccountCategory    @relation(fields: [categoryId], references: [id])
+  AccountHead       AccountHead?       @relation("AccountHeadToAccountHead", fields: [parentId], references: [id])
+  other_AccountHead AccountHead[]      @relation("AccountHeadToAccountHead")
+  JournalEntryItem  JournalEntryItem[]
+  LedgerEntry       LedgerEntry[]
 
   @@index([categoryId])
   @@index([parentId])
@@ -61,56 +63,79 @@ model AccountHead {
 
 // Journal Entries
 model JournalEntry {
-  id              String   @id @default(uuid())
-  date            DateTime
-  description     String
-  amount          Float
-  debitAccountId  String
-  creditAccountId String
-  userId          String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  creditAccount   Account  @relation("CreditAccount", fields: [creditAccountId], references: [id])
-  debitAccount    Account  @relation("DebitAccount", fields: [debitAccountId], references: [id])
-  user            User     @relation(fields: [userId], references: [id])
-  items           JournalEntryItem[]
+  id               String             @id @default(uuid())
+  date             DateTime
+  description      String
+  amount           Float
+  debitAccountId   String
+  creditAccountId  String
+  userId           String
+  businessId       String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  creditAccount    Account            @relation("CreditAccount", fields: [creditAccountId], references: [id])
+  debitAccount     Account            @relation("DebitAccount", fields: [debitAccountId], references: [id])
+  User             User               @relation(fields: [userId], references: [id])
+  Business         Business?          @relation(fields: [businessId], references: [id])
+  JournalEntryItem JournalEntryItem[]
+  
+  // GST Fields (India-specific)
+  gstRate          Float?             // GST rate (5%, 12%, 18%, 28%)
+  gstAmount        Float?             // GST amount
+  gstin            String?            // GSTIN (15-digit)
+  hsnCode          String?            // HSN/SAC code
+  placeOfSupply    String?            // Place of supply (state)
+  isInterState     Boolean            @default(false) // IGST vs CGST+SGST
+  
+  // TDS Fields (India-specific)
+  tdsSection       String?            // TDS section (194C, 194J, etc.)
+  tdsRate          Float?             // TDS rate
+  tdsAmount        Float?             // TDS amount
+  panNumber        String?            // PAN number for TDS
+  
+  // Additional India-specific fields
+  isMsmeVendor     Boolean            @default(false) // MSME vendor flag
+  invoiceNumber    String?            // Invoice number
+  vendorName       String?            // Vendor/supplier name
 
-  @@index([userId])
+  @@index([creditAccountId])
   @@index([date])
   @@index([debitAccountId])
-  @@index([creditAccountId])
+  @@index([userId])
+  @@index([businessId])
+  @@index([gstin])
 }
 
 // Journal Entry Items (individual debit/credit lines)
 model JournalEntryItem {
-  id              String        @id @default(uuid())
-  journalEntryId  String
-  journalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id])
-  accountHeadId   String
-  accountHead     AccountHead  @relation(fields: [accountHeadId], references: [id])
-  description     String?
-  debitAmount     Decimal      @default(0)
-  creditAmount    Decimal      @default(0)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id             String       @id
+  journalEntryId String
+  accountHeadId  String
+  description    String?
+  debitAmount    Decimal      @default(0)
+  creditAmount   Decimal      @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime
+  AccountHead    AccountHead  @relation(fields: [accountHeadId], references: [id])
+  JournalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
 
-  @@index([journalEntryId])
   @@index([accountHeadId])
+  @@index([journalEntryId])
 }
 
 // Ledger Entries (for running balances)
 model LedgerEntry {
-  id              String        @id @default(uuid())
-  accountHeadId   String
-  accountHead     AccountHead  @relation(fields: [accountHeadId], references: [id])
-  date            DateTime
-  description     String
-  debitAmount     Decimal      @default(0)
-  creditAmount    Decimal      @default(0)
-  balance         Decimal      // Running balance
-  reference       String       // Reference to source transaction
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id            String      @id
+  accountHeadId String
+  date          DateTime
+  description   String
+  debitAmount   Decimal     @default(0)
+  creditAmount  Decimal     @default(0)
+  balance       Decimal
+  reference     String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime
+  AccountHead   AccountHead @relation(fields: [accountHeadId], references: [id])
 
   @@index([accountHeadId])
   @@index([date])
@@ -118,12 +143,12 @@ model LedgerEntry {
 
 // Financial Year Settings
 model FinancialYear {
-  id          String    @id @default(uuid())
-  startDate   DateTime
-  endDate     DateTime
-  isActive    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
 
   @@unique([startDate, endDate])
   @@index([isActive])
@@ -131,16 +156,16 @@ model FinancialYear {
 
 // Company Settings
 model CompanySettings {
-  id              String    @id @default(uuid())
+  id              String   @id
   companyName     String
   address         String?
   taxNumber       String?
   phone           String?
   email           String?
   fiscalYearStart DateTime
-  baseCurrency    String    @default("INR")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  baseCurrency    String   @default("INR")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
 }
 
 model Transaction {
@@ -151,14 +176,17 @@ model Transaction {
   category        String
   transactionType String
   userId          String
+  businessId      String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id])
+  User            User     @relation(fields: [userId], references: [id])
+  Business        Business? @relation(fields: [businessId], references: [id])
 
-  @@index([userId])
-  @@index([date])
   @@index([category])
+  @@index([date])
   @@index([transactionType])
+  @@index([userId])
+  @@index([businessId])
 }
 
 model Account {
@@ -167,13 +195,122 @@ model Account {
   type          String
   code          String         @unique
   userId        String
+  businessId    String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  user          User           @relation(fields: [userId], references: [id])
+  User          User           @relation(fields: [userId], references: [id])
+  Business      Business?      @relation(fields: [businessId], references: [id])
   creditEntries JournalEntry[] @relation("CreditAccount")
   debitEntries  JournalEntry[] @relation("DebitAccount")
 
-  @@index([userId])
-  @@index([type])
   @@index([code])
+  @@index([type])
+  @@index([userId])
+  @@index([businessId])
+}
+
+// Business model for multi-tenant support
+model Business {
+  id                String         @id @default(uuid())
+  name              String
+  registrationNumber String?        @unique
+  type              String         // sole_proprietorship, partnership, corporation, llc
+  description       String?
+  incorporationDate DateTime?
+  fiscalYearStart   DateTime?
+  fiscalYearEnd     DateTime?
+  address           String?
+  city              String?
+  state             String?
+  postalCode        String?
+  country           String?
+  taxId             String?
+  phone             String?
+  email             String?
+  website           String?
+  ownerId           String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  // Relations
+  Owner             User           @relation("BusinessOwner", fields: [ownerId], references: [id])
+  Users             UserBusiness[]
+  Accounts          Account[]
+  JournalEntries    JournalEntry[]
+  Transactions      Transaction[]
+  CreditCards       CreditCard[]
+
+  @@index([ownerId])
+  @@index([type])
+}
+
+// User-Business relationship for multi-tenant support
+model UserBusiness {
+  id         String   @id @default(uuid())
+  userId     String
+  businessId String
+  role       String   @default("VIEWER") // ADMIN, BUSINESS_OWNER, ACCOUNTANT, VIEWER
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+  @@index([userId])
+  @@index([businessId])
+  @@index([role])
+}
+
+// Credit Card Management
+model CreditCard {
+  id                String                    @id @default(uuid())
+  cardName          String
+  cardNumber        String?                   // Last 4 digits only
+  cardType          String                    // Visa, Mastercard, Amex, RuPay
+  bankName          String
+  creditLimit       Float                     @default(0)
+  outstandingAmount Float                     @default(0)
+  dueDate           DateTime?
+  statementDate     DateTime?
+  userId            String
+  businessId        String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  
+  // Relations
+  User              User                      @relation(fields: [userId], references: [id])
+  Business          Business?                 @relation(fields: [businessId], references: [id])
+  transactions      CreditCardTransaction[]
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([cardType])
+  @@index([bankName])
+}
+
+model CreditCardTransaction {
+  id            String      @id @default(uuid())
+  date          DateTime
+  description   String
+  amount        Float
+  type          String      // DEBIT (purchase) or CREDIT (payment)
+  category      String?
+  merchant      String?
+  reference     String?
+  creditCardId  String
+  userId        String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  // Relations
+  creditCard    CreditCard  @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
+  User          User        @relation(fields: [userId], references: [id])
+
+  @@index([creditCardId])
+  @@index([userId])
+  @@index([date])
+  @@index([type])
+  @@index([category])
 } 

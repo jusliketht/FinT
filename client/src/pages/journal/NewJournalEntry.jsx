@@ -1,47 +1,36 @@
 import React from 'react';
-import { 
-  Box, 
-  Breadcrumbs,
-  Typography,
-  Link as MuiLink,
-  Paper
-} from '@mui/material';
+import { Box, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Text } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
-import HomeIcon from '@mui/icons-material/Home';
-import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
-import AddIcon from '@mui/icons-material/Add';
-import JournalEntryForm from '../../components/features/journal/JournalEntryForm';
+import { ChevronRightIcon, AddIcon } from '@chakra-ui/icons';
+import JournalEntryForm from '../../components/features/accounting/JournalEntryForm';
+import { useToast } from '../../contexts/ToastContext';
 
 const NewJournalEntry = () => {
+  const { showToast } = useToast();
+
   return (
     <Box>
       {/* Breadcrumb navigation */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Breadcrumbs aria-label="breadcrumb">
-          <MuiLink
-            component={Link}
-            to="/"
-            color="inherit"
-            sx={{ display: 'flex', alignItems: 'center' }}
-          >
-            <HomeIcon sx={{ mr: 0.5 }} fontSize="small" />
-            Dashboard
-          </MuiLink>
-          <MuiLink
-            component={Link}
-            to="/journal"
-            color="inherit"
-            sx={{ display: 'flex', alignItems: 'center' }}
-          >
-            <LibraryBooksIcon sx={{ mr: 0.5 }} fontSize="small" />
-            Journal Entries
-          </MuiLink>
-          <Typography sx={{ display: 'flex', alignItems: 'center' }} color="text.primary">
-            <AddIcon sx={{ mr: 0.5 }} fontSize="small" />
-            New Journal Entry
-          </Typography>
-        </Breadcrumbs>
-      </Paper>
+      <Box p={4} mb={4} bg="white" borderRadius="md" shadow="sm">
+        <Breadcrumb spacing="8px" separator={<ChevronRightIcon color="gray.500" />}>
+          <BreadcrumbItem>
+            <BreadcrumbLink as={Link} to="/" display="flex" alignItems="center">
+              Dashboard
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbItem>
+            <BreadcrumbLink as={Link} to="/journal" display="flex" alignItems="center">
+              Journal Entries
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbItem isCurrentPage>
+            <Text display="flex" alignItems="center" color="blue.500">
+              <AddIcon mr={1} />
+              New Journal Entry
+            </Text>
+          </BreadcrumbItem>
+        </Breadcrumb>
+      </Box>
 
       <JournalEntryForm />
     </Box>

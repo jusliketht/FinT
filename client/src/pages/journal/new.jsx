@@ -4,17 +4,18 @@ import accountService from '../../services/accountService';
 import journalEntryService from '../../services/journalEntryService';
 
 // Account creation modal components
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FormHelperText from '@mui/material/FormHelperText';
+// import Dialog from '@mui/material/Dialog';
+// import DialogTitle from '@mui/material/DialogTitle';
+// import DialogContent from '@mui/material/DialogContent';
+// import DialogActions from '@mui/material/DialogActions';
+// import Button from '@mui/material/Button';
+// import TextField from '@mui/material/TextField';
+// import FormControl from '@mui/material/FormControl';
+// import InputLabel from '@mui/material/InputLabel';
+// import Select from '@mui/material/Select';
+// import MenuItem from '@mui/material/MenuItem';
+// import FormHelperText from '@mui/material/FormHelperText';
+// TODO: Replace MUI components with Chakra UI equivalents
 
 // Sample accounts data for dropdown
 const sampleAccounts = [
@@ -528,7 +529,7 @@ const NewJournalEntry = () => {
       </div>
       
       {/* New Account Dialog */}
-      <Dialog
+      {/* <Dialog
         open={newAccountModalOpen}
         onClose={() => setNewAccountModalOpen(false)}
         maxWidth="sm"
@@ -594,7 +595,7 @@ const NewJournalEntry = () => {
             </Button>
           </DialogActions>
         </form>
-      </Dialog>
+      </Dialog> */}
     </>
   );
 };

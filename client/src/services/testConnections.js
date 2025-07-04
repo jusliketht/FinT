@@ -1,95 +1,63 @@
-import accountTypeService from './accountTypeService';
-import accountCategoryService from './accountCategoryService';
+import api from './api';
 import accountService from './accountService';
-import journalEntryService from './journalEntryService';
-import ledgerService from './ledgerService';
+import accountCategoryService from './accountCategoryService';
+import accountTypeService from './accountTypeService';
+// import ledgerService from './ledgerService';
 
 /**
  * Test all service connections to backend
  * @returns {Promise<Object>} - Results of connection tests
  */
-export async function testAllConnections() {
+export const testAllConnections = async () => {
   const results = {
-    accountTypes: { success: false, data: null, error: null },
-    accountCategories: { success: false, data: null, error: null },
-    accounts: { success: false, data: null, error: null },
-    journalEntries: { success: false, data: null, error: null },
-    ledger: { success: false, data: null, error: null }
+    api: false,
+    accounts: false,
+    categories: false,
+    types: false,
+    // ledgers: false
   };
 
-  // Test account types connection
   try {
-    const accountTypes = await accountTypeService.getAll();
-    results.accountTypes = { 
-      success: true, 
-      data: accountTypes, 
-      error: null 
-    };
-    console.log('✅ Account Types API connected successfully', accountTypes);
+    // Test basic API connection
+    await api.get('/users/check');
+    results.api = true;
   } catch (error) {
-    results.accountTypes = { 
-      success: false, 
-      data: null, 
-      error: error.message || 'Failed to connect to Account Types API'
-    };
-    console.error('❌ Account Types API connection failed', error);
+    console.error('API connection failed:', error);
   }
 
-  // Test account categories connection
   try {
-    const accountCategories = await accountCategoryService.getAll();
-    results.accountCategories = { 
-      success: true, 
-      data: accountCategories, 
-      error: null 
-    };
-    console.log('✅ Account Categories API connected successfully', accountCategories);
+    // Test accounts service
+    await accountService.getAllAccounts();
+    results.accounts = true;
   } catch (error) {
-    results.accountCategories = { 
-      success: false, 
-      data: null, 
-      error: error.message || 'Failed to connect to Account Categories API'
-    };
-    console.error('❌ Account Categories API connection failed', error);
+    console.error('Accounts service failed:', error);
   }
 
-  // Test accounts connection
   try {
-    const accounts = await accountService.getAll();
-    results.accounts = { 
-      success: true, 
-      data: accounts, 
-      error: null 
-    };
-    console.log('✅ Accounts API connected successfully', accounts);
+    // Test categories service
+    await accountCategoryService.getAllCategories();
+    results.categories = true;
   } catch (error) {
-    results.accounts = { 
-      success: false, 
-      data: null, 
-      error: error.message || 'Failed to connect to Accounts API'
-    };
-    console.error('❌ Accounts API connection failed', error);
+    console.error('Categories service failed:', error);
   }
 
-  // Test journal entries connection 
   try {
-    const journalEntries = await journalEntryService.getAll();
-    results.journalEntries = { 
-      success: true, 
-      data: journalEntries, 
-      error: null 
-    };
-    console.log('✅ Journal Entries API connected successfully', journalEntries);
+    // Test types service
+    await accountTypeService.getAllTypes();
+    results.types = true;
   } catch (error) {
-    results.journalEntries = { 
-      success: false, 
-      data: null, 
-      error: error.message || 'Failed to connect to Journal Entries API'
-    };
-    console.error('❌ Journal Entries API connection failed', error);
+    console.error('Types service failed:', error);
   }
+
+  // try {
+  //   // Test ledgers service
+  //   await ledgerService.getTrialBalance();
+  //   results.ledgers = true;
+  // } catch (error) {
+  //   console.error('Ledgers service failed:', error);
+  // }
 
   return results;
-}
+};
 
 export default testAllConnections; 

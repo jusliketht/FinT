@@ -1,12 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  TextField,
-  InputAdornment,
+  Input,
+  InputGroup,
   IconButton
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
+} from '@chakra-ui/react';
+import { SearchIcon, CloseIcon } from '@chakra-ui/icons';
 
 const SearchInput = ({
   value,
@@ -14,34 +13,27 @@ const SearchInput = ({
   onClear,
   placeholder = 'Search...',
   fullWidth = true,
-  size = 'small'
+  size = 'sm'
 }) => {
   return (
-    <TextField
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      fullWidth={fullWidth}
-      size={size}
-      InputProps={{
-        startAdornment: (
-          <InputAdornment position="start">
-            <SearchIcon />
-          </InputAdornment>
-        ),
-        endAdornment: value && (
-          <InputAdornment position="end">
-            <IconButton
-              size="small"
-              onClick={onClear}
-              edge="end"
-            >
-              <ClearIcon />
-            </IconButton>
-          </InputAdornment>
-        )
-      }}
-    />
+    <InputGroup size={size}>
+      <SearchIcon color="gray.400" />
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        w={fullWidth ? '100%' : 'auto'}
+      />
+      {value && (
+        <IconButton
+          size="sm"
+          aria-label="Clear search"
+          icon={<CloseIcon />}
+          onClick={onClear}
+          variant="ghost"
+        />
+      )}
+    </InputGroup>
   );
 };
 
@@ -51,7 +43,7 @@ SearchInput.propTypes = {
   onClear: PropTypes.func.isRequired,
   placeholder: PropTypes.string,
   fullWidth: PropTypes.bool,
-  size: PropTypes.oneOf(['small', 'medium'])
+  size: PropTypes.oneOf(['sm', 'md', 'lg'])
 };
 
-export default SearchInput; 
+export default SearchInput;

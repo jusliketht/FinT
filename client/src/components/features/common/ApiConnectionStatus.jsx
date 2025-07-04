@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Box, 
-  Paper, 
-  Typography, 
+  Card, 
+  Text, 
   List, 
   ListItem, 
-  ListItemIcon, 
-  ListItemText,
   Button,
-  CircularProgress
-} from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
-import RefreshIcon from '@mui/icons-material/Refresh';
+  Spinner,
+  HStack,
+  VStack
+} from '@chakra-ui/react';
+import { CheckIcon, WarningIcon, RepeatIcon } from '@chakra-ui/icons';
 import testAllConnections from '../../../services/testConnections';
 
 const ApiConnectionStatus = () => {
@@ -37,49 +35,70 @@ const ApiConnectionStatus = () => {
 
   if (loading && !connectionResults) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress />
+      <Box display="flex" justifyContent="center" p={6}>
+        <Spinner size="lg" />
       </Box>
     );
   }
 
+  if (!connectionResults) {
+    return (
+      <Card p={6}>
+        <Text>No connection data available</Text>
+      </Card>
+    );
+  }
+
+  const getStatusIcon = (status) => {
+    return status === 'success' ? (
+      <CheckIcon color="green.500" />
+    ) : (
+      <WarningIcon color="red.500" />
+    );
+  };
+
+  const getStatusColor = (status) => {
+    return status === 'success' ? 'green.500' : 'red.500';
+  };
+
   return (
-    <Paper sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h6">API Connection Status</Typography>
-        <Button 
-          startIcon={<RefreshIcon />} 
-          onClick={checkConnections}
-          disabled={loading}
-        >
-          {loading ? 'Checking...' : 'Check Connections'}
-        </Button>
-      </Box>
-      
-      {connectionResults && (
-        <List>
-          {Object.entries(connectionResults).map(([key, result]) => (
-            <ListItem key={key} divider>
-              <ListItemIcon>
-                {result.success ? (
-                  <CheckCircleIcon color="success" />
-                ) : (
-                  <ErrorIcon color="error" />
-                )}
-              </ListItemIcon>
-              <ListItemText 
-                primary={`${key.charAt(0).toUpperCase() + key.slice(1)}`} 
-                secondary={result.success ? 
-                  `Connected successfully (${result.data?.length || 0} items)` : 
-                  `Error: ${result.error}`
-                }
-              />
+    <Card p={6}>
+      <VStack spacing={4} align="stretch">
+        <HStack justify="space-between">
+          <Text fontSize="lg" fontWeight="bold">
+            API Connection Status
+          </Text>
+          <Button
+            size="sm"
+            leftIcon={<RepeatIcon />}
+            onClick={checkConnections}
+            isLoading={loading}
+          >
+            Refresh
+          </Button>
+        </HStack>
+
+        <List spacing={3}>
+          {Object.entries(connectionResults).map(([service, result]) => (
+            <ListItem key={service}>
+              <HStack>
+                {getStatusIcon(result.status) && React.createElement(getStatusIcon(result.status))}
+                <Text flex={1}>{service}</Text>
+                <Text color={getStatusColor(result.status)} fontSize="sm">
+                  {result.status === 'success' ? 'Connected' : 'Failed'}
+                </Text>
+              </HStack>
+              {result.error && (
+                <Text fontSize="sm" color="red.500" ml={6}>
+                  {result.error}
+                </Text>
+              )}
             </ListItem>
           ))}
         </List>
-      )}
-    </Paper>
+      </VStack>
+    </Card>
   );
 };
 
-export default ApiConnectionStatus; 
+export default ApiConnectionStatus;

@@ -2,12 +2,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Box,
-  TextField,
-  MenuItem,
+  Input,
+  Select,
   Button,
-  Grid
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+  HStack,
+  Grid,
+  GridItem
+} from '@chakra-ui/react';
 
 const FilterBar = ({
   filters,
@@ -16,70 +17,71 @@ const FilterBar = ({
   dateRange,
   onDateRangeChange
 }) => {
+  const formatDateForInput = (date) => {
+    if (!date) return '';
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().split('T')[0];
+  };
+
   return (
-    <Box sx={{ mb: 3 }}>
-      <Grid container spacing={2} alignItems="center">
+    <Box mb={6}>
+      <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
         {filters.map((filter) => (
-          <Grid item xs={12} sm={6} md={3} key={filter.id}>
+          <GridItem key={filter.id}>
             {filter.type === 'select' ? (
-              <TextField
-                select
-                fullWidth
-                label={filter.label}
+              <Select
+                placeholder={filter.label}
                 value={filter.value}
                 onChange={(e) => onFilterChange(filter.id, e.target.value)}
-                size="small"
+                size="sm"
               >
                 {filter.options.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
+                  <option key={option.value} value={option.value}>
                     {option.label}
-                  </MenuItem>
+                  </option>
                 ))}
-              </TextField>
+              </Select>
             ) : (
-              <TextField
-                fullWidth
-                label={filter.label}
+              <Input
+                placeholder={filter.label}
                 value={filter.value}
                 onChange={(e) => onFilterChange(filter.id, e.target.value)}
-                size="small"
+                size="sm"
               />
             )}
-          </Grid>
+          </GridItem>
         ))}
         
         {dateRange && (
           <>
-            <Grid item xs={12} sm={6} md={3}>
-              <DatePicker
-                label="Start Date"
-                value={dateRange.startDate}
-                onChange={(date) => onDateRangeChange('startDate', date)}
-                slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+            <GridItem>
+              <Input
+                type="date"
+                placeholder="From Date"
+                value={formatDateForInput(dateRange.from)}
+                onChange={(e) => onDateRangeChange({ ...dateRange, from: e.target.value ? new Date(e.target.value) : null })}
+                size="sm"
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <DatePicker
-                label="End Date"
-                value={dateRange.endDate}
-                onChange={(date) => onDateRangeChange('endDate', date)}
-                slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+            </GridItem>
+            <GridItem>
+              <Input
+                type="date"
+                placeholder="To Date"
+                value={formatDateForInput(dateRange.to)}
+                onChange={(e) => onDateRangeChange({ ...dateRange, to: e.target.value ? new Date(e.target.value) : null })}
+                size="sm"
               />
-            </Grid>
+            </GridItem>
           </>
         )}
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Button
-            variant="outlined"
-            onClick={onReset}
-            fullWidth
-            size="small"
-          >
-            Reset Filters
-          </Button>
-        </Grid>
       </Grid>
+      
+      <HStack spacing={4} mt={4}>
+        <Button size="sm" onClick={onReset} variant="outline">
+          Reset Filters
+        </Button>
+      </HStack>
     </Box>
   );
 };
@@ -90,10 +92,10 @@ FilterBar.propTypes = {
       id: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
       type: PropTypes.oneOf(['text', 'select']).isRequired,
-      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      value: PropTypes.string,
       options: PropTypes.arrayOf(
         PropTypes.shape({
-          value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+          value: PropTypes.string.isRequired,
           label: PropTypes.string.isRequired
         })
       )
@@ -102,10 +104,10 @@ FilterBar.propTypes = {
   onFilterChange: PropTypes.func.isRequired,
   onReset: PropTypes.func.isRequired,
   dateRange: PropTypes.shape({
-    startDate: PropTypes.instanceOf(Date),
-    endDate: PropTypes.instanceOf(Date)
+    from: PropTypes.instanceOf(Date),
+    to: PropTypes.instanceOf(Date)
   }),
   onDateRangeChange: PropTypes.func
 };
 
-export default FilterBar; 
+export default FilterBar;

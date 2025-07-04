@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Box, Typography, Alert, Dialog, Tabs, Tab } from '@mui/material';
+// import { Container, Box, Typography, Alert, Dialog, Tabs, Tab } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import ChartOfAccounts from '../../components/accounts/ChartOfAccounts';
 import AccountForm from '../../components/accounts/AccountForm';
 import AccountCategoryManager from '../../components/accounts/AccountCategoryManager';
-import { accountsAPI } from '../../services/api';
+import accountService from '../../services/accountService';
+import accountCategoryService from '../../services/accountCategoryService';
+import accountTypeService from '../../services/accountTypeService';
 
 const ChartOfAccountsPage = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -25,9 +27,9 @@ const ChartOfAccountsPage = () => {
     try {
       setLoading(true);
       const [accountsResponse, categoriesResponse, typesResponse] = await Promise.all([
-        accountsAPI.getAll(),
-        accountsAPI.getCategories(),
-        accountsAPI.getAccountTypes()
+        accountService.getAll(),
+        accountCategoryService.getAll(),
+        accountTypeService.getAll()
       ]);
       setAccounts(accountsResponse.data);
       setCategories(categoriesResponse.data);
@@ -57,7 +59,7 @@ const ChartOfAccountsPage = () => {
 
     try {
       setLoading(true);
-      await accountsAPI.delete(account.id);
+      await accountService.delete(account.id);
       enqueueSnackbar('Account deleted successfully', { variant: 'success' });
       fetchData();
     } catch (err) {
@@ -72,10 +74,10 @@ const ChartOfAccountsPage = () => {
     try {
       setLoading(true);
       if (selectedAccount) {
-        await accountsAPI.update(selectedAccount.id, values);
+        await accountService.update(selectedAccount.id, values);
         enqueueSnackbar('Account updated successfully', { variant: 'success' });
       } else {
-        await accountsAPI.create(values);
+        await accountService.create(values);
         enqueueSnackbar('Account created successfully', { variant: 'success' });
       }
       setIsFormOpen(false);
@@ -91,7 +93,7 @@ const ChartOfAccountsPage = () => {
   const handleAddCategory = async (values) => {
     try {
       setLoading(true);
-      await accountsAPI.createCategory(values);
+      await accountCategoryService.create(values);
       enqueueSnackbar('Category created successfully', { variant: 'success' });
       fetchData();
     } catch (err) {
@@ -105,7 +107,7 @@ const ChartOfAccountsPage = () => {
   const handleEditCategory = async (id, values) => {
     try {
       setLoading(true);
-      await accountsAPI.updateCategory(id, values);
+      await accountCategoryService.update(id, values);
       enqueueSnackbar('Category updated successfully', { variant: 'success' });
       fetchData();
     } catch (err) {
@@ -123,7 +125,7 @@ const ChartOfAccountsPage = () => {
 
     try {
       setLoading(true);
-      await accountsAPI.deleteCategory(id);
+      await accountCategoryService.delete(id);
       enqueueSnackbar('Category deleted successfully', { variant: 'success' });
       fetchData();
     } catch (err) {
@@ -137,7 +139,7 @@ const ChartOfAccountsPage = () => {
   const handleAddType = async (values) => {
     try {
       setLoading(true);
-      await accountsAPI.createAccountType(values);
+      await accountTypeService.create(values);
       enqueueSnackbar('Account type created successfully', { variant: 'success' });
       fetchData();
     } catch (err) {
@@ -151,7 +153,7 @@ const ChartOfAccountsPage = () => {
   const handleEditType = async (id, values) => {
     try {
       setLoading(true);
-      await accountsAPI.updateAccountType(id, values);
+      await accountTypeService.update(id, values);
       enqueueSnackbar('Account type updated successfully', { variant: 'success' });
       fetchData();
     } catch (err) {
@@ -169,7 +171,7 @@ const ChartOfAccountsPage = () => {
 
     try {
       setLoading(true);
-      await accountsAPI.deleteAccountType(id);
+      await accountTypeService.delete(id);
       enqueueSnackbar('Account type deleted successfully', { variant: 'success' });
       fetchData();
     } catch (err) {

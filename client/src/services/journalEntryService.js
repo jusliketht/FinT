@@ -35,6 +35,16 @@ const journalEntryService = {
   },
 
   /**
+   * Create multiple journal entries from verified transactions
+   * @param {Array} transactions - Array of verified transactions with account mappings
+   * @returns {Promise<Object>} - Created journal entries
+   */
+  createBatch: async (transactions) => {
+    const response = await api.post(`${RESOURCE_URL}/batch`, transactions);
+    return response.data;
+  },
+
+  /**
    * Update an existing journal entry
    * @param {string} id - Journal entry ID
    * @param {Object} entryData - Updated journal entry data

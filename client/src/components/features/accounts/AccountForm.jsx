@@ -1,228 +1,163 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Box,
   Button,
-  TextField,
-  MenuItem,
-  Grid,
-  FormControl,
-  InputLabel,
+  Input,
   Select,
-  FormHelperText
-} from '@mui/material';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
+  VStack,
+  Heading,
+  Alert,
+  Text,
+} from '@chakra-ui/react';
+import { useToast } from '../../../contexts/ToastContext';
+import useApi from '../../../hooks/useApi';
 
-const accountTypes = [
-  { value: 'asset', label: 'Asset' },
-  { value: 'liability', label: 'Liability' },
-  { value: 'equity', label: 'Equity' },
-  { value: 'revenue', label: 'Revenue' },
-  { value: 'expense', label: 'Expense' }
-];
-
-const validationSchema = Yup.object({
-  code: Yup.string()
-    .required('Account code is required')
-    .matches(/^[A-Z0-9]+$/, 'Account code must contain only uppercase letters and numbers')
-    .min(3, 'Account code must be at least 3 characters')
-    .max(10, 'Account code must not exceed 10 characters'),
-  name: Yup.string()
-    .required('Account name is required')
-    .min(3, 'Account name must be at least 3 characters')
-    .max(100, 'Account name must not exceed 100 characters'),
-  type: Yup.string()
-    .required('Account type is required')
-    .oneOf(['asset', 'liability', 'equity', 'revenue', 'expense'], 'Invalid account type'),
-  categoryId: Yup.string()
-    .required('Account category is required'),
-  description: Yup.string()
-    .max(500, 'Description must not exceed 500 characters')
-});
-
-const AccountForm = ({
-  open,
-  onClose,
-  onSubmit,
-  account,
-  categories,
-  loading
-}) => {
-  const formik = useFormik({
-    initialValues: {
-      code: account?.code || '',
-      name: account?.name || '',
-      type: account?.type || '',
-      categoryId: account?.category?.id || '',
-      description: account?.description || ''
-    },
-    validationSchema,
-    onSubmit: (values) => {
-      onSubmit(values);
-    }
+const AccountForm = ({ account, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    type: '',
+    code: '',
+    description: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const api = useApi();
+  const { showToast } = useToast();
 
-  const handleClose = () => {
-    formik.resetForm();
-    onClose();
+  useEffect(() => {
+    if (account) {
+      setFormData({
+        name: account.name || '',
+        type: account.type || '',
+        code: account.code || '',
+        description: account.description || '',
+      });
+    }
+  }, [account]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const filteredCategories = categories.filter(
-    cat => !formik.values.type || cat.type === formik.values.type
-  );
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.name || !formData.type || !formData.code) {
+      showToast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      let response;
+      if (account) {
+        response = await api.put(`/api/accounts/${account.id}`, formData);
+        showToast('Account updated successfully', 'success');
+      } else {
+        response = await api.post('/api/accounts', formData);
+        showToast('Account created successfully', 'success');
+      }
+
+      if (onSave) {
+        onSave(response.data);
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'An error occurred';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-    >
-      <form onSubmit={formik.handleSubmit}>
-        <DialogTitle>
-          {account ? 'Edit Account' : 'Add New Account'}
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                id="code"
-                name="code"
-                label="Account Code"
-                value={formik.values.code}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.code && Boolean(formik.errors.code)}
-                helperText={formik.touched.code && formik.errors.code}
-                disabled={Boolean(account)}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl
-                fullWidth
-                error={formik.touched.type && Boolean(formik.errors.type)}
-              >
-                <InputLabel>Account Type</InputLabel>
-                <Select
-                  id="type"
-                  name="type"
-                  value={formik.values.type}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  label="Account Type"
-                  disabled={Boolean(account)}
-                >
-                  {accountTypes.map((type) => (
-                    <MenuItem key={type.value} value={type.value}>
-                      {type.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {formik.touched.type && formik.errors.type && (
-                  <FormHelperText>{formik.errors.type}</FormHelperText>
-                )}
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                id="name"
-                name="name"
-                label="Account Name"
-                value={formik.values.name}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.name && Boolean(formik.errors.name)}
-                helperText={formik.touched.name && formik.errors.name}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl
-                fullWidth
-                error={formik.touched.categoryId && Boolean(formik.errors.categoryId)}
-              >
-                <InputLabel>Account Category</InputLabel>
-                <Select
-                  id="categoryId"
-                  name="categoryId"
-                  value={formik.values.categoryId}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  label="Account Category"
-                >
-                  {filteredCategories.map((category) => (
-                    <MenuItem key={category.id} value={category.id}>
-                      {category.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {formik.touched.categoryId && formik.errors.categoryId && (
-                  <FormHelperText>{formik.errors.categoryId}</FormHelperText>
-                )}
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                id="description"
-                name="description"
-                label="Description"
-                multiline
-                rows={3}
-                value={formik.values.description}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.description && Boolean(formik.errors.description)}
-                helperText={formik.touched.description && formik.errors.description}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={loading || !formik.isValid || !formik.dirty}
-          >
-            {account ? 'Save Changes' : 'Create Account'}
-          </Button>
-        </DialogActions>
-      </form>
-    </Dialog>
-  );
-};
+    <Box p={6}>
+      <Heading size="lg" mb={6}>
+        {account ? 'Edit Account' : 'Create New Account'}
+      </Heading>
 
-AccountForm.propTypes = {
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  onSubmit: PropTypes.func.isRequired,
-  account: PropTypes.shape({
-    id: PropTypes.string,
-    code: PropTypes.string,
-    name: PropTypes.string,
-    type: PropTypes.string,
-    category: PropTypes.shape({
-      id: PropTypes.string,
-      name: PropTypes.string
-    }),
-    description: PropTypes.string
-  }),
-  categories: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      type: PropTypes.string.isRequired
-    })
-  ).isRequired,
-  loading: PropTypes.bool
+      {error && (
+        <Alert status="error" mb={4}>
+          {error}
+        </Alert>
+      )}
+
+      <Box as="form" onSubmit={handleSubmit}>
+        <VStack spacing={4}>
+          <Box mb={4} w="100%">
+            <Text fontWeight="medium" mb={2}>Account Name</Text>
+            <Input
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Enter account name"
+            />
+          </Box>
+
+          <Box mb={4} w="100%">
+            <Text fontWeight="medium" mb={2}>Account Type</Text>
+            <Select
+              name="type"
+              value={formData.type}
+              onChange={handleChange}
+              placeholder="Select account type"
+            >
+              <option value="asset">Asset</option>
+              <option value="liability">Liability</option>
+              <option value="equity">Equity</option>
+              <option value="revenue">Revenue</option>
+              <option value="expense">Expense</option>
+            </Select>
+          </Box>
+
+          <Box mb={4} w="100%">
+            <Text fontWeight="medium" mb={2}>Account Code</Text>
+            <Input
+              name="code"
+              value={formData.code}
+              onChange={handleChange}
+              placeholder="Enter account code"
+            />
+          </Box>
+
+          <Box mb={4} w="100%">
+            <Text fontWeight="medium" mb={2}>Description</Text>
+            <Input
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Enter description (optional)"
+            />
+          </Box>
+
+          <Box w="100%" display="flex" gap={4}>
+            <Button
+              type="submit"
+              colorScheme="blue"
+              isLoading={loading}
+              flex={1}
+            >
+              {account ? 'Update Account' : 'Create Account'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              flex={1}
+            >
+              Cancel
+            </Button>
+          </Box>
+        </VStack>
+      </Box>
+    </Box>
+  );
 };
 
 export default AccountForm; 

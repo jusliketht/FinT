@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Tabs, Tab, Button } from '@mui/material';
+// import { Box, Typography, Tabs, Tab, Button } from '@mui/material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import JournalList from './JournalList';
 

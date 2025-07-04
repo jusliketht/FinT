@@ -2,16 +2,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Box,
-  Typography,
+  Text,
   Button,
-  Paper
-} from '@mui/material';
-import {
-  Inbox as InboxIcon,
-  Search as SearchIcon,
-  FilterList as FilterListIcon,
-  Add as AddIcon
-} from '@mui/icons-material';
+  Icon,
+  Card,
+  HStack
+} from '@chakra-ui/react';
+import { InfoOutlineIcon, SearchIcon, AddIcon, WarningIcon } from '@chakra-ui/icons';
 
 const NoData = ({
   title = 'No Data Available',
@@ -26,17 +23,20 @@ const NoData = ({
   variant = 'default',
   sx
 }) => {
+  const titleColor = 'gray.800';
+  const cardBg = 'gray.50';
+
   const getIcon = () => {
     switch (icon) {
       case 'search':
-        return <SearchIcon sx={{ fontSize: 60 }} />;
+        return <Icon as={SearchIcon} boxSize={12} color="gray.400" />;
       case 'filter':
-        return <FilterListIcon sx={{ fontSize: 60 }} />;
+        return <Icon as={WarningIcon} boxSize={12} color="gray.400" />;
       case 'add':
-        return <AddIcon sx={{ fontSize: 60 }} />;
+        return <Icon as={AddIcon} boxSize={12} color="gray.400" />;
       case 'inbox':
       default:
-        return <InboxIcon sx={{ fontSize: 60 }} />;
+        return <Icon as={InfoOutlineIcon} boxSize={12} color="gray.400" />;
     }
   };
 
@@ -56,76 +56,46 @@ const NoData = ({
 
   const content = (
     <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        p: 3,
-        ...sx
-      }}
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      textAlign="center"
+      p={6}
+      {...sx}
     >
-      <Box
-        sx={{
-          color: 'text.secondary',
-          mb: 2
-        }}
-      >
+      <Box color="gray.400" mb={4}>
         {getIcon()}
       </Box>
 
-      <Typography
-        variant="h6"
-        color="text.primary"
-        gutterBottom
-      >
+      <Text fontSize="xl" fontWeight="bold" mb={2} color={titleColor}>
         {title}
-      </Typography>
+      </Text>
 
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ mb: 3, maxWidth: 400 }}
-      >
+      <Text fontSize="md" color="gray.500" mb={6} maxW="400px">
         {description || getDefaultDescription()}
-      </Typography>
+      </Text>
 
-      <Box sx={{ display: 'flex', gap: 2 }}>
+      <HStack spacing={4}>
         {action && (
-          <Button
-            variant="contained"
-            onClick={action}
-            startIcon={actionIcon}
-          >
+          <Button colorScheme="blue" onClick={action} leftIcon={actionIcon}>
             {actionText}
           </Button>
         )}
-
         {secondaryAction && (
-          <Button
-            variant="outlined"
-            onClick={secondaryAction}
-            startIcon={secondaryActionIcon}
-          >
+          <Button variant="outline" onClick={secondaryAction} leftIcon={secondaryActionIcon}>
             {secondaryActionText}
           </Button>
         )}
-      </Box>
+      </HStack>
     </Box>
   );
 
   if (variant === 'paper') {
     return (
-      <Paper
-        elevation={0}
-        sx={{
-          bgcolor: 'background.default',
-          borderRadius: 1
-        }}
-      >
+      <Card bg={cardBg} borderRadius="md">
         {content}
-      </Paper>
+      </Card>
     );
   }
 

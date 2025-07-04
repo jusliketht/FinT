@@ -1,23 +1,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
-  Typography,
+  Text,
   Box,
   Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip
-} from '@mui/material';
+  Tag,
+  VStack,
+  HStack
+} from '@chakra-ui/react';
 import { format } from 'date-fns';
 
 const JournalEntryView = ({
@@ -28,7 +19,7 @@ const JournalEntryView = ({
   onEdit,
   onDelete
 }) => {
-  if (!entry) return null;
+  if (!open || !entry) return null;
 
   const getAccountName = (accountId) => {
     const account = accounts.find(acc => acc.id === accountId);
@@ -46,184 +37,124 @@ const JournalEntryView = ({
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
       case 'posted':
-        return 'success';
+        return 'green';
       case 'draft':
-        return 'warning';
+        return 'orange';
       case 'void':
-        return 'error';
+        return 'red';
       default:
-        return 'default';
+        return 'gray';
     }
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
+    <Box
+      position="fixed"
+      top={0}
+      left={0}
+      right={0}
+      bottom={0}
+      bg="rgba(0, 0, 0, 0.5)"
+      zIndex={1000}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      onClick={onClose}
     >
-      <DialogTitle>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">
-            Journal Entry Details
-          </Typography>
-          <Chip
-            label={entry.status}
-            color={getStatusColor(entry.status)}
-            size="small"
-          />
+      <Box
+        bg="white"
+        borderRadius="md"
+        p={6}
+        maxW="6xl"
+        w="90%"
+        maxH="90vh"
+        overflow="auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Box mb={4}>
+          <Text fontSize="xl" fontWeight="bold">Journal Entry Details</Text>
         </Box>
-      </DialogTitle>
-      <DialogContent>
-        <Grid container spacing={2} sx={{ mt: 1 }}>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="textSecondary">
-              Date
-            </Typography>
-            <Typography variant="body1">
-              {format(new Date(entry.date), 'PPP')}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="textSecondary">
-              Reference
-            </Typography>
-            <Typography variant="body1">
-              {entry.reference}
-            </Typography>
-          </Grid>
-          <Grid item xs={12}>
-            <Typography variant="subtitle2" color="textSecondary">
-              Description
-            </Typography>
-            <Typography variant="body1">
-              {entry.description}
-            </Typography>
+        
+        <VStack spacing={6} align="stretch">
+          <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={4}>
+            <Box>
+              <Text fontWeight="bold" mb={2}>Entry Information</Text>
+              <VStack align="start" spacing={1}>
+                <Text><strong>Entry Number:</strong> {entry.entryNumber}</Text>
+                <Text><strong>Date:</strong> {format(new Date(entry.date), 'MMM dd, yyyy')}</Text>
+                <Text><strong>Reference:</strong> {entry.reference || 'N/A'}</Text>
+                <Text><strong>Description:</strong> {entry.description}</Text>
+              </VStack>
+            </Box>
+            
+            <Box>
+              <Text fontWeight="bold" mb={2}>Status & Totals</Text>
+              <VStack align="start" spacing={1}>
+                <HStack>
+                  <Text><strong>Status:</strong></Text>
+                  <Tag colorScheme={getStatusColor(entry.status)}>
+                    {entry.status}
+                  </Tag>
+                </HStack>
+                <Text><strong>Total Debit:</strong> ${totalDebit.toFixed(2)}</Text>
+                <Text><strong>Total Credit:</strong> ${totalCredit.toFixed(2)}</Text>
+                <Text color={totalDebit === totalCredit ? 'green.500' : 'red.500'}>
+                  <strong>Balance:</strong> {totalDebit === totalCredit ? 'Balanced' : 'Unbalanced'}
+                </Text>
+              </VStack>
+            </Box>
           </Grid>
 
-          {/* Journal Entry Lines */}
-          <Grid item xs={12}>
-            <TableContainer component={Paper} variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Account</TableCell>
-                    <TableCell>Description</TableCell>
-                    <TableCell align="right">Debit</TableCell>
-                    <TableCell align="right">Credit</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
+          <Box>
+            <Text fontWeight="bold" mb={4}>Entry Lines</Text>
+            <Box overflowX="auto">
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <th style={{ textAlign: 'left', padding: '8px', fontWeight: 'bold' }}>Account</th>
+                    <th style={{ textAlign: 'left', padding: '8px', fontWeight: 'bold' }}>Description</th>
+                    <th style={{ textAlign: 'right', padding: '8px', fontWeight: 'bold' }}>Debit</th>
+                    <th style={{ textAlign: 'right', padding: '8px', fontWeight: 'bold' }}>Credit</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {entry.lines.map((line, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{getAccountName(line.accountId)}</TableCell>
-                      <TableCell>{line.description}</TableCell>
-                      <TableCell align="right">
-                        {line.debit ? line.debit.toFixed(2) : '-'}
-                      </TableCell>
-                      <TableCell align="right">
-                        {line.credit ? line.credit.toFixed(2) : '-'}
-                      </TableCell>
-                    </TableRow>
+                    <tr key={index} style={{ borderBottom: '1px solid #f7fafc' }}>
+                      <td style={{ padding: '8px' }}>{getAccountName(line.accountId)}</td>
+                      <td style={{ padding: '8px' }}>{line.description || '-'}</td>
+                      <td style={{ textAlign: 'right', padding: '8px' }}>{line.debit ? `$${line.debit.toFixed(2)}` : '-'}</td>
+                      <td style={{ textAlign: 'right', padding: '8px' }}>{line.credit ? `$${line.credit.toFixed(2)}` : '-'}</td>
+                    </tr>
                   ))}
-                  <TableRow>
-                    <TableCell colSpan={2}>
-                      <Typography variant="subtitle2">
-                        Totals
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="subtitle2">
-                        {totalDebit.toFixed(2)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="subtitle2">
-                        {totalCredit.toFixed(2)}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Grid>
-
-          {/* Additional Information */}
-          {entry.createdAt && (
-            <Grid item xs={12}>
-              <Typography variant="caption" color="textSecondary">
-                Created: {format(new Date(entry.createdAt), 'PPpp')}
-              </Typography>
-            </Grid>
-          )}
-          {entry.updatedAt && entry.updatedAt !== entry.createdAt && (
-            <Grid item xs={12}>
-              <Typography variant="caption" color="textSecondary">
-                Last Updated: {format(new Date(entry.updatedAt), 'PPpp')}
-              </Typography>
-            </Grid>
-          )}
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>
-          Close
-        </Button>
-        {entry.status === 'draft' && (
-          <>
-            <Button
-              onClick={onEdit}
-              variant="outlined"
-              color="primary"
-            >
-              Edit
-            </Button>
-            <Button
-              onClick={onDelete}
-              variant="outlined"
-              color="error"
-            >
-              Delete
-            </Button>
-          </>
-        )}
-      </DialogActions>
-    </Dialog>
+                </tbody>
+              </table>
+            </Box>
+          </Box>
+        </VStack>
+        
+        <HStack spacing={3} mt={6} justifyContent="flex-end">
+          <Button variant="outline" onClick={onEdit}>
+            Edit Entry
+          </Button>
+          <Button colorScheme="red" variant="outline" onClick={onDelete}>
+            Delete Entry
+          </Button>
+          <Button onClick={onClose}>
+            Close
+          </Button>
+        </HStack>
+      </Box>
+    </Box>
   );
 };
 
 JournalEntryView.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  entry: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    date: PropTypes.string.isRequired,
-    reference: PropTypes.string.isRequired,
-    description: PropTypes.string.isRequired,
-    status: PropTypes.string.isRequired,
-    lines: PropTypes.arrayOf(
-      PropTypes.shape({
-        id: PropTypes.string,
-        accountId: PropTypes.string.isRequired,
-        description: PropTypes.string,
-        debit: PropTypes.number,
-        credit: PropTypes.number
-      })
-    ).isRequired,
-    createdAt: PropTypes.string,
-    updatedAt: PropTypes.string
-  }),
-  accounts: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      code: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      type: PropTypes.string.isRequired
-    })
-  ).isRequired,
-  onEdit: PropTypes.func.isRequired,
-  onDelete: PropTypes.func.isRequired
+  entry: PropTypes.object,
+  accounts: PropTypes.array.isRequired,
+  onEdit: PropTypes.func,
+  onDelete: PropTypes.func
 };
 
-export default JournalEntryView; 
+export default JournalEntryView;

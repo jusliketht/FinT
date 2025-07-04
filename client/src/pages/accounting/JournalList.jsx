@@ -1,18 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import {
   Box,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  CircularProgress,
+  Text,
+  Spinner,
   Alert
-} from '@mui/material';
-import axios from 'axios';
+} from '@chakra-ui/react';
 
 const JournalList = () => {
   const [entries, setEntries] = useState([]);
@@ -28,37 +21,37 @@ const JournalList = () => {
   }, []);
 
   return (
-    <Box sx={{ mt: 2 }}>
-      <Typography variant="h6" gutterBottom>
+    <Box mt={6}>
+      <Text fontSize="xl" fontWeight="bold" mb={4}>
         Journal Entries
-      </Typography>
-      {loading && <CircularProgress sx={{ my: 2 }} />}
-      {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
+      </Text>
+      {loading && <Spinner size="lg" my={4} />}
+      {error && <Alert status="error" my={4}>{error}</Alert>}
       {!loading && !error && (
-        <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
-          <Table size="small" sx={{ minWidth: 650 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>Debit Account</TableCell>
-                <TableCell>Credit Account</TableCell>
-                <TableCell align="right">Amount</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+        <Box overflowX="auto" borderWidth="1px" borderRadius="lg">
+          <table style={{ width: '100%', minWidth: '650px', borderCollapse: 'collapse' }}>
+            <thead style={{ backgroundColor: '#f7fafc' }}>
+              <tr>
+                <th style={{ textAlign: 'left', padding: '12px', fontWeight: 'bold' }}>Date</th>
+                <th style={{ textAlign: 'left', padding: '12px', fontWeight: 'bold' }}>Description</th>
+                <th style={{ textAlign: 'left', padding: '12px', fontWeight: 'bold' }}>Debit Account</th>
+                <th style={{ textAlign: 'left', padding: '12px', fontWeight: 'bold' }}>Credit Account</th>
+                <th style={{ textAlign: 'right', padding: '12px', fontWeight: 'bold' }}>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
               {entries.map(entry => (
-                <TableRow key={entry.id}>
-                  <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
-                  <TableCell>{entry.description}</TableCell>
-                  <TableCell>{entry.debitAccount?.name || entry.debitAccountId}</TableCell>
-                  <TableCell>{entry.creditAccount?.name || entry.creditAccountId}</TableCell>
-                  <TableCell align="right">{entry.amount}</TableCell>
-                </TableRow>
+                <tr key={entry.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <td style={{ padding: '12px' }}>{new Date(entry.date).toLocaleDateString()}</td>
+                  <td style={{ padding: '12px' }}>{entry.description}</td>
+                  <td style={{ padding: '12px' }}>{entry.debitAccount?.name || entry.debitAccountId}</td>
+                  <td style={{ padding: '12px' }}>{entry.creditAccount?.name || entry.creditAccountId}</td>
+                  <td style={{ textAlign: 'right', padding: '12px' }}>{entry.amount}</td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </tbody>
+          </table>
+        </Box>
       )}
     </Box>
   );

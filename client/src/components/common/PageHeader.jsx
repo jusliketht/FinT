@@ -2,23 +2,19 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Box,
-  Typography,
-  Breadcrumbs,
-  Link,
+  Heading,
+  Text,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
   Button,
   IconButton,
   Tooltip,
-  useTheme,
-  useMediaQuery,
-  Divider
-} from '@mui/material';
-import {
-  NavigateNext as NavigateNextIcon,
-  ArrowBack as ArrowBackIcon,
-  Refresh as RefreshIcon,
-  Add as AddIcon,
-  MoreVert as MoreVertIcon
-} from '@mui/icons-material';
+  HStack,
+  useBreakpointValue,
+  VStack
+} from '@chakra-ui/react';
+import { ChevronRightIcon, ArrowBackIcon, RepeatIcon, HamburgerIcon } from '@chakra-ui/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const PageHeader = ({
@@ -34,8 +30,7 @@ const PageHeader = ({
   maxWidth,
   sx
 }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useBreakpointValue({ base: true, md: false });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -52,8 +47,8 @@ const PageHeader = ({
       label,
       icon,
       onClick,
-      color = 'primary',
-      variant = 'contained',
+      colorScheme = 'blue',
+      variant = 'solid',
       tooltip,
       disabled,
       showOnMobile = true
@@ -67,11 +62,11 @@ const PageHeader = ({
       <Button
         key={index}
         variant={variant}
-        color={color}
+        colorScheme={colorScheme}
         onClick={onClick}
-        disabled={disabled}
-        startIcon={icon}
-        size="small"
+        isDisabled={disabled}
+        leftIcon={icon}
+        size="sm"
       >
         {label}
       </Button>
@@ -79,7 +74,7 @@ const PageHeader = ({
 
     if (tooltip) {
       return (
-        <Tooltip key={index} title={tooltip}>
+        <Tooltip key={index} label={tooltip}>
           <span>{button}</span>
         </Tooltip>
       );
@@ -93,165 +88,104 @@ const PageHeader = ({
 
     return (
       <IconButton
-        size="small"
+        size="sm"
+        icon={<HamburgerIcon />}
         onClick={(event) => {
           // Handle mobile menu
           event.stopPropagation();
         }}
-      >
-        <MoreVertIcon />
-      </IconButton>
+        aria-label="More actions"
+      />
     );
   };
 
   return (
-    <Box
-      sx={{
-        mb: 3,
-        maxWidth,
-        ...sx
-      }}
-    >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: 'wrap'
-        }}
-      >
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          {breadcrumbs.length > 0 && (
-            <Breadcrumbs
-              separator={<NavigateNextIcon fontSize="small" />}
-              sx={{ mb: 1 }}
-            >
-              {breadcrumbs.map((crumb, index) => {
-                const isLast = index === breadcrumbs.length - 1;
-                const isCurrentPage = crumb.href === location.pathname;
+    <Box {...sx}>
+      <VStack spacing={4} align="stretch">
+        <HStack justify="space-between" align="flex-start">
+          <VStack align="flex-start" spacing={2}>
+            {breadcrumbs.length > 0 && (
+              <Breadcrumb separator={<ChevronRightIcon fontSize="sm" />} mb={1}>
+                {breadcrumbs.map((crumb, index) => {
+                  const isLast = index === breadcrumbs.length - 1;
+                  const isCurrentPage = crumb.href === location.pathname;
 
-                if (isLast || isCurrentPage) {
+                  if (isLast || isCurrentPage) {
+                    return (
+                      <BreadcrumbItem isCurrentPage key={index}>
+                        <BreadcrumbLink as="span" color="gray.500" fontSize="sm" noOfLines={1}>
+                          {crumb.label}
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                    );
+                  }
+
                   return (
-                    <Typography
-                      key={index}
-                      color="text.secondary"
-                      variant="body2"
-                      sx={{
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {crumb.label}
-                    </Typography>
+                    <BreadcrumbItem key={index}>
+                      <BreadcrumbLink
+                        href={crumb.href}
+                        onClick={e => {
+                          e.preventDefault();
+                          navigate(crumb.href);
+                        }}
+                        fontSize="sm"
+                        _hover={{ textDecoration: 'underline' }}
+                      >
+                        {crumb.label}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
                   );
-                }
-
-                return (
-                  <Link
-                    key={index}
-                    color="inherit"
-                    href={crumb.href}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate(crumb.href);
-                    }}
-                    variant="body2"
-                    sx={{
-                      textDecoration: 'none',
-                      '&:hover': {
-                        textDecoration: 'underline'
-                      }
-                    }}
-                  >
-                    {crumb.label}
-                  </Link>
-                );
-              })}
-            </Breadcrumbs>
-          )}
-
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              flexWrap: 'wrap'
-            }}
-          >
-            {(showBackButton || onBack) && (
-              <Tooltip title="Go back">
-                <IconButton
-                  size="small"
-                  onClick={handleBack}
-                  sx={{ mr: 1 }}
-                >
-                  <ArrowBackIcon />
-                </IconButton>
-              </Tooltip>
+                })}
+              </Breadcrumb>
             )}
 
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{
-                flex: 1,
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {title}
-            </Typography>
+            <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
+              {(showBackButton || onBack) && (
+                <Tooltip label="Go back">
+                  <IconButton
+                    size="sm"
+                    icon={<ArrowBackIcon />}
+                    onClick={handleBack}
+                    mr={2}
+                    aria-label="Go back"
+                  />
+                </Tooltip>
+              )}
 
-            {showRefreshButton && (
-              <Tooltip title="Refresh">
-                <IconButton
-                  size="small"
-                  onClick={onRefresh}
-                  sx={{ ml: 1 }}
-                >
-                  <RefreshIcon />
-                </IconButton>
-              </Tooltip>
+              <Heading as="h1" size="lg" flex={1} minW={0} noOfLines={1}>
+                {title}
+              </Heading>
+
+              {showRefreshButton && (
+                <Tooltip label="Refresh">
+                  <IconButton
+                    size="sm"
+                    icon={<RepeatIcon />}
+                    onClick={onRefresh}
+                    aria-label="Refresh"
+                  />
+                </Tooltip>
+              )}
+            </Box>
+
+            {subtitle && (
+              <Text fontSize="md" color="gray.500" mt={1} noOfLines={1}>
+                {subtitle}
+              </Text>
             )}
-          </Box>
+          </VStack>
 
-          {subtitle && (
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{
-                mt: 0.5,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {subtitle}
-            </Typography>
+          {!isMobile && actions.length > 0 && (
+            <HStack spacing={2} flexWrap="wrap" justify="flex-end">
+              {actions.map(renderAction)}
+            </HStack>
           )}
-        </Box>
 
-        {!isMobile && actions.length > 0 && (
-          <Box
-            sx={{
-              display: 'flex',
-              gap: 1,
-              flexWrap: 'wrap',
-              justifyContent: 'flex-end'
-            }}
-          >
-            {actions.map(renderAction)}
-          </Box>
-        )}
+          {isMobile && renderMobileActions()}
+        </HStack>
 
-        {isMobile && renderMobileActions()}
-      </Box>
-
-      {showDivider && <Divider sx={{ mt: 2 }} />}
+        {showDivider && <Box borderBottom="1px" borderColor="gray.200" mt={2} />}
+      </VStack>
     </Box>
   );
 };
@@ -270,8 +204,8 @@ PageHeader.propTypes = {
       label: PropTypes.string.isRequired,
       icon: PropTypes.node,
       onClick: PropTypes.func.isRequired,
-      color: PropTypes.oneOf(['primary', 'secondary', 'error', 'info', 'success', 'warning']),
-      variant: PropTypes.oneOf(['text', 'outlined', 'contained']),
+      colorScheme: PropTypes.string,
+      variant: PropTypes.oneOf(['solid', 'outline', 'ghost', 'link']),
       tooltip: PropTypes.string,
       disabled: PropTypes.bool,
       showOnMobile: PropTypes.bool
@@ -286,4 +220,4 @@ PageHeader.propTypes = {
   sx: PropTypes.object
 };
 
-export default PageHeader; 
+export default PageHeader;

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "JournalEntry" ADD COLUMN     "gstRate" DOUBLE PRECISION,
+ADD COLUMN     "tdsRate" DOUBLE PRECISION;

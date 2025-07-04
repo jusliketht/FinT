@@ -1,27 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import {
-  TextField,
-  InputAdornment,
-  IconButton,
-  CircularProgress,
+  Input,
+  InputGroup,
   Box,
-  Popper,
-  Paper,
+  VStack,
+  HStack,
+  Text,
+  Icon,
   List,
   ListItem,
-  ListItemText,
-  ListItemIcon,
-  Typography,
-  useTheme,
-  useMediaQuery
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Clear as ClearIcon,
-  History as HistoryIcon,
-  TrendingUp as TrendingUpIcon
-} from '@mui/icons-material';
+  InputRightElement,
+  IconButton
+} from '@chakra-ui/react';
+import { SearchIcon, RepeatIcon, ArrowUpIcon } from '@chakra-ui/icons';
 import useDebounce from '../../hooks/useDebounce';
 
 const SearchInput = ({
@@ -36,7 +28,7 @@ const SearchInput = ({
   trendingSearches = [],
   loading = false,
   error = null,
-  size = 'medium',
+  size = 'md',
   fullWidth = false,
   autoFocus = false,
   showClearButton = true,
@@ -46,13 +38,13 @@ const SearchInput = ({
   onClear,
   sx
 }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [inputValue, setInputValue] = useState(value || '');
-  const [showPopper, setShowPopper] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [showSuggestionsState, setShowSuggestionsState] = useState(false);
   const inputRef = useRef(null);
   const debouncedValue = useDebounce(inputValue, debounceMs);
+  const bgColor = 'white';
+  const borderColor = 'gray.200';
+  const hoverBg = 'gray.50';
 
   useEffect(() => {
     if (debouncedValue.length >= minLength) {
@@ -64,181 +56,162 @@ const SearchInput = ({
     if (value !== inputValue) {
       setInputValue(value || '');
     }
-  }, [value]);
+  }, [value, inputValue]);
 
   const handleChange = (event) => {
     const newValue = event.target.value;
     setInputValue(newValue);
     onChange?.(newValue);
-    setShowPopper(newValue.length > 0);
+    setShowSuggestionsState(newValue.length > 0);
   };
 
-  const handleClear = () => {
-    setInputValue('');
-    onChange?.('');
-    onClear?.();
-    setShowPopper(false);
-    inputRef.current?.focus();
-  };
-
-  const handleFocus = (event) => {
-    setAnchorEl(event.currentTarget);
-    if (inputValue.length > 0) {
-      setShowPopper(true);
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      onSearch?.(inputValue);
     }
-  };
-
-  const handleBlur = () => {
-    // Delay hiding the popper to allow for clicking on suggestions
-    setTimeout(() => {
-      setShowPopper(false);
-    }, 200);
   };
 
   const handleSuggestionClick = (suggestion) => {
     setInputValue(suggestion);
     onChange?.(suggestion);
     onSuggestionClick?.(suggestion);
-    setShowPopper(false);
+    setShowSuggestionsState(false);
   };
 
   const renderSuggestions = () => {
-    if (!showSuggestions || !showPopper) return null;
+    if (!showSuggestionsState || inputValue.length === 0) return null;
 
-    const hasSuggestions = suggestions.length > 0;
-    const hasRecentSearches = recentSearches.length > 0;
-    const hasTrendingSearches = trendingSearches.length > 0;
+    const allSuggestions = [
+      ...suggestions.slice(0, maxSuggestions),
+      ...recentSearches.slice(0, 2),
+      ...trendingSearches.slice(0, 2)
+    ];
 
-    if (!hasSuggestions && !hasRecentSearches && !hasTrendingSearches) {
-      return null;
-    }
+    if (allSuggestions.length === 0) return null;
 
     return (
-      <Popper
-        open={showPopper}
-        anchorEl={anchorEl}
-        placement="bottom-start"
-        style={{ width: anchorEl?.offsetWidth, zIndex: theme.zIndex.modal }}
+      <Box
+        position="absolute"
+        top="100%"
+        left={0}
+        right={0}
+        zIndex={10}
+        bg={bgColor}
+        border="1px"
+        borderColor={borderColor}
+        borderRadius="md"
+        boxShadow="lg"
+        maxH="300px"
+        overflowY="auto"
       >
-        <Paper
-          elevation={3}
-          sx={{
-            mt: 0.5,
-            maxHeight: 400,
-            overflow: 'auto'
-          }}
-        >
-          {hasSuggestions && (
-            <List dense>
-              {suggestions.slice(0, maxSuggestions).map((suggestion, index) => (
-                <ListItem
-                  key={`suggestion-${index}`}
-                  button
-                  onClick={() => handleSuggestionClick(suggestion)}
-                >
-                  <ListItemIcon>
-                    <SearchIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText primary={suggestion} />
-                </ListItem>
-              ))}
-            </List>
-          )}
-
-          {hasRecentSearches && (
-            <>
-              <Box sx={{ px: 2, py: 1 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Recent Searches
-                </Typography>
-              </Box>
-              <List dense>
-                {recentSearches.slice(0, maxSuggestions).map((search, index) => (
+        <VStack spacing={0} align="stretch">
+          {suggestions.length > 0 && (
+            <Box>
+              <Text px={3} py={2} fontSize="sm" fontWeight="bold" color="gray.500">
+                Suggestions
+              </Text>
+              <List spacing={0}>
+                {suggestions.slice(0, maxSuggestions).map((suggestion, index) => (
                   <ListItem
-                    key={`recent-${index}`}
-                    button
-                    onClick={() => handleSuggestionClick(search)}
+                    key={index}
+                    px={3}
+                    py={2}
+                    cursor="pointer"
+                    _hover={{ bg: hoverBg }}
+                    onClick={() => handleSuggestionClick(suggestion)}
                   >
-                    <ListItemIcon>
-                      <HistoryIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText primary={search} />
+                    <HStack>
+                      <Icon as={SearchIcon} color="gray.400" />
+                      <Text>{suggestion}</Text>
+                    </HStack>
                   </ListItem>
                 ))}
               </List>
-            </>
+            </Box>
           )}
 
-          {hasTrendingSearches && (
-            <>
-              <Box sx={{ px: 2, py: 1 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Trending Searches
-                </Typography>
-              </Box>
-              <List dense>
-                {trendingSearches.slice(0, maxSuggestions).map((search, index) => (
+          {recentSearches.length > 0 && (
+            <Box>
+              <Text px={3} py={2} fontSize="sm" fontWeight="bold" color="gray.500">
+                Recent Searches
+              </Text>
+              <List spacing={0}>
+                {recentSearches.slice(0, 2).map((search, index) => (
                   <ListItem
-                    key={`trending-${index}`}
-                    button
+                    key={index}
+                    px={3}
+                    py={2}
+                    cursor="pointer"
+                    _hover={{ bg: hoverBg }}
                     onClick={() => handleSuggestionClick(search)}
                   >
-                    <ListItemIcon>
-                      <TrendingUpIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText primary={search} />
+                    <HStack>
+                      <Icon as={RepeatIcon} color="gray.400" />
+                      <Text>{search}</Text>
+                    </HStack>
                   </ListItem>
                 ))}
               </List>
-            </>
+            </Box>
           )}
-        </Paper>
-      </Popper>
+
+          {trendingSearches.length > 0 && (
+            <Box>
+              <Text px={3} py={2} fontSize="sm" fontWeight="bold" color="gray.500">
+                Trending
+              </Text>
+              <List spacing={0}>
+                {trendingSearches.slice(0, 2).map((search, index) => (
+                  <ListItem
+                    key={index}
+                    px={3}
+                    py={2}
+                    cursor="pointer"
+                    _hover={{ bg: hoverBg }}
+                    onClick={() => handleSuggestionClick(search)}
+                  >
+                    <HStack>
+                      <Icon as={ArrowUpIcon} color="gray.400" />
+                      <Text>{search}</Text>
+                    </HStack>
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          )}
+        </VStack>
+      </Box>
     );
   };
 
   return (
-    <Box sx={{ position: 'relative', ...sx }}>
-      <TextField
-        inputRef={inputRef}
-        value={inputValue}
-        onChange={handleChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        placeholder={placeholder}
-        size={size}
-        fullWidth={fullWidth}
-        autoFocus={autoFocus}
-        error={!!error}
-        helperText={error}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              {loading ? (
-                <CircularProgress size={20} />
-              ) : (
-                <SearchIcon color="action" />
-              )}
-            </InputAdornment>
-          ),
-          endAdornment: showClearButton && inputValue && (
-            <InputAdornment position="end">
-              <IconButton
-                size="small"
-                onClick={handleClear}
-                edge="end"
-              >
-                <ClearIcon />
-              </IconButton>
-            </InputAdornment>
-          )
-        }}
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            backgroundColor: 'background.paper'
-          }
-        }}
-      />
+    <Box position="relative" w={fullWidth ? '100%' : 'auto'} {...sx}>
+      <InputGroup size={size}>
+        <Input
+          ref={inputRef}
+          value={inputValue}
+          onChange={handleChange}
+          placeholder={placeholder}
+          autoFocus={autoFocus}
+          borderRadius="md"
+          onKeyDown={handleKeyPress}
+        />
+        {showClearButton && (
+          <InputRightElement>
+            <IconButton
+              icon={<Icon as={SearchIcon} color="gray.400" />}
+              aria-label="Clear"
+              onClick={() => {
+                setInputValue('');
+                onChange?.('');
+                onClear?.();
+                setShowSuggestionsState(false);
+                inputRef.current?.focus();
+              }}
+            />
+          </InputRightElement>
+        )}
+      </InputGroup>
       {renderSuggestions()}
     </Box>
   );
@@ -255,8 +228,8 @@ SearchInput.propTypes = {
   recentSearches: PropTypes.arrayOf(PropTypes.string),
   trendingSearches: PropTypes.arrayOf(PropTypes.string),
   loading: PropTypes.bool,
-  error: PropTypes.string,
-  size: PropTypes.oneOf(['small', 'medium']),
+  error: PropTypes.object,
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
   fullWidth: PropTypes.bool,
   autoFocus: PropTypes.bool,
   showClearButton: PropTypes.bool,
@@ -267,4 +240,4 @@ SearchInput.propTypes = {
   sx: PropTypes.object
 };
 
-export default SearchInput; 
+export default SearchInput;

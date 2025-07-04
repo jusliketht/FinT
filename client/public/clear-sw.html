@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Service Worker</title>
+</head>
+<body>
+    <h1>Clearing Service Worker...</h1>
+    <p>This page will help clear any cached service workers that might be interfering with the login.</p>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                    console.log('Service Worker unregistered');
+                }
+            });
+            
+            // Clear all caches
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                        console.log('Cache deleted:', name);
+                    }
+                });
+            }
+        }
+        
+        // Clear localStorage and sessionStorage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        setTimeout(() => {
+            alert('Service worker and cache cleared! You can now close this tab and return to the main application.');
+        }, 1000);
+    </script>
+</body>
+</html> 

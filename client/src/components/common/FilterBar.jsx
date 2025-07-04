@@ -2,23 +2,17 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Box,
-  TextField,
+  Input,
+  InputGroup,
   IconButton,
-  InputAdornment,
-  MenuItem,
+  Select,
   Tooltip,
-  useTheme,
-  useMediaQuery
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  FilterList as FilterListIcon,
-  Clear as ClearIcon,
-  DateRange as DateRangeIcon
-} from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+  useBreakpointValue,
+  HStack,
+  Icon,
+  Button
+} from '@chakra-ui/react';
+import { CloseIcon, TimeIcon } from '@chakra-ui/icons';
 
 const FilterBar = ({
   searchQuery,
@@ -31,8 +25,7 @@ const FilterBar = ({
   searchPlaceholder = 'Search...',
   sx
 }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
   const handleClearSearch = () => {
     onSearchChange('');
@@ -42,48 +35,50 @@ const FilterBar = ({
     onClearFilters?.();
   };
 
+  const handleDateChange = (name, value) => {
+    onFilterChange(name, value ? new Date(value) : null);
+  };
+  
+  const formatDateForInput = (date) => {
+    if (!date) return '';
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().split('T')[0];
+  };
+
   const renderFilterField = (filter) => {
     const { name, label, type = 'select', options = [], ...props } = filter;
 
     switch (type) {
       case 'select':
         return (
-          <TextField
-            select
-            size="small"
-            label={label}
+          <Select
+            size="sm"
+            placeholder={label}
             value={filters[name] || ''}
             onChange={(e) => onFilterChange(name, e.target.value)}
-            sx={{ minWidth: 150 }}
+            minW="150px"
             {...props}
           >
-            <MenuItem value="">
-              <em>All</em>
-            </MenuItem>
             {options.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
+              <option key={option.value} value={option.value}>
                 {option.label}
-              </MenuItem>
+              </option>
             ))}
-          </TextField>
+          </Select>
         );
 
       case 'date':
         return (
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
-              label={label}
-              value={filters[name] || null}
-              onChange={(date) => onFilterChange(name, date)}
-              slotProps={{
-                textField: {
-                  size: 'small',
-                  sx: { minWidth: 150 }
-                }
-              }}
-              {...props}
-            />
-          </LocalizationProvider>
+          <Input
+            type="date"
+            placeholder={label}
+            size="sm"
+            value={formatDateForInput(filters[name])}
+            onChange={(e) => handleDateChange(name, e.target.value)}
+            minW="150px"
+            {...props}
+          />
         );
 
       default:
@@ -92,41 +87,24 @@ const FilterBar = ({
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        gap: 2,
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        mb: 3,
-        ...sx
-      }}
-    >
-      <TextField
-        size="small"
-        placeholder={searchPlaceholder}
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-        sx={{ flexGrow: 1, minWidth: isMobile ? '100%' : 200 }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
-          endAdornment: searchQuery && (
-            <InputAdornment position="end">
-              <IconButton
-                size="small"
-                onClick={handleClearSearch}
-                edge="end"
-              >
-                <ClearIcon />
-              </IconButton>
-            </InputAdornment>
-          )
-        }}
-      />
+    <HStack spacing={4} wrap="wrap" align="center" mb={3} {...sx}>
+      <InputGroup size="sm" flexGrow={1} minW={isMobile ? '100%' : '200px'}>
+        <Input
+          placeholder={searchPlaceholder}
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          borderRadius="md"
+        />
+        {searchQuery && (
+          <IconButton
+            size="xs"
+            aria-label="Clear search"
+            icon={<CloseIcon />}
+            onClick={handleClearSearch}
+            variant="ghost"
+          />
+        )}
+      </InputGroup>
 
       {filters.map((filter) => (
         <Box key={filter.name}>
@@ -135,47 +113,40 @@ const FilterBar = ({
       ))}
 
       {dateRange && (
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <DateRangeIcon color="action" />
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
-              label="From"
-              value={dateRange.from || null}
-              onChange={(date) => onDateRangeChange({ ...dateRange, from: date })}
-              slotProps={{
-                textField: {
-                  size: 'small',
-                  sx: { minWidth: 150 }
-                }
-              }}
-            />
-            <DatePicker
-              label="To"
-              value={dateRange.to || null}
-              onChange={(date) => onDateRangeChange({ ...dateRange, to: date })}
-              slotProps={{
-                textField: {
-                  size: 'small',
-                  sx: { minWidth: 150 }
-                }
-              }}
-            />
-          </LocalizationProvider>
-        </Box>
+        <HStack spacing={2} align="center">
+          <Icon as={TimeIcon} color="gray.500" />
+          <Input
+            type="date"
+            placeholder="From"
+            size="sm"
+            value={formatDateForInput(dateRange.from)}
+            onChange={(e) => onDateRangeChange({ ...dateRange, from: e.target.value ? new Date(e.target.value) : null })}
+            minW="150px"
+          />
+          <Input
+            type="date"
+            placeholder="To"
+            size="sm"
+            value={formatDateForInput(dateRange.to)}
+            onChange={(e) => onDateRangeChange({ ...dateRange, to: e.target.value ? new Date(e.target.value) : null })}
+            minW="150px"
+          />
+        </HStack>
       )}
 
       {(filters.length > 0 || dateRange) && (
-        <Tooltip title="Clear all filters">
-          <IconButton
-            size="small"
+        <Tooltip label="Clear all filters">
+          <Button
+            size="sm"
             onClick={handleClearFilters}
-            sx={{ ml: 'auto' }}
+            ml="auto"
+            variant="ghost"
           >
-            <FilterListIcon />
-          </IconButton>
+            Clear Filters
+          </Button>
         </Tooltip>
       )}
-    </Box>
+    </HStack>
   );
 };
 
@@ -206,4 +177,4 @@ FilterBar.propTypes = {
   sx: PropTypes.object
 };
 
-export default FilterBar; 
+export default FilterBar;

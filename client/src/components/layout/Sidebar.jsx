@@ -6,13 +6,14 @@ const navLinks = [
   { label: 'Journal', to: '/journal', icon: '📝' },
   { label: 'Ledgers', to: '/ledgers', icon: '📒' },
   { label: 'Accounts', to: '/accounts', icon: '📚' },
+  { label: 'Bank Statements', to: '/bank-statements', icon: '📄' },
   { label: 'Banking', to: '/banking', icon: '🏦' },
   { label: 'Finance', to: '/finance', icon: '💰' },
   { label: 'Reports', to: '/reports', icon: '📈' },
   { label: 'AI Assistant', to: '/ai', icon: '🤖' },
-  { label: 'Settings', to: '/settings', icon: '⚙️' },
   { label: 'Account Types', to: '/account-types', icon: '🏷️' },
   { label: 'Account Categories', to: '/account-categories', icon: '📂' },
+  { label: 'Settings', to: '/settings', icon: '⚙️' },
   { label: 'Debug', to: '/debug', icon: '🔍' },
 ];
 

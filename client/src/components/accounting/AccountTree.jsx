@@ -1,36 +1,38 @@
 import React from 'react';
 import {
   Box,
-  Typography,
+  Text,
   IconButton,
   Tooltip,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import TreeView from '@mui/lab/TreeView';
-import TreeItem from '@mui/lab/TreeItem';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+  VStack,
+  HStack,
+  useBreakpointValue,
+  Collapse,
+  Icon,
+} from '@chakra-ui/react';
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  EditIcon,
+  DeleteIcon,
+  ViewIcon,
+  DollarIcon,
+  TriangleUpIcon,
+  TriangleDownIcon
+} from '@chakra-ui/icons';
 
 const getAccountIcon = (type) => {
   switch (type) {
     case 'Asset':
-      return <AccountBalanceWalletIcon fontSize="small" />;
+      return <ViewIcon fontSize="sm" />;
     case 'Liability':
-      return <AccountBalanceIcon fontSize="small" />;
+      return <DollarIcon fontSize="sm" />;
     case 'Equity':
-      return <AttachMoneyIcon fontSize="small" />;
+      return <DollarIcon fontSize="sm" />;
     case 'Revenue':
-      return <TrendingUpIcon fontSize="small" color="success" />;
+      return <TriangleUpIcon fontSize="sm" color="green.500" />;
     case 'Expense':
-      return <TrendingDownIcon fontSize="small" color="error" />;
+      return <TriangleDownIcon fontSize="sm" color="red.500" />;
     default:
       return null;
   }
@@ -45,8 +47,7 @@ const AccountTree = ({
   selected,
   onNodeSelect,
 }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
   const buildTree = (items, parent = null) => {
     return items
@@ -59,107 +60,120 @@ const AccountTree = ({
 
   const tree = buildTree(accounts);
 
-  const renderTreeItems = (nodes) => (
-    nodes.map((node) => (
-      <TreeItem
-        key={node._id}
-        nodeId={node._id}
-        label={
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              py: 0.5,
-              px: 1,
-              '&:hover': {
-                backgroundColor: theme.palette.action.hover,
-                borderRadius: 1,
-              },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {getAccountIcon(node.type)}
-              <Box>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: node.isSubledger ? 'normal' : 'bold',
-                    color: !node.isActive ? 'text.disabled' : 'text.primary',
-                  }}
-                >
-                  {node.code} - {node.name}
-                </Typography>
-                {node.description && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      display: isMobile ? 'none' : 'block',
-                      maxWidth: 300,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+  const renderTreeItems = (nodes, level = 0) => (
+    <VStack align="stretch" spacing={0}>
+      {nodes.map((node) => {
+        const isExpanded = expanded.includes(node._id);
+        const hasChildren = node.children.length > 0;
+        
+        return (
+          <Box key={node._id}>
+            <Box
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+              py={2}
+              px={3}
+              pl={level * 4 + 3}
+              cursor="pointer"
+              _hover={{ bg: 'gray.100', borderRadius: 'md' }}
+              onClick={() => onNodeSelect(node._id)}
+              bg={selected === node._id ? 'blue.50' : 'transparent'}
+              borderRadius="md"
+            >
+              <HStack spacing={2} flex={1}>
+                {hasChildren && (
+                  <IconButton
+                    size="xs"
+                    variant="ghost"
+                    icon={isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNodeToggle(node._id);
                     }}
-                  >
-                    {node.description}
-                  </Typography>
+                    aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                  />
                 )}
-              </Box>
+                {!hasChildren && <Box w={6} />}
+                
+                <Icon as={getAccountIcon(node.type)} color="gray.500" />
+                
+                <Box flex={1} minW={0}>
+                  <Text
+                    fontSize="sm"
+                    fontWeight={node.isSubledger ? 'normal' : 'bold'}
+                    color={!node.isActive ? 'gray.400' : 'inherit'}
+                    noOfLines={1}
+                  >
+                    {node.code} - {node.name}
+                  </Text>
+                  {node.description && (
+                    <Text
+                      fontSize="xs"
+                      color="gray.500"
+                      display={isMobile ? 'none' : 'block'}
+                      noOfLines={1}
+                      maxW="300px"
+                    >
+                      {node.description}
+                    </Text>
+                  )}
+                </Box>
+              </HStack>
+              
+              <HStack spacing={1}>
+                <Tooltip label="Edit Account">
+                  <IconButton
+                    size="xs"
+                    variant="ghost"
+                    icon={<EditIcon />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(node);
+                    }}
+                    aria-label="Edit account"
+                  />
+                </Tooltip>
+                <Tooltip label="Delete Account">
+                  <IconButton
+                    size="xs"
+                    variant="ghost"
+                    icon={<DeleteIcon />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(node._id);
+                    }}
+                    aria-label="Delete account"
+                    colorScheme="red"
+                  />
+                </Tooltip>
+              </HStack>
             </Box>
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              <Tooltip title="Edit Account">
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(node);
-                  }}
-                >
-                  <EditIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Delete Account">
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(node._id);
-                  }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
+            
+            {hasChildren && (
+              <Collapse in={isExpanded} animateOpacity>
+                <Box pl={4}>
+                  {renderTreeItems(node.children, level + 1)}
+                </Box>
+              </Collapse>
+            )}
           </Box>
-        }
-      >
-        {node.children.length > 0 && renderTreeItems(node.children)}
-      </TreeItem>
-    ))
+        );
+      })}
+    </VStack>
   );
 
   return (
-    <TreeView
-      defaultCollapseIcon={<ExpandMoreIcon />}
-      defaultExpandIcon={<ChevronRightIcon />}
-      expanded={expanded}
-      onNodeToggle={onNodeToggle}
-      selected={selected}
-      onNodeSelect={onNodeSelect}
-      sx={{
-        flexGrow: 1,
-        maxWidth: '100%',
-        overflow: 'auto',
-        '& .MuiTreeItem-root': {
-          '& .MuiTreeItem-content': {
-            padding: '4px 0',
-          },
-        },
-      }}
+    <Box
+      flexGrow={1}
+      maxW="100%"
+      overflow="auto"
+      borderWidth="1px"
+      borderRadius="md"
+      p={2}
     >
       {renderTreeItems(tree)}
-    </TreeView>
+    </Box>
   );
 };
 

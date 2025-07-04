@@ -1,29 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Tabs,
-  Tab,
-  Paper,
-  Button,
-  Alert,
-  useTheme,
-  useMediaQuery,
-  CircularProgress,
-  IconButton,
-  Tooltip,
-  Drawer,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import SearchIcon from '@mui/icons-material/Search';
-import axios from 'axios';
+// import {
+//   Box,
+//   Typography,
+//   Tabs,
+//   Tab,
+//   Paper,
+//   Button,
+//   Alert,
+//   useTheme,
+//   useMediaQuery,
+//   CircularProgress,
+//   IconButton,
+//   Tooltip,
+//   Drawer,
+// } from '@mui/material';
 import AccountForm from '../../components/accounting/AccountForm';
 import AccountTree from '../../components/accounting/AccountTree';
 
 const Settings = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  // const theme = useTheme();
+  // const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeTab, setActiveTab] = useState(0);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -136,7 +132,7 @@ const Settings = () => {
       >
         <Typography variant="h6">Chart of Accounts</Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          {isMobile ? (
+          {/* {isMobile ? (
             <Tooltip title="Filter & Search">
               <IconButton onClick={() => setFilterDrawerOpen(true)}>
                 <FilterListIcon />
@@ -159,13 +155,13 @@ const Settings = () => {
                 }}
               />
             </Box>
-          )}
+          )} */}
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
           >
-            {isMobile ? '' : 'Add Account'}
+            {/* {isMobile ? '' : 'Add Account'} */}
           </Button>
         </Box>
       </Box>
@@ -203,7 +199,7 @@ const Settings = () => {
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant={isMobile ? 'fullWidth' : 'standard'}
+          variant={/* isMobile ? 'fullWidth' : 'standard' */}
         >
           <Tab label="Account Heads" />
           <Tab label="General Settings" />
@@ -231,33 +227,7 @@ const Settings = () => {
         error={error}
       />
 
-      <Drawer
-        anchor="right"
-        open={filterDrawerOpen}
-        onClose={() => setFilterDrawerOpen(false)}
-      >
-        <Box sx={{ width: 280, p: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Filter & Search
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <input
-              type="text"
-              placeholder="Search accounts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                border: `1px solid ${theme.palette.divider}`,
-                borderRadius: 4,
-                padding: '8px 12px',
-                outline: 'none',
-                width: '100%',
-              }}
-            />
-            {/* Add more filters here as needed */}
-          </Box>
-        </Box>
-      </Drawer>
+      {/* Drawer removed for Chakra UI v3 compatibility */}
     </Box>
   );
 };

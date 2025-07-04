@@ -5,11 +5,7 @@ import {
   Heading,
   Text,
   Button,
-  useToast,
   Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Tag,
   VStack,
   SimpleGrid,
@@ -18,24 +14,21 @@ import {
   StatNumber,
   StatArrow,
   Table,
-  Thead,
-  Tbody,
   Tr,
   Th,
   Td,
-  Divider,
+  Card
 } from '@chakra-ui/react';
 import { getTransactions, uploadFile, resetUploadSuccess } from '../../redux/slices/transactionSlice';
-import { Card, useCommonColors } from '../../components/common/ChakraComponents';
+import { useToast } from '../../contexts/ToastContext';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const toast = useToast();
+  const { showToast } = useToast();
   const { transactions, uploadLoading, error, uploadSuccess } = useSelector(
     (state) => state.transactions
   );
   const { user } = useSelector((state) => state.auth);
-  const { } = useCommonColors();
   
   const [fileList, setFileList] = useState([]);
   
@@ -45,18 +38,12 @@ const Dashboard = () => {
   
   useEffect(() => {
     if (uploadSuccess) {
-      toast({
-        title: 'Success',
-        description: 'File uploaded and processed successfully',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
+      showToast('File uploaded and processed successfully', 'success');
       setFileList([]);
       dispatch(getTransactions());
       dispatch(resetUploadSuccess());
     }
-  }, [uploadSuccess, dispatch, toast]);
+  }, [uploadSuccess, dispatch, showToast]);
   
   // Calculate stats
   const calculateStats = () => {
@@ -104,26 +91,14 @@ const Dashboard = () => {
       file.type === 'application/vnd.ms-excel';
     
     if (!isPDF && !isExcel) {
-      toast({
-        title: 'Invalid file type',
-        description: 'You can only upload PDF or Excel files!',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      showToast('You can only upload PDF or Excel files!', 'error');
       return;
     }
     
     // Check file size (50MB max)
     const isLessThan50MB = file.size / 1024 / 1024 < 50;
     if (!isLessThan50MB) {
-      toast({
-        title: 'File too large',
-        description: 'File must be smaller than 50MB!',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      showToast('File must be smaller than 50MB!', 'error');
       return;
     }
     
@@ -132,13 +107,7 @@ const Dashboard = () => {
   
   const handleUpload = () => {
     if (fileList.length === 0) {
-      toast({
-        title: 'No file selected',
-        description: 'Please select a file first',
-        status: 'warning',
-        duration: 5000,
-        isClosable: true,
-      });
+      showToast('Please select a file first', 'warning');
       return;
     }
     
@@ -155,12 +124,9 @@ const Dashboard = () => {
         
         {error && (
           <Alert status="error" mb={6}>
-            <AlertIcon />
             <Box flex="1">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription display="block">
-                {error}
-              </AlertDescription>
+              <Text fontWeight="bold">Error</Text>
+              <Text>{error}</Text>
             </Box>
           </Alert>
         )}
@@ -201,7 +167,7 @@ const Dashboard = () => {
       {/* Show upload section only to admin and accountant */}
       {user && ['admin', 'accountant'].includes(user.role) && (
         <Box>
-          <Divider my={6} />
+          <Box borderBottom="1px" borderColor="gray.200" my={6} />
           <Card>
             <VStack spacing={4}>
               <Heading size="md">Upload Statement</Heading>
@@ -248,7 +214,7 @@ const Dashboard = () => {
       
       <Box overflowX="auto">
         <Table variant="simple">
-          <Thead>
+          <thead>
             <Tr>
               <Th>Date</Th>
               <Th>Description</Th>
@@ -256,8 +222,8 @@ const Dashboard = () => {
               <Th>Bank</Th>
               <Th isNumeric>Amount</Th>
             </Tr>
-          </Thead>
-          <Tbody>
+          </thead>
+          <tbody>
             {transactions.map((transaction) => (
               <Tr key={transaction._id}>
                 <Td>{new Date(transaction.date).toLocaleDateString()}</Td>
@@ -272,7 +238,7 @@ const Dashboard = () => {
                 </Td>
               </Tr>
             ))}
-          </Tbody>
+          </tbody>
         </Table>
       </Box>
     </VStack>

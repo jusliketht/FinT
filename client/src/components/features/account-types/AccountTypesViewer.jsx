@@ -1,94 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Paper, 
-  Typography, 
+import {
+  Box,
+  Heading,
+  Text, 
   Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  CircularProgress,
-  Alert,
-  Chip
-} from '@mui/material';
-import accountTypeService from '../../../services/accountTypeService';
+  Badge
+} from '@chakra-ui/react';
+import { useApi } from '../../../hooks/useApi';
+import { useToast } from '../../../contexts/ToastContext';
 
 const AccountTypesViewer = () => {
+  const api = useApi();
+  const { showToast } = useToast();
+
   const [accountTypes, setAccountTypes] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchAccountTypes();
   }, []);
 
   const fetchAccountTypes = async () => {
-    setLoading(true);
     try {
-      const data = await accountTypeService.getAll();
-      setAccountTypes(data);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch account types: ' + (err.message || 'Unknown error'));
-      console.error('Error fetching account types:', err);
+      setLoading(true);
+      const response = await api.get('/account-types');
+      setAccountTypes(response.data);
+    } catch (error) {
+      showToast('Failed to fetch account types', 'error');
     } finally {
       setLoading(false);
     }
   };
 
+  if (loading) {
+    return <Text>Loading account types...</Text>;
+  }
+
   return (
-    <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        Account Types from Database
-      </Typography>
-      
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-      
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-          <CircularProgress />
-        </Box>
-      ) : accountTypes.length === 0 ? (
-        <Alert severity="info">No account types found in the database</Alert>
-      ) : (
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Label</TableCell>
-              <TableCell>Value</TableCell>
-              <TableCell>Categories</TableCell>
-              <TableCell>Created At</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {accountTypes.map(type => (
-              <TableRow key={type.id}>
-                <TableCell>{type.label}</TableCell>
-                <TableCell>{type.value}</TableCell>
-                <TableCell>
-                  {type.categories && type.categories.length > 0 ? (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {type.categories.map(category => (
-                        <Chip key={category.id} label={category.name} size="small" />
-                      ))}
-                    </Box>
-                  ) : (
-                    'No categories'
-                  )}
-                </TableCell>
-                <TableCell>{new Date(type.createdAt).toLocaleString()}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-    </Paper>
+    <Box>
+      <Heading size="md" mb={4}>Account Types</Heading>
+        
+      <Table variant="simple">
+        <thead>
+          <tr>
+            <th>Value</th>
+            <th>Label</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {accountTypes.map((type) => (
+            <tr key={type.id}>
+              <td>{type.value}</td>
+              <td>{type.label}</td>
+              <td>
+                <Badge colorScheme="green">Active</Badge>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </Box>
   );
 };
 
-export default AccountTypesViewer; 
+export default AccountTypesViewer;

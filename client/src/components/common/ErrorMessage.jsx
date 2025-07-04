@@ -2,18 +2,15 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Box,
-  Typography,
-  Button,
-  Paper,
   Alert,
-  AlertTitle
-} from '@mui/material';
-import {
-  Error as ErrorIcon,
-  Refresh as RefreshIcon,
-  Home as HomeIcon,
-  ArrowBack as ArrowBackIcon
-} from '@mui/icons-material';
+  AlertTitle,
+  AlertDescription,
+  Button,
+  Code,
+  Card,
+  HStack
+} from '@chakra-ui/react';
+import { RepeatIcon, ArrowBackIcon } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 
 const ErrorMessage = ({
@@ -36,149 +33,94 @@ const ErrorMessage = ({
   const navigate = useNavigate();
 
   const getDefaultMessage = () => {
-    if (error?.response?.status === 404) {
-      return 'The requested resource was not found.';
-    }
-    if (error?.response?.status === 403) {
-      return 'You do not have permission to access this resource.';
-    }
-    if (error?.response?.status === 401) {
-      return 'Please sign in to access this resource.';
-    }
-    if (error?.response?.status >= 500) {
-      return 'An unexpected error occurred on the server. Please try again later.';
-    }
+    if (error?.response?.status === 404) return 'The requested resource was not found.';
+    if (error?.response?.status === 403) return 'You do not have permission to access this resource.';
+    if (error?.response?.status === 401) return 'Please sign in to access this resource.';
+    if (error?.response?.status >= 500) return 'An unexpected error occurred on the server. Please try again later.';
     return 'An unexpected error occurred. Please try again.';
   };
 
-  const handleRefresh = () => {
-    window.location.reload();
-  };
-
-  const handleHome = () => {
-    navigate('/');
-  };
-
-  const handleBack = () => {
-    navigate(-1);
-  };
+  const handleRefresh = () => window.location.reload();
+  const handleHome = () => navigate('/');
+  const handleBack = () => navigate(-1);
 
   const content = (
     <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        p: 3,
-        ...sx
-      }}
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      textAlign="center"
+      p={6}
+      {...sx}
     >
-      <Box
-        sx={{
-          color: `${severity}.main`,
-          mb: 2
-        }}
-      >
-        <ErrorIcon sx={{ fontSize: 60 }} />
-      </Box>
-
       <Alert
-        severity={severity}
-        sx={{
-          mb: 3,
-          maxWidth: 600,
-          '& .MuiAlert-message': {
-            width: '100%'
-          }
-        }}
+        status={severity}
+        variant="subtle"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        textAlign="center"
+        borderRadius="lg"
+        p={6}
+        mb={6}
+        maxW="600px"
       >
-        <AlertTitle>{title}</AlertTitle>
-        <Typography variant="body2">
+        <AlertTitle mt={4} mb={1} fontSize="lg">
+          {title}
+        </AlertTitle>
+        <AlertDescription>
           {message || getDefaultMessage()}
-        </Typography>
+        </AlertDescription>
         {error?.message && (
-          <Typography
-            variant="caption"
-            sx={{
-              display: 'block',
-              mt: 1,
-              fontFamily: 'monospace',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word'
-            }}
+          <Code
+            p={2}
+            mt={4}
+            w="100%"
+            borderRadius="md"
+            whiteSpace="pre-wrap"
+            wordBreak="break-word"
           >
             {error.message}
-          </Typography>
+          </Code>
         )}
       </Alert>
 
-      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <HStack spacing={4} wrap="wrap" justify="center">
         {action && (
-          <Button
-            variant="contained"
-            onClick={action}
-            startIcon={actionIcon}
-          >
+          <Button colorScheme="blue" onClick={action} leftIcon={actionIcon}>
             {actionText}
           </Button>
         )}
-
         {showRefresh && (
-          <Button
-            variant="outlined"
-            onClick={handleRefresh}
-            startIcon={<RefreshIcon />}
-          >
+          <Button variant="outline" onClick={handleRefresh} leftIcon={<RepeatIcon />}>
             Refresh Page
           </Button>
         )}
-
         {showHome && (
-          <Button
-            variant="outlined"
-            onClick={handleHome}
-            startIcon={<HomeIcon />}
-          >
+          <Button variant="outline" onClick={handleHome}>
             Go to Home
           </Button>
         )}
-
         {showBack && (
-          <Button
-            variant="outlined"
-            onClick={handleBack}
-            startIcon={<ArrowBackIcon />}
-          >
+          <Button variant="outline" onClick={handleBack} leftIcon={<ArrowBackIcon />}>
             Go Back
           </Button>
         )}
-
         {secondaryAction && (
-          <Button
-            variant="outlined"
-            onClick={secondaryAction}
-            startIcon={secondaryActionIcon}
-          >
+          <Button variant="outline" onClick={secondaryAction} leftIcon={secondaryActionIcon}>
             {secondaryActionText}
           </Button>
         )}
-      </Box>
+      </HStack>
     </Box>
   );
 
   if (variant === 'paper') {
     return (
-      <Paper
-        elevation={0}
-        sx={{
-          bgcolor: 'background.default',
-          borderRadius: 1
-        }}
-      >
+      <Card bg="gray.50" borderRadius="md">
         {content}
-      </Paper>
+      </Card>
     );
   }
 
@@ -204,8 +146,8 @@ ErrorMessage.propTypes = {
   showHome: PropTypes.bool,
   showBack: PropTypes.bool,
   variant: PropTypes.oneOf(['default', 'paper']),
-  severity: PropTypes.oneOf(['error', 'warning', 'info']),
+  severity: PropTypes.oneOf(['error', 'warning', 'info', 'success']),
   sx: PropTypes.object
 };
 
-export default ErrorMessage; 
+export default ErrorMessage;

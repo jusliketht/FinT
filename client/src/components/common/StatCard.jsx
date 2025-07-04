@@ -1,65 +1,57 @@
 import React from 'react';
-import { Card, CardContent, Typography, Box, SvgIcon } from '@mui/material';
-import { styled } from '@mui/material/styles';
-
-const StyledCard = styled(Card)(({ theme }) => ({
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  transition: 'all 0.3s ease-in-out',
-  '&:hover': {
-    transform: 'translateY(-4px)',
-    boxShadow: theme.shadows[4],
-  },
-}));
-
-const IconWrapper = styled(Box)(({ theme, color }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: 48,
-  height: 48,
-  borderRadius: '50%',
-  backgroundColor: color ? `${color}15` : `${theme.palette.primary.main}15`,
-  marginBottom: theme.spacing(2),
-}));
+import { Card, CardBody, Text, Box, Icon, HStack } from '@chakra-ui/react';
 
 const StatCard = ({ title, value, icon, color, trend, trendValue }) => {
+  const bgColor = 'white';
+  const iconBgColor = color ? `${color}.100` : 'blue.100';
+  const iconColor = color || 'blue.500';
+  const trendColor = trend === 'up' ? 'green.500' : 'red.500';
+
   return (
-    <StyledCard>
-      <CardContent>
-        <IconWrapper color={color}>
-          <SvgIcon
-            component={icon}
-            sx={{
-              color: color || 'primary.main',
-              fontSize: 24,
-            }}
+    <Card
+      h="100%"
+      display="flex"
+      flexDirection="column"
+      transition="all 0.3s ease-in-out"
+      _hover={{
+        transform: 'translateY(-4px)',
+        boxShadow: 'lg',
+      }}
+      bg={bgColor}
+    >
+      <CardBody>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          w="48px"
+          h="48px"
+          borderRadius="50%"
+          bg={iconBgColor}
+          mb={4}
+        >
+          <Icon
+            as={icon}
+            color={iconColor}
+            boxSize={6}
           />
-        </IconWrapper>
-        <Typography variant="h4" component="div" gutterBottom>
+        </Box>
+        <Text fontSize="2xl" fontWeight="bold" mb={2}>
           {value}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
+        </Text>
+        <Text fontSize="sm" color="gray.500" mb={2}>
           {title}
-        </Typography>
+        </Text>
         {trend && (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              mt: 1,
-              color: trend === 'up' ? 'success.main' : 'error.main',
-            }}
-          >
-            <Typography variant="body2" sx={{ mr: 0.5 }}>
+          <HStack spacing={1} mt={2} color={trendColor}>
+            <Text fontSize="sm">
               {trend === 'up' ? '↑' : '↓'} {trendValue}
-            </Typography>
-            <Typography variant="body2">vs last month</Typography>
-          </Box>
+            </Text>
+            <Text fontSize="sm">vs last month</Text>
+          </HStack>
         )}
-      </CardContent>
-    </StyledCard>
+      </CardBody>
+    </Card>
   );
 };
 

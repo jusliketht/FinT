@@ -1,32 +1,55 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
-  // Ensure we load the .env file
-  require('dotenv').config();
-
-  const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
   
-  // Get the ConfigService
-  const configService = app.get(ConfigService);
-  
-  // Enable CORS for the client
-  app.enableCors({
-    origin: configService.get('CLIENT_URL', 'http://localhost:3000'),
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
-  
-  // Create API prefix
-  app.setGlobalPrefix('api');
-  
-  // Get port from environment variable or use 5000 as fallback
-  const port = configService.get('PORT', 5000);
-  
-  await app.listen(port);
-  console.log(`Server is running on http://localhost:${port}/api`);
-  console.log(`Using database: ${configService.get('DATABASE_URL')}`);
-  console.log(`Environment: ${configService.get('NODE_ENV')}`);
+  try {
+    const app = await NestFactory.create(AppModule, {
+      logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    });
+    
+    const configService = app.get(ConfigService);
+    
+    // Enable CORS with proper configuration
+    app.enableCors({
+      origin: configService.get('CLIENT_URL', 'http://localhost:3000'),
+      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true,
+      maxAge: 86400, // 24 hours
+    });
+    
+    // Global validation pipe
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: false,
+        transform: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+      }),
+    );
+    
+    // Global prefix
+    app.setGlobalPrefix('api');
+    
+    const port = configService.get('PORT', 5000);
+    const nodeEnv = configService.get('NODE_ENV', 'development');
+    
+    await app.listen(port);
+    
+    logger.log(`🚀 Server is running on http://localhost:${port}/api`);
+    logger.log(`📊 Environment: ${nodeEnv}`);
+    logger.log(`🔗 Database: ${configService.get('DATABASE_URL')?.split('@')[1] || 'Not configured'}`);
+    
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
 }
+
 bootstrap(); 

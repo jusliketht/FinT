@@ -2,18 +2,27 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
+// import { ThemeProvider } from '@mui/material/styles';
+// import CssBaseline from '@mui/material/CssBaseline';
 
 // Styles
 import './index.css';
 
 // Local imports
 import { store } from './redux/store';
-import { theme } from './theme';
+// import { theme } from './theme';
 import App from './App';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import LoadingScreen from './components/common/LoadingScreen';
+
+// Disable service worker to prevent API interference
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for(let registration of registrations) {
+      registration.unregister();
+    }
+  });
+}
 
 // Initialize app
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -24,12 +33,11 @@ root.render(
     <ErrorBoundary>
       <Provider store={store}>
         <BrowserRouter>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <React.Suspense fallback={<LoadingScreen />}>
-              <App />
-            </React.Suspense>
-          </ThemeProvider>
+          {/* <ThemeProvider theme={theme}> */}
+          <React.Suspense fallback={<LoadingScreen />}>
+            <App />
+          </React.Suspense>
+          {/* </ThemeProvider> */}
         </BrowserRouter>
       </Provider>
     </ErrorBoundary>

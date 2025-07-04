@@ -1,33 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box,
-  Paper,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  FormControlLabel,
-  Switch,
-  CircularProgress,
-  Alert,
+  Heading,
+  Text,
   Button,
   IconButton,
-  TextField
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import DownloadIcon from '@mui/icons-material/Download';
-import PrintIcon from '@mui/icons-material/Print';
-import { format } from 'date-fns';
+  Switch,
+  Alert,
+  VStack,
+  HStack,
+  Spinner
+} from '@chakra-ui/react';
 import ledgerService from '../../../services/ledgerService';
+import { useToast } from '../../../contexts/ToastContext';
 
 const TrialBalance = () => {
-  // State
   const [trialBalanceData, setTrialBalanceData] = useState([]);
   const [totals, setTotals] = useState({
     debitTotal: 0,
@@ -36,50 +23,43 @@ const TrialBalance = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [asOfDate, setAsOfDate] = useState(new Date());
+  const [asOfDate] = useState(new Date()); // Date picker not implemented
   const [includeZeroBalances, setIncludeZeroBalances] = useState(false);
+  const { showToast } = useToast();
 
-  // Fetch trial balance data
   const fetchTrialBalance = async () => {
     setLoading(true);
     try {
+      // Date filter not implemented, just use current date
       const filters = {
-        asOfDate: format(asOfDate, 'yyyy-MM-dd'),
+        asOfDate: asOfDate.toISOString().split('T')[0],
         includeZeroBalances: includeZeroBalances.toString()
       };
-      
       const response = await ledgerService.getTrialBalance(filters);
       setTrialBalanceData(response.data);
       setTotals(response.totals);
       setError(null);
     } catch (err) {
       setError('Failed to fetch trial balance data');
-      console.error('Error fetching trial balance:', err);
+      showToast('Failed to fetch trial balance data', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch initial data
   useEffect(() => {
     fetchTrialBalance();
+    // eslint-disable-next-line
   }, []);
 
-  // Handle filter change
-  const handleAsOfDateChange = (newDate) => {
-    setAsOfDate(newDate);
+  const handleIncludeZeroBalancesChange = (e) => {
+    setIncludeZeroBalances(e.target.checked);
   };
 
-  const handleIncludeZeroBalancesChange = (event) => {
-    setIncludeZeroBalances(event.target.checked);
-  };
-
-  // Apply filters
   const handleApplyFilters = () => {
     fetchTrialBalance();
   };
 
-  // Format currency values
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -88,36 +68,29 @@ const TrialBalance = () => {
     }).format(amount);
   };
 
-  // Handle download as CSV
   const handleDownloadCSV = () => {
     const headers = ['Account Code', 'Account Name', 'Account Type', 'Debit Balance', 'Credit Balance'];
-    
     const csvData = [
       headers.join(','),
       ...trialBalanceData.map(row => [
         row.accountCode,
-        `"${row.accountName}"`, // Quote names in case they contain commas
+        `"${row.accountName}"`,
         row.accountType,
         row.debitBalance.toFixed(2),
         row.creditBalance.toFixed(2)
       ].join(','))
     ];
-    
-    // Add totals row
     csvData.push([
-      '','TOTALS','',
+      '', 'TOTALS', '',
       totals.debitTotal.toFixed(2),
       totals.creditTotal.toFixed(2)
     ].join(','));
-    
     const csvContent = csvData.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    
-    // Create a download link
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `trial_balance_${format(asOfDate, 'yyyyMMdd')}.csv`);
+    link.setAttribute('download', `trial_balance_${asOfDate.toISOString().split('T')[0].replace(/-/g, '')}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -129,183 +102,95 @@ const TrialBalance = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }} className="printable-content">
-      <Typography variant="h4" component="h1" gutterBottom>
+    <Box p={6} className="printable-content">
+      <Heading as="h1" size="lg" mb={6}>
         Trial Balance
-      </Typography>
+      </Heading>
 
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2, alignItems: 'center' }}>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
-              label="As of Date"
-              value={asOfDate}
-              onChange={handleAsOfDateChange}
-              renderInput={(params) => <TextField {...params} sx={{ width: 200 }} />}
-              inputFormat="MM/dd/yyyy"
+      <Box bg="white" p={4} borderRadius="lg" boxShadow="sm" mb={6}>
+        <HStack spacing={6} align="center" mb={2} flexWrap="wrap">
+          {/* Date picker not implemented */}
+          <HStack>
+            <Switch
+              isChecked={includeZeroBalances}
+              onChange={handleIncludeZeroBalancesChange}
+              colorScheme="blue"
+              id="include-zero-balances"
             />
-          </LocalizationProvider>
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={includeZeroBalances}
-                onChange={handleIncludeZeroBalancesChange}
-                color="primary"
-              />
-            }
-            label="Include Zero Balances"
-          />
-
-          <Box sx={{ flexGrow: 1 }} />
-
+            <Text htmlFor="include-zero-balances">Include Zero Balances</Text>
+          </HStack>
           <Button
-            variant="contained"
+            colorScheme="blue"
             onClick={handleApplyFilters}
-            disabled={loading}
+            isLoading={loading}
           >
             Apply Filters
           </Button>
-
-          <IconButton 
-            color="primary" 
+          <IconButton
+            icon={<span role="img" aria-label="refresh">🔄</span>}
             onClick={fetchTrialBalance}
-            disabled={loading}
-            title="Refresh"
-          >
-            <RefreshIcon />
-          </IconButton>
-
-          <IconButton 
-            color="primary" 
+            isDisabled={loading}
+            aria-label="Refresh"
+          />
+          <IconButton
+            icon={<span role="img" aria-label="download">⬇️</span>}
             onClick={handleDownloadCSV}
-            disabled={loading || trialBalanceData.length === 0}
-            title="Download as CSV"
-          >
-            <DownloadIcon />
-          </IconButton>
-
-          <IconButton 
-            color="primary" 
+            isDisabled={loading || trialBalanceData.length === 0}
+            aria-label="Download as CSV"
+          />
+          <IconButton
+            icon={<span role="img" aria-label="print">🖨️</span>}
             onClick={handlePrint}
-            disabled={loading || trialBalanceData.length === 0}
-            title="Print"
-          >
-            <PrintIcon />
-          </IconButton>
-        </Box>
-      </Paper>
+            isDisabled={loading || trialBalanceData.length === 0}
+            aria-label="Print"
+          />
+        </HStack>
+      </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert status="error" mb={6}>
           {error}
         </Alert>
       )}
-
-      <Box sx={{ textAlign: 'center', mb: 2 }}>
-        <Typography variant="h5" component="h2">
-          Trial Balance
-        </Typography>
-        <Typography variant="subtitle1">
-          As of {format(asOfDate, 'MMMM dd, yyyy')}
-        </Typography>
-      </Box>
-
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Account Code</TableCell>
-              <TableCell>Account Name</TableCell>
-              <TableCell>Account Type</TableCell>
-              <TableCell align="right">Debit Balance</TableCell>
-              <TableCell align="right">Credit Balance</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                  <CircularProgress size={40} />
-                </TableCell>
-              </TableRow>
-            ) : trialBalanceData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                  No trial balance data found
-                </TableCell>
-              </TableRow>
-            ) : (
-              <>
-                {/* Group by account type */}
-                {Array.from(
-                  new Set(trialBalanceData.map(item => item.accountType))
-                ).map(accountType => (
-                  <React.Fragment key={accountType}>
-                    {/* Account Type Header */}
-                    <TableRow>
-                      <TableCell 
-                        colSpan={5} 
-                        sx={{ 
-                          fontWeight: 'bold', 
-                          backgroundColor: 'rgba(0, 0, 0, 0.08)'
-                        }}
-                      >
-                        {accountType}
-                      </TableCell>
-                    </TableRow>
-                    
-                    {/* Accounts in this type */}
-                    {trialBalanceData
-                      .filter(item => item.accountType === accountType)
-                      .map((row) => (
-                        <TableRow
-                          key={row.accountId}
-                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                        >
-                          <TableCell>{row.accountCode}</TableCell>
-                          <TableCell>{row.accountName}</TableCell>
-                          <TableCell>{row.accountType}</TableCell>
-                          <TableCell align="right">
-                            {row.debitBalance > 0 ? formatCurrency(row.debitBalance) : ''}
-                          </TableCell>
-                          <TableCell align="right">
-                            {row.creditBalance > 0 ? formatCurrency(row.creditBalance) : ''}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    }
-                  </React.Fragment>
-                ))}
-
-                {/* Totals Row */}
-                <TableRow sx={{ fontWeight: 'bold' }}>
-                  <TableCell colSpan={3} align="right" sx={{ fontWeight: 'bold' }}>
-                    TOTALS
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                    {formatCurrency(totals.debitTotal)}
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                    {formatCurrency(totals.creditTotal)}
-                  </TableCell>
-                </TableRow>
-
-                {/* Out of balance warning if applicable */}
-                {totals.difference > 0.01 && (
-                  <TableRow>
-                    <TableCell colSpan={5}>
-                      <Alert severity="error">
-                        Trial Balance is out of balance by {formatCurrency(totals.difference)}
-                      </Alert>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {loading ? (
+        <Box textAlign="center" py={12}>
+          <Spinner size="xl" />
+          <Text mt={4}>Loading trial balance...</Text>
+        </Box>
+      ) : (
+        <Box overflowX="auto" borderWidth="1px" borderRadius="lg" bg="white">
+          <table style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse' }}>
+            <thead style={{ backgroundColor: '#f7fafc' }}>
+              <tr>
+                <th style={{ textAlign: 'left', padding: '12px', fontWeight: 'bold' }}>Account Code</th>
+                <th style={{ textAlign: 'left', padding: '12px', fontWeight: 'bold' }}>Account Name</th>
+                <th style={{ textAlign: 'left', padding: '12px', fontWeight: 'bold' }}>Account Type</th>
+                <th style={{ textAlign: 'right', padding: '12px', fontWeight: 'bold' }}>Debit Balance</th>
+                <th style={{ textAlign: 'right', padding: '12px', fontWeight: 'bold' }}>Credit Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trialBalanceData.map((row, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <td style={{ padding: '12px' }}>{row.accountCode}</td>
+                  <td style={{ padding: '12px' }}>{row.accountName}</td>
+                  <td style={{ padding: '12px' }}>{row.accountType}</td>
+                  <td style={{ textAlign: 'right', padding: '12px' }}>{formatCurrency(row.debitBalance)}</td>
+                  <td style={{ textAlign: 'right', padding: '12px' }}>{formatCurrency(row.creditBalance)}</td>
+                </tr>
+              ))}
+              {/* Totals row */}
+              <tr style={{ fontWeight: 'bold', backgroundColor: '#f7fafc' }}>
+                <td style={{ padding: '12px' }}></td>
+                <td style={{ padding: '12px' }}>TOTALS</td>
+                <td style={{ padding: '12px' }}></td>
+                <td style={{ textAlign: 'right', padding: '12px' }}>{formatCurrency(totals.debitTotal)}</td>
+                <td style={{ textAlign: 'right', padding: '12px' }}>{formatCurrency(totals.creditTotal)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </Box>
+      )}
     </Box>
   );
 };

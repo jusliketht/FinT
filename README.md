@@ -16,14 +16,13 @@ A modern financial tracking application for managing journal entries, bookkeepin
 
 ### Frontend
 - React
-- Material-UI
+- Chakra UI & Tailwind CSS
 - Redux Toolkit
 - React Router
 - Axios
 
 ### Backend
-- Node.js
-- Express
+- NestJS
 - Prisma
 - PostgreSQL
 
@@ -40,11 +39,13 @@ fint/
 │   │   └── utils/        # Utility functions
 │   └── public/           # Static assets
 │
-├── server/                # Express backend
-│   ├── controllers/      # Route controllers
-│   ├── routes/          # API routes
-│   ├── prisma/          # Database schema and migrations
-│   └── utils/           # Utility functions
+├── server/                # NestJS backend
+│   ├── src/
+│   │   ├── accounting/
+│   │   ├── auth/
+│   │   ├── users/
+│   │   └── ...
+│   └── prisma/          # Database schema and migrations
 │
 └── docs/                 # Documentation
 ```

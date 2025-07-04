@@ -2,340 +2,221 @@ import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
-  Paper,
-  Typography,
+  Heading,
+  Text,
   Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  CircularProgress,
+  Input,
+  FormHelperText,
   Alert,
-  Snackbar
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+  Spinner,
+  HStack,
+  VStack,
+  Select
+} from '@chakra-ui/react';
+import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import accountTypeService from '../../../services/accountTypeService';
+import { useToast } from '../../../contexts/ToastContext';
+import { useApi } from '../../../hooks/useApi';
 
 const AccountTypesManager = () => {
+  const api = useApi();
+  const { showToast } = useToast();
+  
   const [accountTypes, setAccountTypes] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [dialogMode, setDialogMode] = useState('add'); // 'add' or 'edit'
-  const [currentAccountType, setCurrentAccountType] = useState({ value: '', label: '' });
-  const [formErrors, setFormErrors] = useState({});
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [loading, setLoading] = useState(true);
+  const [selectedType, setSelectedType] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    value: '',
+    label: '',
+    description: ''
+  });
 
-  // Fetch account types on component mount
   useEffect(() => {
     fetchAccountTypes();
   }, []);
 
-  // Fetch account types from API
   const fetchAccountTypes = async () => {
-    setLoading(true);
     try {
-      const data = await accountTypeService.getAll();
-      setAccountTypes(data);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch account types');
-      console.error('Error fetching account types:', err);
+      setLoading(true);
+      const response = await api.get('/account-types');
+      setAccountTypes(response.data);
+    } catch (error) {
+      showToast('Failed to fetch account types', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // Open dialog for adding a new account type
-  const handleAddClick = () => {
-    setDialogMode('add');
-    setCurrentAccountType({ value: '', label: '' });
-    setFormErrors({});
-    setOpenDialog(true);
-  };
-
-  // Open dialog for editing an account type
-  const handleEditClick = (accountType) => {
-    setDialogMode('edit');
-    setCurrentAccountType({ ...accountType });
-    setFormErrors({});
-    setOpenDialog(true);
-  };
-
-  // Handle form input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setCurrentAccountType((prev) => ({ ...prev, [name]: value }));
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    // Clear error when user types
-    if (formErrors[name]) {
-      setFormErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  // Validate form inputs
-  const validateForm = () => {
-    const errors = {};
-    
-    if (!currentAccountType.value) {
-      errors.value = 'Value is required';
-    } else if (!/^[a-z0-9-]+$/.test(currentAccountType.value)) {
-      errors.value = 'Value must contain only lowercase letters, numbers, and hyphens';
-    }
-    
-    if (!currentAccountType.label) {
-      errors.label = 'Label is required';
-    }
-    
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Handle form submission
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
-    
-    setLoading(true);
     try {
-      if (dialogMode === 'add') {
-        await accountTypeService.create(currentAccountType);
-        setSnackbar({ 
-          open: true, 
-          message: 'Account type created successfully', 
-          severity: 'success' 
-        });
+      if (selectedType) {
+        await api.put(`/account-types/${selectedType.id}`, formData);
+        showToast('Account type updated successfully', 'success');
       } else {
-        await accountTypeService.update(currentAccountType.id, currentAccountType);
-        setSnackbar({ 
-          open: true, 
-          message: 'Account type updated successfully', 
-          severity: 'success' 
-        });
+        await api.post('/account-types', formData);
+        showToast('Account type created successfully', 'success');
       }
       
-      setOpenDialog(false);
       fetchAccountTypes();
-    } catch (err) {
-      console.error('Error saving account type:', err);
-      setSnackbar({ 
-        open: true, 
-        message: `Error: ${err.response?.data?.message || 'Failed to save account type'}`, 
-        severity: 'error' 
-      });
-    } finally {
-      setLoading(false);
+      handleClose();
+    } catch (error) {
+      showToast('Failed to save account type', 'error');
     }
   };
 
-  // Handle account type deletion
-  const handleDeleteClick = async (accountType) => {
-    if (!window.confirm(`Are you sure you want to delete "${accountType.label}"?`)) {
+  const handleEdit = (accountType) => {
+    setSelectedType(accountType);
+    setFormData({
+      value: accountType.value,
+      label: accountType.label,
+      description: accountType.description || ''
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this account type?')) {
       return;
     }
     
-    setLoading(true);
     try {
-      await accountTypeService.delete(accountType.id);
+      await api.delete(`/account-types/${id}`);
+      showToast('Account type deleted successfully', 'success');
       fetchAccountTypes();
-      setSnackbar({ 
-        open: true, 
-        message: 'Account type deleted successfully', 
-        severity: 'success' 
-      });
-    } catch (err) {
-      console.error('Error deleting account type:', err);
-      setSnackbar({ 
-        open: true, 
-        message: `Error: ${err.response?.data?.message || 'Failed to delete account type'}`, 
-        severity: 'error' 
-      });
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      showToast('Failed to delete account type', 'error');
     }
   };
 
-  // Create default account types
-  const handleCreateDefaults = async () => {
-    setLoading(true);
-    try {
-      await accountTypeService.createDefaults();
-      fetchAccountTypes();
-      setSnackbar({ 
-        open: true, 
-        message: 'Default account types created successfully', 
-        severity: 'success' 
-      });
-    } catch (err) {
-      console.error('Error creating default account types:', err);
-      setSnackbar({ 
-        open: true, 
-        message: `Error: ${err.response?.data?.message || 'Failed to create default account types'}`, 
-        severity: 'error' 
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Close snackbar
-  const handleCloseSnackbar = () => {
-    setSnackbar((prev) => ({ ...prev, open: false }));
+  const handleClose = () => {
+    setSelectedType(null);
+    setFormData({ value: '', label: '', description: '' });
+    setShowForm(false);
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4" component="h1">
-          Account Types
-        </Typography>
-        <Box>
-          <Button 
-            variant="outlined" 
-            onClick={handleCreateDefaults} 
-            sx={{ mr: 1 }}
-            disabled={loading}
-          >
-            Create Defaults
-          </Button>
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />} 
-            onClick={handleAddClick}
-            disabled={loading}
-          >
-            Add New
-          </Button>
-        </Box>
-      </Box>
+    <VStack spacing={6} align="stretch">
+      <HStack justify="space-between">
+        <Heading size="lg">Account Types</Heading>
+        <Button
+          leftIcon={<AddIcon />}
+          colorScheme="brand"
+          onClick={() => setShowForm(true)}
+        >
+          Add Account Type
+        </Button>
+      </HStack>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
+      {showForm && (
+        <Box borderWidth="1px" borderRadius="lg" p={6} bg="gray.50">
+          <VStack spacing={4}>
+            <Heading size="md">
+              {selectedType ? 'Edit Account Type' : 'Add Account Type'}
+            </Heading>
+            
+            <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+              <VStack spacing={4}>
+                <Box width="100%">
+                  <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Value *</label>
+                  <Input
+                    value={formData.value}
+                    onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
+                    placeholder="e.g., asset, liability"
+                    required
+                  />
+                </Box>
+                
+                <Box width="100%">
+                  <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Label *</label>
+                  <Input
+                    value={formData.label}
+                    onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
+                    placeholder="e.g., Asset, Liability"
+                    required
+                  />
+                </Box>
+                
+                <Box width="100%">
+                  <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Description</label>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Optional description"
+                  />
+                </Box>
+                
+                <HStack spacing={3}>
+                  <Button variant="ghost" onClick={handleClose}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" colorScheme="brand">
+                    {selectedType ? 'Update' : 'Create'}
+                  </Button>
+                </HStack>
+              </VStack>
+            </form>
+          </VStack>
+        </Box>
       )}
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Value</TableCell>
-              <TableCell>Label</TableCell>
-              <TableCell>Categories</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+      <Box borderWidth="1px" borderRadius="lg" overflow="hidden">
+        <Table variant="simple">
+          <thead>
+            <tr>
+              <th>Value</th>
+              <th>Label</th>
+              <th>Categories</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
             {loading && accountTypes.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  <CircularProgress size={24} />
-                </TableCell>
-              </TableRow>
+              <tr>
+                <td colSpan={4} style={{ textAlign: 'center' }}>
+                  <Spinner size="sm" />
+                </td>
+              </tr>
             ) : accountTypes.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
+              <tr>
+                <td colSpan={4} style={{ textAlign: 'center' }}>
                   No account types found
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             ) : (
               accountTypes.map((accountType) => (
-                <TableRow key={accountType.id}>
-                  <TableCell>{accountType.value}</TableCell>
-                  <TableCell>{accountType.label}</TableCell>
-                  <TableCell>{accountType.categories?.length || 0}</TableCell>
-                  <TableCell align="right">
+                <tr key={accountType.id}>
+                  <td>{accountType.value}</td>
+                  <td>{accountType.label}</td>
+                  <td>{accountType.categories?.length || 0}</td>
+                  <td style={{ textAlign: 'right' }}>
                     <IconButton 
-                      onClick={() => handleEditClick(accountType)}
-                      disabled={loading}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton 
-                      onClick={() => handleDeleteClick(accountType)}
-                      disabled={loading || (accountType.categories?.length > 0)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
+                      size="sm"
+                      icon={<EditIcon />}
+                      onClick={() => handleEdit(accountType)}
+                      variant="ghost"
+                      aria-label="Edit account type"
+                    />
+                    <IconButton
+                      size="sm"
+                      icon={<DeleteIcon />}
+                      onClick={() => handleDelete(accountType.id)}
+                      variant="ghost"
+                      colorScheme="red"
+                      aria-label="Delete account type"
+                      ml={2}
+                    />
+                  </td>
+                </tr>
               ))
             )}
-          </TableBody>
+          </tbody>
         </Table>
-      </TableContainer>
-
-      {/* Add/Edit Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {dialogMode === 'add' ? 'Add New Account Type' : 'Edit Account Type'}
-        </DialogTitle>
-        <DialogContent>
-          <Box component="form" sx={{ mt: 2 }}>
-            <TextField
-              fullWidth
-              label="Value"
-              name="value"
-              value={currentAccountType.value}
-              onChange={handleInputChange}
-              error={!!formErrors.value}
-              helperText={formErrors.value || "Unique identifier (e.g. 'asset', 'liability')"}
-              margin="normal"
-              disabled={dialogMode === 'edit'} // Cannot change value in edit mode
-              inputProps={{
-                pattern: "[a-z0-9-]+"
-              }}
-            />
-            <TextField
-              fullWidth
-              label="Label"
-              name="label"
-              value={currentAccountType.label}
-              onChange={handleInputChange}
-              error={!!formErrors.label}
-              helperText={formErrors.label || "Display name (e.g. 'Asset', 'Liability')"}
-              margin="normal"
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)} disabled={loading}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            variant="contained" 
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Save'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+      </Box>
+    </VStack>
   );
 };
 

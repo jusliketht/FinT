@@ -19,7 +19,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       request.user = {
         id: 'dev-user',
         username: 'developer',
-        role: 'Admin',
+        role: 'ADMIN',
       };
       return true;
     }

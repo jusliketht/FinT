@@ -1,21 +1,20 @@
-import { Box, useColorModeValue } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
 
-// Common color mode values
-export const useCommonColors = () => ({
-  bgColor: useColorModeValue('white', 'gray.700'),
-  borderColor: useColorModeValue('gray.200', 'gray.600'),
-  textColor: useColorModeValue('gray.600', 'gray.300'),
-  brandColor: useColorModeValue('brand.500', 'brand.400'),
-  inputBg: useColorModeValue('gray.50', 'gray.800'),
-  cardBg: useColorModeValue('white', 'gray.700'),
-  errorBg: useColorModeValue('gray.100', 'gray.700'),
-  navBg: useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)'),
-  footerBg: useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)'),
-});
+export const themeColors = {
+  bgColor: 'white',
+  borderColor: 'gray.200',
+  textColor: 'gray.600',
+  brandColor: 'blue.500',
+  inputBg: 'gray.50',
+  cardBg: 'white',
+  errorBg: 'gray.100',
+  navBg: 'rgba(255, 255, 255, 0.8)',
+  footerBg: 'rgba(255, 255, 255, 0.9)',
+};
 
 // Common card container
 export const Card = ({ children, ...props }) => {
-  const { bgColor, borderColor } = useCommonColors();
+  const { bgColor, borderColor } = themeColors;
   return (
     <Box
       p={6}
@@ -33,7 +32,7 @@ export const Card = ({ children, ...props }) => {
 
 // Common form container
 export const FormContainer = ({ children, ...props }) => {
-  const { bgColor, borderColor } = useCommonColors();
+  const { bgColor, borderColor } = themeColors;
   return (
     <Box
       w="full"

@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Request } from '@nestjs/common';
 import { AccountsService } from '../services/accounts.service';
 import { CreateAccountDto } from '../dto/create-account.dto';
 import { UpdateAccountDto } from '../dto/update-account.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
-import { UserRole } from '../../users/entities/user.entity';
+import { UserRole } from '../../constants/enums';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('accounts')
@@ -21,8 +21,8 @@ export class AccountsController {
   @ApiResponse({ status: 201, description: 'Account created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 409, description: 'Account code already exists' })
-  create(@Body() createAccountDto: CreateAccountDto) {
-    return this.accountsService.create(createAccountDto);
+  create(@Body() createAccountDto: CreateAccountDto, @Request() req) {
+    return this.accountsService.create({ ...createAccountDto, userId: req.user.id });
   }
 
   @Get()
@@ -43,16 +43,15 @@ export class AccountsController {
 
   @Get(':id')
   @Roles(UserRole.Admin, UserRole.Accountant, UserRole.Viewer)
-  @ApiOperation({ summary: 'Get account by ID' })
-  @ApiResponse({ status: 200, description: 'Return account details' })
-  @ApiResponse({ status: 404, description: 'Account not found' })
+  @ApiOperation({ summary: 'Get an account by id' })
+  @ApiResponse({ status: 200, description: 'Return the account' })
   findOne(@Param('id') id: string) {
     return this.accountsService.findOne(id);
   }
 
   @Patch(':id')
   @Roles(UserRole.Admin, UserRole.Accountant)
-  @ApiOperation({ summary: 'Update account' })
+  @ApiOperation({ summary: 'Update an account' })
   @ApiResponse({ status: 200, description: 'Account updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 404, description: 'Account not found' })
@@ -63,7 +62,7 @@ export class AccountsController {
 
   @Delete(':id')
   @Roles(UserRole.Admin)
-  @ApiOperation({ summary: 'Delete account' })
+  @ApiOperation({ summary: 'Delete an account' })
   @ApiResponse({ status: 200, description: 'Account deleted successfully' })
   @ApiResponse({ status: 400, description: 'Cannot delete account with children or transactions' })
   @ApiResponse({ status: 404, description: 'Account not found' })

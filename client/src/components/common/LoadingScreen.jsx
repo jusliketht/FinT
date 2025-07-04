@@ -1,28 +1,32 @@
 import React from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, Spinner, Text } from '@chakra-ui/react';
 
 const LoadingScreen = () => {
+  const bgColor = 'white';
+
   return (
     <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        backgroundColor: 'background.default'
-      }}
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      minH="100vh"
+      bg={bgColor}
     >
-      <CircularProgress size={60} thickness={4} />
-      <Typography
-        variant="h6"
-        sx={{
-          mt: 2,
-          color: 'text.secondary'
-        }}
+      <Spinner
+        size="xl"
+        thickness="4px"
+        speed="0.65s"
+        emptyColor="gray.200"
+        color="blue.500"
+      />
+      <Text
+        fontSize="xl"
+        mt={4}
+        color="gray.600"
       >
         Loading...
-      </Typography>
+      </Text>
     </Box>
   );
 };

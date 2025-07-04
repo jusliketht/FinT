@@ -1,180 +1,114 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Chip, Box, Tooltip } from '@mui/material';
+import { Tag, Tooltip, Box, Icon } from '@chakra-ui/react';
 import {
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  Pending as PendingIcon,
-  Block as BlockIcon,
-  Schedule as ScheduleIcon,
-  Cancel as CancelIcon,
-  Done as DoneIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Archive as ArchiveIcon,
-  Restore as RestoreIcon,
-  Lock as LockIcon,
-  LockOpen as LockOpenIcon
-} from '@mui/icons-material';
+  CheckIcon,
+  InfoOutlineIcon,
+  TimeIcon,
+  WarningIcon,
+  CloseIcon,
+  EditIcon,
+  DeleteIcon,
+  ViewIcon,
+  ViewOffIcon
+} from '@chakra-ui/icons';
 
 const statusConfig = {
   // Success states
-  success: {
-    color: 'success',
-    icon: CheckCircleIcon
-  },
-  completed: {
-    color: 'success',
-    icon: DoneIcon
-  },
-  active: {
-    color: 'success',
-    icon: CheckCircleIcon
-  },
-  approved: {
-    color: 'success',
-    icon: CheckCircleIcon
-  },
-  verified: {
-    color: 'success',
-    icon: CheckCircleIcon
-  },
+  success: { colorScheme: 'green', icon: CheckIcon },
+  completed: { colorScheme: 'green', icon: CheckIcon },
+  active: { colorScheme: 'green', icon: CheckIcon },
+  approved: { colorScheme: 'green', icon: CheckIcon },
+  verified: { colorScheme: 'green', icon: CheckIcon },
+  done: { colorScheme: 'green', icon: CheckIcon },
 
   // Error states
-  error: {
-    color: 'error',
-    icon: ErrorIcon
-  },
-  failed: {
-    color: 'error',
-    icon: ErrorIcon
-  },
-  rejected: {
-    color: 'error',
-    icon: CancelIcon
-  },
-  invalid: {
-    color: 'error',
-    icon: BlockIcon
-  },
+  error: { colorScheme: 'red', icon: WarningIcon },
+  failed: { colorScheme: 'red', icon: WarningIcon },
+  rejected: { colorScheme: 'red', icon: CloseIcon },
+  invalid: { colorScheme: 'red', icon: InfoOutlineIcon },
 
   // Warning states
-  warning: {
-    color: 'warning',
-    icon: WarningIcon
-  },
-  pending: {
-    color: 'warning',
-    icon: PendingIcon
-  },
-  processing: {
-    color: 'warning',
-    icon: ScheduleIcon
-  },
-  draft: {
-    color: 'warning',
-    icon: EditIcon
-  },
+  warning: { colorScheme: 'orange', icon: WarningIcon },
+  pending: { colorScheme: 'orange', icon: TimeIcon },
+  processing: { colorScheme: 'orange', icon: TimeIcon },
+  draft: { colorScheme: 'orange', icon: EditIcon },
 
   // Info states
-  info: {
-    color: 'info',
-    icon: InfoIcon
-  },
-  new: {
-    color: 'info',
-    icon: InfoIcon
-  },
-  inProgress: {
-    color: 'info',
-    icon: ScheduleIcon
-  },
+  info: { colorScheme: 'blue', icon: InfoOutlineIcon },
+  new: { colorScheme: 'blue', icon: InfoOutlineIcon },
+  inProgress: { colorScheme: 'blue', icon: TimeIcon },
 
   // Neutral states
-  default: {
-    color: 'default',
-    icon: InfoIcon
-  },
-  deleted: {
-    color: 'default',
-    icon: DeleteIcon
-  },
-  archived: {
-    color: 'default',
-    icon: ArchiveIcon
-  },
-  restored: {
-    color: 'default',
-    icon: RestoreIcon
-  },
-  locked: {
-    color: 'default',
-    icon: LockIcon
-  },
-  unlocked: {
-    color: 'default',
-    icon: LockOpenIcon
-  }
+  default: { colorScheme: 'gray', icon: InfoOutlineIcon },
+  deleted: { colorScheme: 'gray', icon: DeleteIcon },
+  archived: { colorScheme: 'gray', icon: ViewOffIcon },
+  restored: { colorScheme: 'gray', icon: ViewIcon },
 };
 
 const StatusChip = ({
   status,
   label,
-  size = 'small',
-  variant = 'filled',
+  size = 'md',
+  variant = 'solid',
   showIcon = true,
   tooltip,
   onClick,
   onDelete,
-  sx
+  sx,
 }) => {
-  const config = statusConfig[status.toLowerCase()] || statusConfig.default;
-  const Icon = config.icon;
+  const config = statusConfig[status?.toLowerCase()] || statusConfig.default;
+  const TagIcon = config.icon;
 
-  const chip = (
-    <Chip
-      label={label || status}
-      color={config.color}
+  const tag = (
+    <Tag
       size={size}
+      colorScheme={config.colorScheme}
       variant={variant}
-      icon={showIcon ? <Icon /> : undefined}
       onClick={onClick}
-      onDelete={onDelete}
-      sx={{
-        textTransform: 'capitalize',
-        '& .MuiChip-icon': {
-          color: 'inherit'
-        },
-        ...sx
-      }}
-    />
+      cursor={onClick ? 'pointer' : 'default'}
+      sx={sx}
+      textTransform="capitalize"
+    >
+      {showIcon && <Icon as={TagIcon} mr={label || status ? 2 : 0} />}
+      {label || status}
+      {onDelete && (
+        <CloseIcon
+          ml={2}
+          boxSize={3}
+          cursor="pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+        />
+      )}
+    </Tag>
   );
 
   if (tooltip) {
     return (
-      <Tooltip title={tooltip}>
-        <Box component="span" sx={{ display: 'inline-block' }}>
-          {chip}
+      <Tooltip label={tooltip} hasArrow>
+        <Box as="span" display="inline-block">
+          {tag}
         </Box>
       </Tooltip>
     );
   }
 
-  return chip;
+  return tag;
 };
 
 StatusChip.propTypes = {
   status: PropTypes.string.isRequired,
   label: PropTypes.string,
-  size: PropTypes.oneOf(['small', 'medium']),
-  variant: PropTypes.oneOf(['filled', 'outlined']),
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
+  variant: PropTypes.oneOf(['solid', 'subtle', 'outline']),
   showIcon: PropTypes.bool,
   tooltip: PropTypes.string,
   onClick: PropTypes.func,
   onDelete: PropTypes.func,
-  sx: PropTypes.object
+  sx: PropTypes.object,
 };
 
-export default StatusChip; 
+export default StatusChip;
