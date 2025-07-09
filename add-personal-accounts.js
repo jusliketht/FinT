@@ -157,4 +157,170 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-  }); 
+  });
+
+async function addCompaniesWithAccounts() {
+  console.log('==== Adding Companies with Chart of Accounts ====\n');
+  
+  try {
+    // Get the demo user
+    const user = await prisma.user.findFirst({
+      where: { email: 'demo@fint.com' }
+    });
+    
+    if (!user) {
+      console.log('Demo user not found. Please create a demo user first.');
+      return;
+    }
+    
+    console.log(`Using user: ${user.name}`);
+    
+    // Create multiple companies
+    const companies = [
+      {
+        name: 'Tech Solutions Pvt Ltd',
+        type: 'corporation',
+        description: 'IT consulting and software development company',
+        registrationNumber: 'TECH001',
+        address: '123 Tech Park, Bangalore',
+        phone: '+91-9876543210',
+        email: 'info@techsolutions.com',
+        prefix: 'TECH'
+      },
+      {
+        name: 'Design Studio LLP',
+        type: 'llc',
+        description: 'Creative design and branding agency',
+        registrationNumber: 'DESIGN001',
+        address: '456 Creative Hub, Mumbai',
+        phone: '+91-9876543211',
+        email: 'hello@designstudio.com',
+        prefix: 'DESIGN'
+      },
+      {
+        name: 'Consulting Partners',
+        type: 'partnership',
+        description: 'Business consulting and advisory services',
+        registrationNumber: 'CONS001',
+        address: '789 Business Center, Delhi',
+        phone: '+91-9876543212',
+        email: 'contact@consultingpartners.com',
+        prefix: 'CONS'
+      }
+    ];
+    
+    const createdCompanies = [];
+    
+    for (const companyData of companies) {
+      console.log(`\nCreating company: ${companyData.name}`);
+      
+      // Create the company
+      const company = await prisma.business.create({
+        data: {
+          name: companyData.name,
+          type: companyData.type,
+          description: companyData.description,
+          registrationNumber: companyData.registrationNumber,
+          address: companyData.address,
+          phone: companyData.phone,
+          email: companyData.email,
+          ownerId: user.id,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+      
+      console.log(`✓ Created company: ${company.name} (ID: ${company.id})`);
+      
+      // Create chart of accounts for this company with unique codes
+      const baseAccounts = [
+        // Assets
+        { code: '11100', name: 'Cash in Hand', type: 'asset' },
+        { code: '11200', name: 'Bank Accounts', type: 'asset' },
+        { code: '11210', name: 'HDFC Current Account', type: 'asset' },
+        { code: '11220', name: 'ICICI Savings Account', type: 'asset' },
+        { code: '11300', name: 'Accounts Receivable', type: 'asset' },
+        { code: '11400', name: 'GST Input Credit', type: 'asset' },
+        { code: '12100', name: 'Office Equipment', type: 'asset' },
+        
+        // Liabilities
+        { code: '21100', name: 'Accounts Payable', type: 'liability' },
+        { code: '21200', name: 'GST Payable', type: 'liability' },
+        { code: '21300', name: 'TDS Payable', type: 'liability' },
+        { code: '21400', name: 'Short-Term Loans', type: 'liability' },
+        
+        // Equity
+        { code: '31100', name: 'Owner\'s Capital', type: 'equity' },
+        { code: '31200', name: 'Retained Earnings', type: 'equity' },
+        
+        // Revenue
+        { code: '41100', name: 'Service Revenue', type: 'revenue' },
+        { code: '41110', name: 'Consulting Revenue', type: 'revenue' },
+        { code: '41120', name: 'Project Revenue', type: 'revenue' },
+        { code: '41200', name: 'Interest Income', type: 'revenue' },
+        
+        // Expenses
+        { code: '51100', name: 'Employee Costs', type: 'expense' },
+        { code: '51200', name: 'Rent & Utilities', type: 'expense' },
+        { code: '51300', name: 'Marketing & Business Development', type: 'expense' },
+        { code: '51400', name: 'Professional Fees', type: 'expense' },
+        { code: '51500', name: 'Software & Tools', type: 'expense' },
+        { code: '51600', name: 'Travel & Conveyance', type: 'expense' }
+      ];
+      
+      // Create accounts for this company with unique codes
+      const createdAccounts = [];
+      for (const accountData of baseAccounts) {
+        // Create unique code by adding company prefix
+        const uniqueCode = `${companyData.prefix}${accountData.code}`;
+        
+        const account = await prisma.account.create({
+          data: {
+            code: uniqueCode,
+            name: accountData.name,
+            type: accountData.type,
+            userId: user.id,
+            businessId: company.id,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+        createdAccounts.push(account);
+      }
+      
+      console.log(`✓ Created ${createdAccounts.length} accounts for ${company.name}`);
+      
+      createdCompanies.push({
+        company,
+        accounts: createdAccounts
+      });
+    }
+    
+    // Summary
+    console.log('\n==== Summary ====');
+    console.log(`Created ${createdCompanies.length} companies:`);
+    createdCompanies.forEach(({ company, accounts }) => {
+      console.log(`\n${company.name} (${company.type}):`);
+      console.log(`  - Registration: ${company.registrationNumber}`);
+      console.log(`  - Accounts: ${accounts.length}`);
+      console.log(`  - Email: ${company.email}`);
+      console.log(`  - Sample accounts:`);
+      accounts.slice(0, 5).forEach(acc => {
+        console.log(`    * ${acc.code} - ${acc.name}`);
+      });
+    });
+    
+    // Now we can create journal entries for these companies
+    console.log('\n==== Ready for Journal Entries ====');
+    console.log('You can now create journal entries for these companies using their businessId.');
+    console.log('Personal entries: businessId = null');
+    console.log('Company entries: businessId = <company.id>');
+    
+  } catch (error) {
+    console.error('Error creating companies:', error);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+addCompaniesWithAccounts(); 
