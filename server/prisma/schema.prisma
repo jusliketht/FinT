@@ -28,6 +28,21 @@ model User {
   OwnedBusinesses  Business[]     @relation("BusinessOwner")
   CreditCards      CreditCard[]
   CreditCardTransactions CreditCardTransaction[]
+  MappingRule      MappingRule[]
+}
+
+model MappingRule {
+  id          String   @id @default(cuid())
+  userId      String
+  keyword     String   // The keyword to look for in the transaction description
+  accountId   String   // The ID of the account to map to
+  account     Account  @relation(fields: [accountId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([accountId])
 }
 
 // Account Head Category (Asset, Liability, Income, Expense, Equity)
@@ -202,6 +217,7 @@ model Account {
   Business      Business?      @relation(fields: [businessId], references: [id])
   creditEntries JournalEntry[] @relation("CreditAccount")
   debitEntries  JournalEntry[] @relation("DebitAccount")
+  MappingRule   MappingRule[]
 
   @@index([code])
   @@index([type])
@@ -313,4 +329,4 @@ model CreditCardTransaction {
   @@index([date])
   @@index([type])
   @@index([category])
-} 
+}

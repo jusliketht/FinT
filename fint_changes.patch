@@ -1,0 +1,1355 @@
+diff --git a/package-lock.json b/package-lock.json
+index 023b3b3..efb08c9 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -6032,9 +6032,9 @@
+       }
+     },
+     "node_modules/@prisma/client": {
+-      "version": "6.10.1",
+-      "resolved": "https://registry.npmjs.org/@prisma/client/-/client-6.10.1.tgz",
+-      "integrity": "sha512-Re4pMlcUsQsUTAYMK7EJ4Bw2kg3WfZAAlr8GjORJaK4VOP6LxRQUQ1TuLnxcF42XqGkWQ36q5CQF1yVadANQ6w==",
++      "version": "6.12.0",
++      "resolved": "https://registry.npmjs.org/@prisma/client/-/client-6.12.0.tgz",
++      "integrity": "sha512-wn98bJ3Cj6edlF4jjpgXwbnQIo/fQLqqQHPk2POrZPxTlhY3+n90SSIF3LMRVa8VzRFC/Gec3YKJRxRu+AIGVA==",
+       "hasInstallScript": true,
+       "license": "Apache-2.0",
+       "engines": {
+@@ -6054,9 +6054,9 @@
+       }
+     },
+     "node_modules/@prisma/config": {
+-      "version": "6.10.1",
+-      "resolved": "https://registry.npmjs.org/@prisma/config/-/config-6.10.1.tgz",
+-      "integrity": "sha512-kz4/bnqrOrzWo8KzYguN0cden4CzLJJ+2VSpKtF8utHS3l1JS0Lhv6BLwpOX6X9yNreTbZQZwewb+/BMPDCIYQ==",
++      "version": "6.12.0",
++      "resolved": "https://registry.npmjs.org/@prisma/config/-/config-6.12.0.tgz",
++      "integrity": "sha512-HovZWzhWEMedHxmjefQBRZa40P81N7/+74khKFz9e1AFjakcIQdXgMWKgt20HaACzY+d1LRBC+L4tiz71t9fkg==",
+       "devOptional": true,
+       "license": "Apache-2.0",
+       "dependencies": {
+@@ -6064,53 +6064,53 @@
+       }
+     },
+     "node_modules/@prisma/debug": {
+-      "version": "6.10.1",
+-      "resolved": "https://registry.npmjs.org/@prisma/debug/-/debug-6.10.1.tgz",
+-      "integrity": "sha512-k2YT53cWxv9OLjW4zSYTZ6Z7j0gPfCzcr2Mj99qsuvlxr8WAKSZ2NcSR0zLf/mP4oxnYG842IMj3utTgcd7CaA==",
++      "version": "6.12.0",
++      "resolved": "https://registry.npmjs.org/@prisma/debug/-/debug-6.12.0.tgz",
++      "integrity": "sha512-plbz6z72orcqr0eeio7zgUrZj5EudZUpAeWkFTA/DDdXEj28YHDXuiakvR6S7sD6tZi+jiwQEJAPeV6J6m/tEQ==",
+       "devOptional": true,
+       "license": "Apache-2.0"
+     },
+     "node_modules/@prisma/engines": {
+-      "version": "6.10.1",
+-      "resolved": "https://registry.npmjs.org/@prisma/engines/-/engines-6.10.1.tgz",
+-      "integrity": "sha512-Q07P5rS2iPwk2IQr/rUQJ42tHjpPyFcbiH7PXZlV81Ryr9NYIgdxcUrwgVOWVm5T7ap02C0dNd1dpnNcSWig8A==",
++      "version": "6.12.0",
++      "resolved": "https://registry.npmjs.org/@prisma/engines/-/engines-6.12.0.tgz",
++      "integrity": "sha512-4BRZZUaAuB4p0XhTauxelvFs7IllhPmNLvmla0bO1nkECs8n/o1pUvAVbQ/VOrZR5DnF4HED0PrGai+rIOVePA==",
+       "devOptional": true,
+       "hasInstallScript": true,
+       "license": "Apache-2.0",
+       "dependencies": {
+-        "@prisma/debug": "6.10.1",
+-        "@prisma/engines-version": "6.10.1-1.9b628578b3b7cae625e8c927178f15a170e74a9c",
+-        "@prisma/fetch-engine": "6.10.1",
+-        "@prisma/get-platform": "6.10.1"
++        "@prisma/debug": "6.12.0",
++        "@prisma/engines-version": "6.12.0-15.8047c96bbd92db98a2abc7c9323ce77c02c89dbc",
++        "@prisma/fetch-engine": "6.12.0",
++        "@prisma/get-platform": "6.12.0"
+       }
+     },
+     "node_modules/@prisma/engines-version": {
+-      "version": "6.10.1-1.9b628578b3b7cae625e8c927178f15a170e74a9c",
+-      "resolved": "https://registry.npmjs.org/@prisma/engines-version/-/engines-version-6.10.1-1.9b628578b3b7cae625e8c927178f15a170e74a9c.tgz",
+-      "integrity": "sha512-ZJFTsEqapiTYVzXya6TUKYDFnSWCNegfUiG5ik9fleQva5Sk3DNyyUi7X1+0ZxWFHwHDr6BZV5Vm+iwP+LlciA==",
++      "version": "6.12.0-15.8047c96bbd92db98a2abc7c9323ce77c02c89dbc",
++      "resolved": "https://registry.npmjs.org/@prisma/engines-version/-/engines-version-6.12.0-15.8047c96bbd92db98a2abc7c9323ce77c02c89dbc.tgz",
++      "integrity": "sha512-70vhecxBJlRr06VfahDzk9ow4k1HIaSfVUT3X0/kZoHCMl9zbabut4gEXAyzJZxaCGi5igAA7SyyfBI//mmkbQ==",
+       "devOptional": true,
+       "license": "Apache-2.0"
+     },
+     "node_modules/@prisma/fetch-engine": {
+-      "version": "6.10.1",
+-      "resolved": "https://registry.npmjs.org/@prisma/fetch-engine/-/fetch-engine-6.10.1.tgz",
+-      "integrity": "sha512-clmbG/Jgmrc/n6Y77QcBmAUlq9LrwI9Dbgy4pq5jeEARBpRCWJDJ7PWW1P8p0LfFU0i5fsyO7FqRzRB8mkdS4g==",
++      "version": "6.12.0",
++      "resolved": "https://registry.npmjs.org/@prisma/fetch-engine/-/fetch-engine-6.12.0.tgz",
++      "integrity": "sha512-EamoiwrK46rpWaEbLX9aqKDPOd8IyLnZAkiYXFNuq0YsU0Z8K09/rH8S7feOWAVJ3xzeSgcEJtBlVDrajM9Sag==",
+       "devOptional": true,
+       "license": "Apache-2.0",
+       "dependencies": {
+-        "@prisma/debug": "6.10.1",
+-        "@prisma/engines-version": "6.10.1-1.9b628578b3b7cae625e8c927178f15a170e74a9c",
+-        "@prisma/get-platform": "6.10.1"
++        "@prisma/debug": "6.12.0",
++        "@prisma/engines-version": "6.12.0-15.8047c96bbd92db98a2abc7c9323ce77c02c89dbc",
++        "@prisma/get-platform": "6.12.0"
+       }
+     },
+     "node_modules/@prisma/get-platform": {
+-      "version": "6.10.1",
+-      "resolved": "https://registry.npmjs.org/@prisma/get-platform/-/get-platform-6.10.1.tgz",
+-      "integrity": "sha512-4CY5ndKylcsce9Mv+VWp5obbR2/86SHOLVV053pwIkhVtT9C9A83yqiqI/5kJM9T1v1u1qco/bYjDKycmei9HA==",
++      "version": "6.12.0",
++      "resolved": "https://registry.npmjs.org/@prisma/get-platform/-/get-platform-6.12.0.tgz",
++      "integrity": "sha512-nRerTGhTlgyvcBlyWgt8OLNIV7QgJS2XYXMJD1hysorMCuLAjuDDuoxmVt7C2nLxbuxbWPp7OuFRHC23HqD9dA==",
+       "devOptional": true,
+       "license": "Apache-2.0",
+       "dependencies": {
+-        "@prisma/debug": "6.10.1"
++        "@prisma/debug": "6.12.0"
+       }
+     },
+     "node_modules/@reduxjs/toolkit": {
+@@ -21288,15 +21288,15 @@
+       "license": "MIT"
+     },
+     "node_modules/prisma": {
+-      "version": "6.10.1",
+-      "resolved": "https://registry.npmjs.org/prisma/-/prisma-6.10.1.tgz",
+-      "integrity": "sha512-khhlC/G49E4+uyA3T3H5PRBut486HD2bDqE2+rvkU0pwk9IAqGFacLFUyIx9Uw+W2eCtf6XGwsp+/strUwMNPw==",
++      "version": "6.12.0",
++      "resolved": "https://registry.npmjs.org/prisma/-/prisma-6.12.0.tgz",
++      "integrity": "sha512-pmV7NEqQej9WjizN6RSNIwf7Y+jeh9mY1JEX2WjGxJi4YZWexClhde1yz/FuvAM+cTwzchcMytu2m4I6wPkIzg==",
+       "devOptional": true,
+       "hasInstallScript": true,
+       "license": "Apache-2.0",
+       "dependencies": {
+-        "@prisma/config": "6.10.1",
+-        "@prisma/engines": "6.10.1"
++        "@prisma/config": "6.12.0",
++        "@prisma/engines": "6.12.0"
+       },
+       "bin": {
+         "prisma": "build/index.js"
+@@ -28765,7 +28765,7 @@
+         "@nestjs/passport": "^10.0.3",
+         "@nestjs/platform-express": "^10.0.0",
+         "@nestjs/swagger": "^7.1.17",
+-        "@prisma/client": "^6.7.0",
++        "@prisma/client": "^6.12.0",
+         "@types/bcryptjs": "^3.0.0",
+         "@types/uuid": "^10.0.0",
+         "bcrypt": "^5.1.1",
+@@ -28807,7 +28807,7 @@
+         "eslint-plugin-prettier": "^5.0.0",
+         "jest": "^29.5.0",
+         "prettier": "^3.0.0",
+-        "prisma": "^6.7.0",
++        "prisma": "^6.12.0",
+         "rimraf": "^5.0.5",
+         "source-map-support": "^0.5.21",
+         "supertest": "^6.3.3",
+diff --git a/server/package.json b/server/package.json
+index 0347bc6..f7fc9fe 100644
+--- a/server/package.json
++++ b/server/package.json
+@@ -39,7 +39,7 @@
+     "@nestjs/passport": "^10.0.3",
+     "@nestjs/platform-express": "^10.0.0",
+     "@nestjs/swagger": "^7.1.17",
+-    "@prisma/client": "^6.7.0",
++    "@prisma/client": "^6.12.0",
+     "@types/bcryptjs": "^3.0.0",
+     "@types/uuid": "^10.0.0",
+     "bcrypt": "^5.1.1",
+@@ -81,7 +81,7 @@
+     "eslint-plugin-prettier": "^5.0.0",
+     "jest": "^29.5.0",
+     "prettier": "^3.0.0",
+-    "prisma": "^6.7.0",
++    "prisma": "^6.12.0",
+     "rimraf": "^5.0.5",
+     "source-map-support": "^0.5.21",
+     "supertest": "^6.3.3",
+diff --git a/server/prisma/schema.prisma b/server/prisma/schema.prisma
+index 950b01e..608d232 100644
+--- a/server/prisma/schema.prisma
++++ b/server/prisma/schema.prisma
+@@ -28,6 +28,21 @@ model User {
+   OwnedBusinesses  Business[]     @relation("BusinessOwner")
+   CreditCards      CreditCard[]
+   CreditCardTransactions CreditCardTransaction[]
++  MappingRule      MappingRule[]
++}
++
++model MappingRule {
++  id          String   @id @default(cuid())
++  userId      String
++  keyword     String   // The keyword to look for in the transaction description
++  accountId   String   // The ID of the account to map to
++  account     Account  @relation(fields: [accountId], references: [id])
++  user        User     @relation(fields: [userId], references: [id])
++  createdAt   DateTime @default(now())
++  updatedAt   DateTime @updatedAt
++
++  @@index([userId])
++  @@index([accountId])
+ }
+ 
+ // Account Head Category (Asset, Liability, Income, Expense, Equity)
+@@ -202,6 +217,7 @@ model Account {
+   Business      Business?      @relation(fields: [businessId], references: [id])
+   creditEntries JournalEntry[] @relation("CreditAccount")
+   debitEntries  JournalEntry[] @relation("DebitAccount")
++  MappingRule   MappingRule[]
+ 
+   @@index([code])
+   @@index([type])
+@@ -313,4 +329,5 @@ model CreditCardTransaction {
+   @@index([date])
+   @@index([type])
+   @@index([category])
+-} 
+\ No newline at end of file
++}
++
+diff --git a/server/src/accounting/accounting.module.ts b/server/src/accounting/accounting.module.ts
+index cc6df2d..b07d1e4 100644
+--- a/server/src/accounting/accounting.module.ts
++++ b/server/src/accounting/accounting.module.ts
+@@ -7,6 +7,7 @@ import { AccountsService } from './services/accounts.service';
+ import { JournalEntriesService } from './services/journal-entries.service';
+ import { ReportsService } from './services/reports.service';
+ import { ReconciliationService } from './services/reconciliation.service';
++import { AccountMappingService } from './services/account-mapping.service';
+ 
+ @Module({
+   controllers: [
+@@ -20,12 +21,14 @@ import { ReconciliationService } from './services/reconciliation.service';
+     JournalEntriesService,
+     ReportsService,
+     ReconciliationService,
++    AccountMappingService,
+   ],
+   exports: [
+     AccountsService,
+     JournalEntriesService,
+     ReportsService,
+     ReconciliationService,
++    AccountMappingService,
+   ],
+ })
+ export class AccountingModule {} 
+\ No newline at end of file
+diff --git a/server/src/accounting/services/account-mapping.service.ts b/server/src/accounting/services/account-mapping.service.ts
+new file mode 100644
+index 0000000..66f8f40
+--- /dev/null
++++ b/server/src/accounting/services/account-mapping.service.ts
+@@ -0,0 +1,63 @@
++import { Injectable } from '@nestjs/common';
++import { PrismaClient } from '@prisma/client';
++import { Transaction } from '../../pdf-statement/pdf-statement.service';
++
++const prisma = new PrismaClient();
++
++export interface MappingRule {
++  id: string;
++  userId: string;
++  keyword: string;
++  accountId: string;
++  createdAt: Date;
++  updatedAt: Date;
++}
++
++export interface CreateMappingRuleDto {
++  keyword: string;
++  accountId: string;
++}
++
++@Injectable()
++export class AccountMappingService {
++  async getAccountForTransaction(transaction: Transaction, userId: string): Promise<string> {
++    const rules = await prisma.mappingRule.findMany({
++      where: { userId },
++      orderBy: { createdAt: 'desc' }, // Prioritize newer rules
++    });
++
++    for (const rule of rules) {
++      if (transaction.description.toLowerCase().includes(rule.keyword.toLowerCase())) {
++        return rule.accountId;
++      }
++    }
++
++    // Default to a generic expense account if no rule matches
++    // In a real application, this might be a user-configurable default or trigger a manual review.
++    return 'default-uncategorized-expense-account-id';
++  }
++
++  async createMappingRule(createMappingRuleDto: CreateMappingRuleDto, userId: string): Promise<MappingRule> {
++    return prisma.mappingRule.create({
++      data: {
++        userId,
++        keyword: createMappingRuleDto.keyword,
++        accountId: createMappingRuleDto.accountId,
++      },
++    });
++  }
++
++  async getMappingRules(userId: string): Promise<MappingRule[]> {
++    return prisma.mappingRule.findMany({
++      where: { userId },
++    });
++  }
++
++  async deleteMappingRule(id: string, userId: string): Promise<void> {
++    await prisma.mappingRule.deleteMany({
++      where: { id, userId },
++    });
++  }
++}
++
++
+diff --git a/server/src/pdf-statement/pdf-statement.controller.ts b/server/src/pdf-statement/pdf-statement.controller.ts
+index 19013d4..97ea615 100644
+--- a/server/src/pdf-statement/pdf-statement.controller.ts
++++ b/server/src/pdf-statement/pdf-statement.controller.ts
+@@ -113,6 +113,7 @@ export class PdfStatementController {
+       const result = await this.pdfStatementService.processBankStatement(
+         file,
+         body.bankType,
++        request.user.id, // Assuming userId is available on request.user.id after JwtAuthGuard
+         body.password,
+       );
+ 
+@@ -160,6 +161,7 @@ export class PdfStatementController {
+           const result = await this.pdfStatementService.processBankStatement(
+             file,
+             body.bankType,
++            request.user.id, // Assuming userId is available on request.user.id after JwtAuthGuard
+             body.password,
+           );
+ 
+diff --git a/server/src/pdf-statement/pdf-statement.service.ts b/server/src/pdf-statement/pdf-statement.service.ts
+index b76a3d2..81d14b1 100644
+--- a/server/src/pdf-statement/pdf-statement.service.ts
++++ b/server/src/pdf-statement/pdf-statement.service.ts
+@@ -5,6 +5,8 @@ import { HdfcProcessor } from './processors/hdfc-processor';
+ import { IciciProcessor } from './processors/icici-processor';
+ import { SbiProcessor } from './processors/sbi-processor';
+ import { GenericProcessor } from './processors/generic-processor';
++import { BaseProcessor } from './processors/base-processor';
++import { AccountMappingService } from '../accounting/services/account-mapping.service';
+ 
+ export interface Transaction {
+   date: Date;
+@@ -36,6 +38,8 @@ export class PdfStatementService {
+     generic: new GenericProcessor(),
+   };
+ 
++  constructor(private readonly accountMappingService: AccountMappingService) {}
++
+   /**
+    * Extract text from PDF file using OCR if needed
+    */
+@@ -84,6 +88,7 @@ export class PdfStatementService {
+   async processBankStatement(
+     file: any, // Express.Multer.File type
+     bankType: string,
++    userId: string,
+     password?: string
+   ): Promise<ProcessingResult> {
+     try {
+@@ -111,7 +116,7 @@ export class PdfStatementService {
+       }
+ 
+       // Generate journal entries
+-      const journalEntries = await this.generateJournalEntries(transactions);
++      const journalEntries = await this.generateJournalEntries(transactions, userId);
+ 
+       // Calculate summary
+       const totalAmount = transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+@@ -145,7 +150,7 @@ export class PdfStatementService {
+   /**
+    * Generate journal entries from transactions
+    */
+-  async generateJournalEntries(transactions: Transaction[]): Promise<any[]> {
++  async generateJournalEntries(transactions: Transaction[], userId: string): Promise<any[]> {
+     const journalEntries = [];
+ 
+     for (const transaction of transactions) {
+@@ -156,7 +161,7 @@ export class PdfStatementService {
+           description: transaction.description,
+           items: [
+             {
+-              accountId: this.getAccountIdForTransaction(transaction),
++              accountId: await this.getAccountIdForTransaction(transaction, userId),
+               debitAmount: transaction.type === 'debit' ? transaction.amount : 0,
+               creditAmount: transaction.type === 'credit' ? transaction.amount : 0,
+               description: transaction.description,
+@@ -180,12 +185,10 @@ export class PdfStatementService {
+   }
+ 
+   /**
+-   * Get account ID for transaction (placeholder - needs proper implementation)
++   * Get account ID for transaction using AccountMappingService
+    */
+-  private getAccountIdForTransaction(transaction: Transaction): string {
+-    // This should be implemented with proper account mapping logic
+-    // For now, return a placeholder
+-    return 'default-expense-account-id';
++  private async getAccountIdForTransaction(transaction: Transaction, userId: string): Promise<string> {
++    return this.accountMappingService.getAccountForTransaction(transaction, userId);
+   }
+ 
+   /**
+diff --git a/server/src/pdf-statement/processors/base-processor.ts b/server/src/pdf-statement/processors/base-processor.ts
+new file mode 100644
+index 0000000..843ebd6
+--- /dev/null
++++ b/server/src/pdf-statement/processors/base-processor.ts
+@@ -0,0 +1,78 @@
++import { Transaction } from '../pdf-statement.service';
++
++export abstract class BaseProcessor {
++  protected readonly datePatterns: RegExp[] = [
++    /\b\d{1,2}\/\d{1,2}\/\d{4}\b/g, // DD/MM/YYYY or D/M/YYYY
++    /\b\d{1,2}-\d{1,2}-\d{4}\b/g, // DD-MM-YYYY or D-M-YYYY
++    /\b\d{4}-\d{1,2}-\d{1,2}\b/g, // YYYY-MM-DD
++    /\b\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}\b/gi, // DD Mon YYYY
++    /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}\b/gi, // Mon DD, YYYY
++  ];
++
++  protected readonly amountPatterns: RegExp[] = [
++    /\b\d{1,3}(?:,\d{3})*\.\d{2}\b/g, // e.g., 1,234.56
++    /\b\d+\.\d{2}\b/g, // e.g., 123.45
++  ];
++
++  protected readonly creditIndicators: string[] = ['CR', 'CREDIT', 'DEPOSIT', 'DEP'];
++  protected readonly debitIndicators: string[] = ['DR', 'DEBIT', 'WITHDRAWAL', 'WDL'];
++
++  abstract extractTransactions(text: string): Promise<Transaction[]>;
++
++  protected parseDate(dateString: string): Date | null {
++    const monthMap: { [key: string]: number } = {
++      'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
++      'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
++    };
++
++    // Handle DD Mon YYYY format
++    let match = dateString.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})/i);
++    if (match) {
++      const [, day, month, year] = match;
++      return new Date(parseInt(year), monthMap[month.toLowerCase()], parseInt(day));
++    }
++
++    // Handle Mon DD, YYYY format
++    match = dateString.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s+(\d{4})/i);
++    if (match) {
++      const [, month, day, year] = match;
++      return new Date(parseInt(year), monthMap[month.toLowerCase()], parseInt(day));
++    }
++
++    // Attempt to parse with Date constructor for other formats (DD/MM/YYYY, YYYY-MM-DD, etc.)
++    const date = new Date(dateString);
++    if (!isNaN(date.getTime())) {
++      return date;
++    }
++
++    return null;
++  }
++
++  protected parseAmount(amountString: string): number | null {
++    const cleanedAmount = amountString.replace(/,/g, ''); // Remove commas
++    const amount = parseFloat(cleanedAmount);
++    return isNaN(amount) ? null : amount;
++  }
++
++  protected determineTransactionType(line: string): 'credit' | 'debit' {
++    const lowerLine = line.toLowerCase();
++
++    if (this.creditIndicators.some(indicator => lowerLine.includes(indicator.toLowerCase()))) {
++      return 'credit';
++    }
++    if (this.debitIndicators.some(indicator => lowerLine.includes(indicator.toLowerCase()))) {
++      return 'debit';
++    }
++    // Default to debit if no clear indicator, or implement more sophisticated logic
++    return 'debit';
++  }
++
++  protected cleanDescription(description: string): string {
++    return description
++      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
++      .replace(/[^\w\s\-\.\/]/g, '') // Allow alphanumeric, spaces, hyphens, dots, and forward slashes
++      .trim();
++  }
++}
++
++
+diff --git a/server/src/pdf-statement/processors/generic-processor.ts b/server/src/pdf-statement/processors/generic-processor.ts
+index 0d4fd35..9d37884 100644
+--- a/server/src/pdf-statement/processors/generic-processor.ts
++++ b/server/src/pdf-statement/processors/generic-processor.ts
+@@ -1,240 +1,67 @@
+ import { Transaction } from '../pdf-statement.service';
++import { BaseProcessor } from './base-processor';
+ 
+-export class GenericProcessor {
+-  private readonly datePatterns = [
+-    /(\d{2})\/(\d{2})\/(\d{4})/g, // DD/MM/YYYY
+-    /(\d{2})-(\w{3})-(\d{4})/g,  // DD-MMM-YYYY
+-    /(\d{4})-(\d{2})-(\d{2})/g,  // YYYY-MM-DD
+-  ];
+-  private readonly amountPattern = /([\d,]+\.\d{2})/g;
+-
+-  /**
+-   * Extract transactions from generic bank statement text
+-   */
++export class GenericProcessor extends BaseProcessor {
+   async extractTransactions(text: string): Promise<Transaction[]> {
+     const transactions: Transaction[] = [];
+-    const lines = text.split('\n');
+-
+-    for (const line of lines) {
+-      try {
+-        const transaction = this.parseTransactionLine(line);
+-        if (transaction) {
+-          transactions.push(transaction);
+-        }
+-      } catch (error) {
+-        // Skip lines that can't be parsed
+-        continue;
+-      }
+-    }
++    const lines = text.split('\n').filter(line => line.trim() !== '');
+ 
+-    return transactions;
+-  }
+-
+-  /**
+-   * Parse a single transaction line using generic patterns
+-   */
+-  private parseTransactionLine(line: string): Transaction | null {
+-    // Skip empty lines and headers
+-    if (!line.trim() || this.isHeaderLine(line)) {
+-      return null;
+-    }
+-
+-    try {
+-      // Try to find a date in the line
+-      const date = this.extractDate(line);
+-      if (!date) {
+-        return null;
+-      }
++    let currentTransaction: Partial<Transaction> = {};
+ 
+-      // Try to find an amount in the line
+-      const amount = this.extractAmount(line);
+-      if (!amount) {
+-        return null;
+-      }
+-
+-      // Extract description (everything between date and amount)
+-      const description = this.extractDescription(line, date, amount);
+-
+-      // Determine transaction type
+-      const type = this.determineTransactionType(line, amount);
+-
+-      return {
+-        date,
+-        description: this.cleanDescription(description),
+-        amount: Math.abs(amount),
+-        type,
+-        reference: `GEN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+-      };
+-    } catch (error) {
+-      return null;
+-    }
+-  }
++    for (const line of lines) {
++      const dateMatch = this.datePatterns.map(pattern => line.match(pattern)).find(match => match);
++      const amountMatch = this.amountPatterns.map(pattern => line.match(pattern)).find(match => match);
+ 
+-  /**
+-   * Extract date from line using multiple patterns
+-   */
+-  private extractDate(line: string): Date | null {
+-    for (const pattern of this.datePatterns) {
+-      const match = line.match(pattern);
+-      if (match) {
+-        try {
+-          if (pattern.source.includes('MMM')) {
+-            // DD-MMM-YYYY format
+-            const [, day, month, year] = match;
+-            return this.parseDateWithMonth(day, month, year);
+-          } else if (pattern.source.includes('YYYY-MM-DD')) {
+-            // YYYY-MM-DD format
+-            const [, year, month, day] = match;
+-            return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+-          } else {
+-            // DD/MM/YYYY format
+-            const [, day, month, year] = match;
+-            return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+-          }
+-        } catch (error) {
+-          continue;
++      if (dateMatch && amountMatch) {
++        // New transaction line
++        if (currentTransaction.date && currentTransaction.amount && currentTransaction.description) {
++          transactions.push(this.finalizeTransaction(currentTransaction as Transaction));
+         }
++        currentTransaction = {};
++        currentTransaction.date = this.parseDate(dateMatch[0]);
++        currentTransaction.amount = this.parseAmount(amountMatch[0]);
++        currentTransaction.description = this.extractDescriptionFromLine(line, dateMatch[0], amountMatch[0]);
++        currentTransaction.type = this.determineTransactionType(line);
++      } else if (currentTransaction.description) {
++        // Append to previous transaction's description if it seems related
++        currentTransaction.description += ' ' + line.trim();
+       }
+     }
+-    return null;
+-  }
+ 
+-  /**
+-   * Parse date with month name
+-   */
+-  private parseDateWithMonth(day: string, month: string, year: string): Date {
+-    const monthMap: { [key: string]: number } = {
+-      'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+-      'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+-    };
+-
+-    const monthIndex = monthMap[month.toLowerCase()];
+-    if (monthIndex === undefined) {
+-      throw new Error(`Invalid month: ${month}`);
++    // Add the last transaction if it exists
++    if (currentTransaction.date && currentTransaction.amount && currentTransaction.description) {
++      transactions.push(this.finalizeTransaction(currentTransaction as Transaction));
+     }
+ 
+-    return new Date(parseInt(year), monthIndex, parseInt(day));
+-  }
+-
+-  /**
+-   * Extract amount from line
+-   */
+-  private extractAmount(line: string): number | null {
+-    const match = line.match(this.amountPattern);
+-    if (match) {
+-      return parseFloat(match[1].replace(/,/g, ''));
+-    }
+-    return null;
++    return transactions;
+   }
+ 
+-  /**
+-   * Extract description from line
+-   */
+-  private extractDescription(line: string, date: Date, amount: number): string {
+-    // Find the date string in the line
+-    const dateStr = this.findDateString(line, date);
+-    if (!dateStr) {
+-      return line.trim();
+-    }
+-
+-    // Find the amount string in the line
+-    const amountStr = amount.toFixed(2);
+-    
+-    // Extract text between date and amount
++  private extractDescriptionFromLine(line: string, dateStr: string, amountStr: string): string {
++    let description = line;
+     const dateIndex = line.indexOf(dateStr);
+     const amountIndex = line.lastIndexOf(amountStr);
+-    
+-    if (dateIndex !== -1 && amountIndex !== -1) {
+-      const startIndex = dateIndex + dateStr.length;
+-      const endIndex = amountIndex;
+-      return line.substring(startIndex, endIndex).trim();
+-    }
+-
+-    return line.trim();
+-  }
+ 
+-  /**
+-   * Find the date string in the line
+-   */
+-  private findDateString(line: string, date: Date): string | null {
+-    const day = date.getDate().toString().padStart(2, '0');
+-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+-    const year = date.getFullYear().toString();
+-
+-    // Try different formats
+-    const formats = [
+-      `${day}/${month}/${year}`,
+-      `${day}-${this.getMonthName(date.getMonth())}-${year}`,
+-      `${year}-${month}-${day}`,
+-    ];
+-
+-    for (const format of formats) {
+-      if (line.includes(format)) {
+-        return format;
++    if (dateIndex !== -1 && amountIndex !== -1) {
++      if (dateIndex < amountIndex) {
++        description = line.substring(dateIndex + dateStr.length, amountIndex).trim();
++      } else {
++        // Amount appears before date, take text before amount or after date
++        description = line.substring(0, amountIndex).trim() + ' ' + line.substring(dateIndex + dateStr.length).trim();
+       }
++    } else if (dateIndex !== -1) {
++      description = line.substring(dateIndex + dateStr.length).trim();
++    } else if (amountIndex !== -1) {
++      description = line.substring(0, amountIndex).trim();
+     }
+ 
+-    return null;
++    return this.cleanDescription(description);
+   }
+ 
+-  /**
+-   * Get month name
+-   */
+-  private getMonthName(monthIndex: number): string {
+-    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+-    return months[monthIndex];
+-  }
+-
+-  /**
+-   * Determine if line is a header
+-   */
+-  private isHeaderLine(line: string): boolean {
+-    const headerKeywords = [
+-      'date',
+-      'description',
+-      'amount',
+-      'balance',
+-      'particulars',
+-      'narration',
+-      'debit',
+-      'credit',
+-      'transaction',
+-      'details',
+-      'bank',
+-      'statement',
+-    ];
+-
+-    const lowerLine = line.toLowerCase();
+-    return headerKeywords.some(keyword => lowerLine.includes(keyword));
+-  }
+-
+-  /**
+-   * Determine transaction type (credit/debit)
+-   */
+-  private determineTransactionType(line: string, amount: number): 'credit' | 'debit' {
+-    const lowerLine = line.toLowerCase();
+-    
+-    // Look for credit indicators
+-    if (lowerLine.includes('cr') || lowerLine.includes('credit') || lowerLine.includes('deposit')) {
+-      return 'credit';
+-    }
+-    
+-    // Look for debit indicators
+-    if (lowerLine.includes('dr') || lowerLine.includes('debit') || lowerLine.includes('withdrawal')) {
+-      return 'debit';
+-    }
+-
+-    // Default based on amount position or other heuristics
+-    return amount > 0 ? 'credit' : 'debit';
+-  }
+-
+-  /**
+-   * Clean and normalize description
+-   */
+-  private cleanDescription(description: string): string {
+-    return description
+-      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+-      .replace(/[^\w\s\-\.]/g, '') // Remove special characters except spaces, hyphens, and dots
+-      .trim();
++  private finalizeTransaction(transaction: Transaction): Transaction {
++    return {
++      ...transaction,
++      amount: Math.abs(transaction.amount),
++      reference: `GEN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
++    };
+   }
+-} 
+\ No newline at end of file
++}
+\ No newline at end of file
+diff --git a/server/src/pdf-statement/processors/hdfc-processor.ts b/server/src/pdf-statement/processors/hdfc-processor.ts
+index df2cce9..2772224 100644
+--- a/server/src/pdf-statement/processors/hdfc-processor.ts
++++ b/server/src/pdf-statement/processors/hdfc-processor.ts
+@@ -1,132 +1,56 @@
+ import { Transaction } from '../pdf-statement.service';
++import { BaseProcessor } from './base-processor';
+ 
+-export class HdfcProcessor {
+-  private readonly transactionPattern = /\d{2}\/\d{2}\/\d{4}\s+([^\s]+(?:\s+[^\s]+)*?)\s+([\d,]+\.\d{2})/g;
+-  private readonly datePattern = /(\d{2})\/(\d{2})\/(\d{4})/;
+-  private readonly amountPattern = /([\d,]+\.\d{2})/;
++export class HdfcProcessor extends BaseProcessor {
++  private readonly hdfcDatePattern = /(\d{2}\/\d{2}\/\d{4})/; // DD/MM/YYYY
++  private readonly hdfcAmountPattern = /([\d,]+\.\d{2})/; // Amount pattern
+ 
+-  /**
+-   * Extract transactions from HDFC bank statement text
+-   */
+   async extractTransactions(text: string): Promise<Transaction[]> {
+     const transactions: Transaction[] = [];
+-    const lines = text.split('\n');
++    const lines = text.split('\n').filter(line => line.trim() !== '');
+ 
+     for (const line of lines) {
+-      try {
+-        const transaction = this.parseTransactionLine(line);
+-        if (transaction) {
+-          transactions.push(transaction);
+-        }
+-      } catch (error) {
+-        // Skip lines that can't be parsed
+-        continue;
++      const transaction = this.parseHdfcLine(line);
++      if (transaction) {
++        transactions.push(transaction);
+       }
+     }
+ 
+     return transactions;
+   }
+ 
+-  /**
+-   * Parse a single transaction line
+-   */
+-  private parseTransactionLine(line: string): Transaction | null {
+-    // Skip empty lines and headers
+-    if (!line.trim() || this.isHeaderLine(line)) {
+-      return null;
+-    }
+-
+-    // Try to match the transaction pattern
+-    const match = line.match(this.transactionPattern);
+-    if (!match) {
+-      return null;
+-    }
+-
+-    try {
+-      // Extract date
+-      const dateMatch = line.match(this.datePattern);
+-      if (!dateMatch) {
+-        return null;
+-      }
+-
+-      const [, day, month, year] = dateMatch;
+-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
++  private parseHdfcLine(line: string): Transaction | null {
++    const dateMatch = line.match(this.hdfcDatePattern);
++    if (!dateMatch) return null;
+ 
+-      // Extract description (everything between date and amount)
+-      const dateEndIndex = line.indexOf(`${day}/${month}/${year}`) + `${day}/${month}/${year}`.length;
+-      const amountMatch = line.match(this.amountPattern);
+-      if (!amountMatch) {
+-        return null;
+-      }
++    const date = this.parseDate(dateMatch[1]);
++    if (!date) return null;
+ 
+-      const amountStartIndex = line.lastIndexOf(amountMatch[1]);
+-      const description = line.substring(dateEndIndex, amountStartIndex).trim();
++    const amountMatch = line.match(this.hdfcAmountPattern);
++    if (!amountMatch) return null;
+ 
+-      // Extract amount
+-      const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
++    const amount = this.parseAmount(amountMatch[1]);
++    if (amount === null) return null;
+ 
+-      // Determine transaction type (credit/debit)
+-      const type = this.determineTransactionType(line, amount);
++    // Extract description: text between date and amount
++    const dateIndex = line.indexOf(dateMatch[1]);
++    const amountIndex = line.lastIndexOf(amountMatch[1]);
+ 
+-      return {
+-        date,
+-        description: this.cleanDescription(description),
+-        amount: Math.abs(amount),
+-        type,
+-        reference: `HDFC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+-      };
+-    } catch (error) {
+-      return null;
++    let description = line;
++    if (dateIndex !== -1 && amountIndex !== -1 && dateIndex < amountIndex) {
++      description = line.substring(dateIndex + dateMatch[1].length, amountIndex).trim();
++    } else if (dateIndex !== -1) {
++      description = line.substring(dateIndex + dateMatch[1].length).trim();
+     }
+-  }
+ 
+-  /**
+-   * Determine if line is a header
+-   */
+-  private isHeaderLine(line: string): boolean {
+-    const headerKeywords = [
+-      'date',
+-      'description',
+-      'amount',
+-      'balance',
+-      'particulars',
+-      'narration',
+-      'debit',
+-      'credit',
+-    ];
+-
+-    const lowerLine = line.toLowerCase();
+-    return headerKeywords.some(keyword => lowerLine.includes(keyword));
+-  }
+-
+-  /**
+-   * Determine transaction type (credit/debit)
+-   */
+-  private determineTransactionType(line: string, amount: number): 'credit' | 'debit' {
+-    const lowerLine = line.toLowerCase();
+-    
+-    // Look for credit indicators
+-    if (lowerLine.includes('cr') || lowerLine.includes('credit') || lowerLine.includes('deposit')) {
+-      return 'credit';
+-    }
+-    
+-    // Look for debit indicators
+-    if (lowerLine.includes('dr') || lowerLine.includes('debit') || lowerLine.includes('withdrawal')) {
+-      return 'debit';
+-    }
+-
+-    // Default based on amount position or other heuristics
+-    // This is a simplified logic - in real implementation, you'd need more sophisticated detection
+-    return amount > 0 ? 'credit' : 'debit';
+-  }
++    const type = this.determineTransactionType(line);
+ 
+-  /**
+-   * Clean and normalize description
+-   */
+-  private cleanDescription(description: string): string {
+-    return description
+-      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+-      .replace(/[^\w\s\-\.]/g, '') // Remove special characters except spaces, hyphens, and dots
+-      .trim();
++    return {
++      date,
++      description: this.cleanDescription(description),
++      amount: Math.abs(amount),
++      type,
++      reference: `HDFC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
++    };
+   }
+-} 
+\ No newline at end of file
++}
+\ No newline at end of file
+diff --git a/server/src/pdf-statement/processors/icici-processor.ts b/server/src/pdf-statement/processors/icici-processor.ts
+index e3c596e..68da7a1 100644
+--- a/server/src/pdf-statement/processors/icici-processor.ts
++++ b/server/src/pdf-statement/processors/icici-processor.ts
+@@ -1,150 +1,56 @@
+ import { Transaction } from '../pdf-statement.service';
++import { BaseProcessor } from './base-processor';
+ 
+-export class IciciProcessor {
+-  private readonly transactionPattern = /\d{2}-\w{3}-\d{4}\s+([^\s]+(?:\s+[^\s]+)*?)\s+([\d,]+\.\d{2})/g;
+-  private readonly datePattern = /(\d{2})-(\w{3})-(\d{4})/;
+-  private readonly amountPattern = /([\d,]+\.\d{2})/;
++export class IciciProcessor extends BaseProcessor {
++  private readonly iciciDatePattern = /(\d{2}-\w{3}-\d{4})/i; // DD-MMM-YYYY
++  private readonly iciciAmountPattern = /([\d,]+\.\d{2})/;
+ 
+-  /**
+-   * Extract transactions from ICICI bank statement text
+-   */
+   async extractTransactions(text: string): Promise<Transaction[]> {
+     const transactions: Transaction[] = [];
+-    const lines = text.split('\n');
++    const lines = text.split('\n').filter(line => line.trim() !== '');
+ 
+     for (const line of lines) {
+-      try {
+-        const transaction = this.parseTransactionLine(line);
+-        if (transaction) {
+-          transactions.push(transaction);
+-        }
+-      } catch (error) {
+-        // Skip lines that can't be parsed
+-        continue;
++      const transaction = this.parseIciciLine(line);
++      if (transaction) {
++        transactions.push(transaction);
+       }
+     }
+ 
+     return transactions;
+   }
+ 
+-  /**
+-   * Parse a single transaction line
+-   */
+-  private parseTransactionLine(line: string): Transaction | null {
+-    // Skip empty lines and headers
+-    if (!line.trim() || this.isHeaderLine(line)) {
+-      return null;
+-    }
+-
+-    // Try to match the transaction pattern
+-    const match = line.match(this.transactionPattern);
+-    if (!match) {
+-      return null;
+-    }
+-
+-    try {
+-      // Extract date
+-      const dateMatch = line.match(this.datePattern);
+-      if (!dateMatch) {
+-        return null;
+-      }
+-
+-      const [, day, month, year] = dateMatch;
+-      const date = this.parseDate(day, month, year);
+-
+-      // Extract description (everything between date and amount)
+-      const dateEndIndex = line.indexOf(`${day}-${month}-${year}`) + `${day}-${month}-${year}`.length;
+-      const amountMatch = line.match(this.amountPattern);
+-      if (!amountMatch) {
+-        return null;
+-      }
+-
+-      const amountStartIndex = line.lastIndexOf(amountMatch[1]);
+-      const description = line.substring(dateEndIndex, amountStartIndex).trim();
+-
+-      // Extract amount
+-      const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+-
+-      // Determine transaction type (credit/debit)
+-      const type = this.determineTransactionType(line, amount);
++  private parseIciciLine(line: string): Transaction | null {
++    const dateMatch = line.match(this.iciciDatePattern);
++    if (!dateMatch) return null;
+ 
+-      return {
+-        date,
+-        description: this.cleanDescription(description),
+-        amount: Math.abs(amount),
+-        type,
+-        reference: `ICICI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+-      };
+-    } catch (error) {
+-      return null;
+-    }
+-  }
+-
+-  /**
+-   * Parse date from ICICI format (DD-MMM-YYYY)
+-   */
+-  private parseDate(day: string, month: string, year: string): Date {
+-    const monthMap: { [key: string]: number } = {
+-      'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+-      'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+-    };
++    const date = this.parseDate(dateMatch[1]);
++    if (!date) return null;
+ 
+-    const monthIndex = monthMap[month.toLowerCase()];
+-    if (monthIndex === undefined) {
+-      throw new Error(`Invalid month: ${month}`);
+-    }
++    const amountMatch = line.match(this.iciciAmountPattern);
++    if (!amountMatch) return null;
+ 
+-    return new Date(parseInt(year), monthIndex, parseInt(day));
+-  }
++    const amount = this.parseAmount(amountMatch[1]);
++    if (amount === null) return null;
+ 
+-  /**
+-   * Determine if line is a header
+-   */
+-  private isHeaderLine(line: string): boolean {
+-    const headerKeywords = [
+-      'date',
+-      'description',
+-      'amount',
+-      'balance',
+-      'particulars',
+-      'narration',
+-      'debit',
+-      'credit',
+-      'transaction',
+-      'details',
+-    ];
++    // Extract description: text between date and amount
++    const dateIndex = line.indexOf(dateMatch[1]);
++    const amountIndex = line.lastIndexOf(amountMatch[1]);
+ 
+-    const lowerLine = line.toLowerCase();
+-    return headerKeywords.some(keyword => lowerLine.includes(keyword));
+-  }
+-
+-  /**
+-   * Determine transaction type (credit/debit)
+-   */
+-  private determineTransactionType(line: string, amount: number): 'credit' | 'debit' {
+-    const lowerLine = line.toLowerCase();
+-    
+-    // Look for credit indicators
+-    if (lowerLine.includes('cr') || lowerLine.includes('credit') || lowerLine.includes('deposit')) {
+-      return 'credit';
+-    }
+-    
+-    // Look for debit indicators
+-    if (lowerLine.includes('dr') || lowerLine.includes('debit') || lowerLine.includes('withdrawal')) {
+-      return 'debit';
++    let description = line;
++    if (dateIndex !== -1 && amountIndex !== -1 && dateIndex < amountIndex) {
++      description = line.substring(dateIndex + dateMatch[1].length, amountIndex).trim();
++    } else if (dateIndex !== -1) {
++      description = line.substring(dateIndex + dateMatch[1].length).trim();
+     }
+ 
+-    // Default based on amount position or other heuristics
+-    return amount > 0 ? 'credit' : 'debit';
+-  }
++    const type = this.determineTransactionType(line);
+ 
+-  /**
+-   * Clean and normalize description
+-   */
+-  private cleanDescription(description: string): string {
+-    return description
+-      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+-      .replace(/[^\w\s\-\.]/g, '') // Remove special characters except spaces, hyphens, and dots
+-      .trim();
++    return {
++      date,
++      description: this.cleanDescription(description),
++      amount: Math.abs(amount),
++      type,
++      reference: `ICICI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
++    };
+   }
+-} 
+\ No newline at end of file
++}
+\ No newline at end of file
+diff --git a/server/src/pdf-statement/processors/sbi-processor.ts b/server/src/pdf-statement/processors/sbi-processor.ts
+index edec4c9..ac1969b 100644
+--- a/server/src/pdf-statement/processors/sbi-processor.ts
++++ b/server/src/pdf-statement/processors/sbi-processor.ts
+@@ -1,135 +1,56 @@
+ import { Transaction } from '../pdf-statement.service';
++import { BaseProcessor } from './base-processor';
+ 
+-export class SbiProcessor {
+-  private readonly transactionPattern = /\d{2}\/\d{2}\/\d{4}\s+([^\s]+(?:\s+[^\s]+)*?)\s+([\d,]+\.\d{2})/g;
+-  private readonly datePattern = /(\d{2})\/(\d{2})\/(\d{4})/;
+-  private readonly amountPattern = /([\d,]+\.\d{2})/;
++export class SbiProcessor extends BaseProcessor {
++  private readonly sbiDatePattern = /(\d{2}\/\d{2}\/\d{4})/;
++  private readonly sbiAmountPattern = /([\d,]+\.\d{2})/;
+ 
+-  /**
+-   * Extract transactions from SBI bank statement text
+-   */
+   async extractTransactions(text: string): Promise<Transaction[]> {
+     const transactions: Transaction[] = [];
+-    const lines = text.split('\n');
++    const lines = text.split('\n').filter(line => line.trim() !== '');
+ 
+     for (const line of lines) {
+-      try {
+-        const transaction = this.parseTransactionLine(line);
+-        if (transaction) {
+-          transactions.push(transaction);
+-        }
+-      } catch (error) {
+-        // Skip lines that can't be parsed
+-        continue;
++      const transaction = this.parseSbiLine(line);
++      if (transaction) {
++        transactions.push(transaction);
+       }
+     }
+ 
+     return transactions;
+   }
+ 
+-  /**
+-   * Parse a single transaction line
+-   */
+-  private parseTransactionLine(line: string): Transaction | null {
+-    // Skip empty lines and headers
+-    if (!line.trim() || this.isHeaderLine(line)) {
+-      return null;
+-    }
+-
+-    // Try to match the transaction pattern
+-    const match = line.match(this.transactionPattern);
+-    if (!match) {
+-      return null;
+-    }
+-
+-    try {
+-      // Extract date
+-      const dateMatch = line.match(this.datePattern);
+-      if (!dateMatch) {
+-        return null;
+-      }
+-
+-      const [, day, month, year] = dateMatch;
+-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
++  private parseSbiLine(line: string): Transaction | null {
++    const dateMatch = line.match(this.sbiDatePattern);
++    if (!dateMatch) return null;
+ 
+-      // Extract description (everything between date and amount)
+-      const dateEndIndex = line.indexOf(`${day}/${month}/${year}`) + `${day}/${month}/${year}`.length;
+-      const amountMatch = line.match(this.amountPattern);
+-      if (!amountMatch) {
+-        return null;
+-      }
++    const date = this.parseDate(dateMatch[1]);
++    if (!date) return null;
+ 
+-      const amountStartIndex = line.lastIndexOf(amountMatch[1]);
+-      const description = line.substring(dateEndIndex, amountStartIndex).trim();
++    const amountMatch = line.match(this.sbiAmountPattern);
++    if (!amountMatch) return null;
+ 
+-      // Extract amount
+-      const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
++    const amount = this.parseAmount(amountMatch[1]);
++    if (amount === null) return null;
+ 
+-      // Determine transaction type (credit/debit)
+-      const type = this.determineTransactionType(line, amount);
++    // Extract description: text between date and amount
++    const dateIndex = line.indexOf(dateMatch[1]);
++    const amountIndex = line.lastIndexOf(amountMatch[1]);
+ 
+-      return {
+-        date,
+-        description: this.cleanDescription(description),
+-        amount: Math.abs(amount),
+-        type,
+-        reference: `SBI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+-      };
+-    } catch (error) {
+-      return null;
++    let description = line;
++    if (dateIndex !== -1 && amountIndex !== -1 && dateIndex < amountIndex) {
++      description = line.substring(dateIndex + dateMatch[1].length, amountIndex).trim();
++    } else if (dateIndex !== -1) {
++      description = line.substring(dateIndex + dateMatch[1].length).trim();
+     }
+-  }
+ 
+-  /**
+-   * Determine if line is a header
+-   */
+-  private isHeaderLine(line: string): boolean {
+-    const headerKeywords = [
+-      'date',
+-      'description',
+-      'amount',
+-      'balance',
+-      'particulars',
+-      'narration',
+-      'debit',
+-      'credit',
+-      'transaction',
+-      'details',
+-      'sbi',
+-      'state bank',
+-    ];
+-
+-    const lowerLine = line.toLowerCase();
+-    return headerKeywords.some(keyword => lowerLine.includes(keyword));
+-  }
+-
+-  /**
+-   * Determine transaction type (credit/debit)
+-   */
+-  private determineTransactionType(line: string, amount: number): 'credit' | 'debit' {
+-    const lowerLine = line.toLowerCase();
+-    
+-    // Look for credit indicators
+-    if (lowerLine.includes('cr') || lowerLine.includes('credit') || lowerLine.includes('deposit')) {
+-      return 'credit';
+-    }
+-    
+-    // Look for debit indicators
+-    if (lowerLine.includes('dr') || lowerLine.includes('debit') || lowerLine.includes('withdrawal')) {
+-      return 'debit';
+-    }
+-
+-    // Default based on amount position or other heuristics
+-    return amount > 0 ? 'credit' : 'debit';
+-  }
++    const type = this.determineTransactionType(line);
+ 
+-  /**
+-   * Clean and normalize description
+-   */
+-  private cleanDescription(description: string): string {
+-    return description
+-      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+-      .replace(/[^\w\s\-\.]/g, '') // Remove special characters except spaces, hyphens, and dots
+-      .trim();
++    return {
++      date,
++      description: this.cleanDescription(description),
++      amount: Math.abs(amount),
++      type,
++      reference: `SBI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
++    };
+   }
+-} 
+\ No newline at end of file
++}
+\ No newline at end of file
+diff --git a/server/src/pdf-statement/test-pdf-parsing.ts b/server/src/pdf-statement/test-pdf-parsing.ts
+new file mode 100644
+index 0000000..a2ac93a
+--- /dev/null
++++ b/server/src/pdf-statement/test-pdf-parsing.ts
+@@ -0,0 +1,35 @@
++import { PdfStatementService } from './pdf-statement.service';
++import * as fs from 'fs';
++import * as path from 'path';
++
++async function testPdfParsing() {
++  const service = new PdfStatementService();
++
++  // Example usage for a generic PDF (replace with actual test file)
++  const pdfPath = path.join(__dirname, '../../test-files/sample-bank-statement.pdf'); // Adjust path as needed
++  const password = 'your_pdf_password'; // Replace with actual password if applicable
++
++  try {
++    const fileBuffer = fs.readFileSync(pdfPath);
++    const file = { originalname: 'sample-bank-statement.pdf', buffer: fileBuffer, mimetype: 'application/pdf', size: fileBuffer.length };
++
++    console.log(`Attempting to process: ${file.originalname}`);
++
++    const result = await service.processBankStatement(file, 'generic', password);
++
++    if (result.success) {
++      console.log('PDF Processing Successful!');
++      console.log('Summary:', result.summary);
++      console.log('Transactions:', result.transactions);
++      console.log('Journal Entries:', result.journalEntries);
++    } else {
++      console.error('PDF Processing Failed:', result.errors);
++    }
++  } catch (error) {
++    console.error('An error occurred during PDF parsing test:', error);
++  }
++}
++
++testPdfParsing();
++
++

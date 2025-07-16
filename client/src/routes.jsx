@@ -23,6 +23,7 @@ const BusinessManagement = lazy(() => import('./pages/business/BusinessManagemen
 const BusinessDetails = lazy(() => import('./pages/business/BusinessDetails'));
 const Ledgers = lazy(() => import('./pages/ledgers'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Transactions = lazy(() => import('./pages/TransactionsPage'));
 
 // Protected route component
 const ProtectedRoute = ({ children, requireBusiness = true }) => {
@@ -164,6 +165,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <Ledgers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/transactions"
+            element={
+              <ProtectedRoute>
+                <Transactions />
               </ProtectedRoute>
             }
           />

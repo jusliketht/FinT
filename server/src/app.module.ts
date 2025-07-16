@@ -5,6 +5,7 @@ import { AccountingModule } from './accounting/accounting.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { PdfStatementModule } from './pdf-statement/pdf-statement.module';
+import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { PdfStatementModule } from './pdf-statement/pdf-statement.module';
     AuthModule,
     UsersModule,
     PdfStatementModule,
+    TransactionsModule,
   ],
 })
 export class AppModule {} 
