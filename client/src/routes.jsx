@@ -25,6 +25,12 @@ const Ledgers = lazy(() => import('./pages/ledgers'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Transactions = lazy(() => import('./pages/TransactionsPage'));
 
+// Financial Reports
+const TrialBalance = lazy(() => import('./pages/reports/TrialBalance'));
+const ProfitAndLoss = lazy(() => import('./pages/reports/ProfitAndLoss'));
+const BalanceSheet = lazy(() => import('./pages/reports/BalanceSheet'));
+const CashFlow = lazy(() => import('./pages/reports/CashFlow'));
+
 // Protected route component
 const ProtectedRoute = ({ children, requireBusiness = true }) => {
   const { user } = useAuth();
@@ -141,6 +147,38 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <Reports />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports/trial-balance"
+            element={
+              <ProtectedRoute>
+                <TrialBalance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports/profit-and-loss"
+            element={
+              <ProtectedRoute>
+                <ProfitAndLoss />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports/balance-sheet"
+            element={
+              <ProtectedRoute>
+                <BalanceSheet />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports/cash-flow"
+            element={
+              <ProtectedRoute>
+                <CashFlow />
               </ProtectedRoute>
             }
           />

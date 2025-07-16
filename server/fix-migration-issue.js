@@ -75,6 +75,8 @@ async function fixMigrationIssue() {
       console.log('Creating default AccountHead records...');
       
       const categories = await prisma.accountCategory.findMany();
+      console.log('Available categories:', categories.map(c => ({ id: c.id, name: c.name })));
+      
       const assetsCategory = categories.find(c => c.name === 'Assets');
       const liabilitiesCategory = categories.find(c => c.name === 'Liabilities');
       const equityCategory = categories.find(c => c.name === 'Equity');
@@ -91,10 +93,23 @@ async function fixMigrationIssue() {
       ];
 
       for (const account of defaultAccounts) {
+        console.log('Creating account:', account);
         if (account.categoryId) {
-          await prisma.accountHead.create({
-            data: account
-          });
+          try {
+            await prisma.accountHead.create({
+              data: {
+                code: account.code,
+                name: account.name,
+                type: account.type,
+                categoryId: account.categoryId
+              }
+            });
+            console.log(`Created account: ${account.name}`);
+          } catch (error) {
+            console.error(`Failed to create account ${account.name}:`, error);
+          }
+        } else {
+          console.log(`Skipping account ${account.name} - no category found`);
         }
       }
 
