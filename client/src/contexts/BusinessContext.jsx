@@ -1,153 +1,136 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import businessService from '../services/businessService';
-import { useAuth } from './AuthContext';
 
 const BusinessContext = createContext();
 
-export function BusinessProvider({ children }) {
-  const { user } = useAuth();
+export const useBusiness = () => {
+  const context = useContext(BusinessContext);
+  if (!context) {
+    throw new Error('useBusiness must be used within a BusinessProvider');
+  }
+  return context;
+};
+
+export const BusinessProvider = ({ children }) => {
   const [businesses, setBusinesses] = useState([]);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (user) {
-      loadUserBusinesses();
-    } else {
-      setBusinesses([]);
-      setSelectedBusiness(null);
-      setLoading(false);
-    }
-  }, [user]);
+    fetchBusinesses();
+  }, []);
 
-  const loadUserBusinesses = async () => {
+  const fetchBusinesses = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await businessService.getMyBusinesses();
+      const data = await businessService.getAll();
       setBusinesses(data);
       
-      // If there's a selected business, refresh its data
-      if (selectedBusiness) {
-        const updatedBusiness = data.find(b => b.id === selectedBusiness.id);
-        if (updatedBusiness) {
-          setSelectedBusiness(updatedBusiness);
-        }
+      // Auto-select first business if none selected
+      if (data.length > 0 && !selectedBusiness) {
+        setSelectedBusiness(data[0]);
       }
     } catch (err) {
-      setError(err.message || 'Failed to load businesses');
-      console.error('Error loading businesses:', err);
+      setError('Failed to fetch businesses');
+      console.error('Error fetching businesses:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const selectBusiness = (business) => {
+    setSelectedBusiness(business);
+    // Store selected business in localStorage for persistence
+    localStorage.setItem('selectedBusinessId', business?.id || '');
   };
 
   const createBusiness = async (businessData) => {
     try {
-      setLoading(true);
-      setError(null);
-      const newBusiness = await businessService.createBusiness(businessData);
+      const newBusiness = await businessService.create(businessData);
       setBusinesses(prev => [...prev, newBusiness]);
+      
+      // Auto-select newly created business
+      if (!selectedBusiness) {
+        setSelectedBusiness(newBusiness);
+      }
+      
       return newBusiness;
     } catch (err) {
-      setError(err.message || 'Failed to create business');
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const updateBusiness = async (id, businessData) => {
+  const updateBusiness = async (businessId, businessData) => {
     try {
-      setLoading(true);
-      setError(null);
-      const updatedBusiness = await businessService.updateBusiness(id, businessData);
-      setBusinesses(prev => prev.map(b => b.id === id ? updatedBusiness : b));
+      const updatedBusiness = await businessService.update(businessId, businessData);
+      setBusinesses(prev => 
+        prev.map(business => 
+          business.id === businessId ? updatedBusiness : business
+        )
+      );
       
-      if (selectedBusiness?.id === id) {
+      // Update selected business if it's the one being updated
+      if (selectedBusiness?.id === businessId) {
         setSelectedBusiness(updatedBusiness);
       }
       
       return updatedBusiness;
     } catch (err) {
-      setError(err.message || 'Failed to update business');
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const deleteBusiness = async (id) => {
+  const deleteBusiness = async (businessId) => {
     try {
-      setLoading(true);
-      setError(null);
-      await businessService.deleteBusiness(id);
-      setBusinesses(prev => prev.filter(b => b.id !== id));
+      await businessService.delete(businessId);
+      setBusinesses(prev => prev.filter(business => business.id !== businessId));
       
-      if (selectedBusiness?.id === id) {
+      // Clear selected business if it's the one being deleted
+      if (selectedBusiness?.id === businessId) {
         setSelectedBusiness(null);
       }
     } catch (err) {
-      setError(err.message || 'Failed to delete business');
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const addUserToBusiness = async (businessId, userId) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const updatedBusiness = await businessService.addUserToBusiness(businessId, userId);
-      setBusinesses(prev => prev.map(b => b.id === businessId ? updatedBusiness : b));
-      
-      if (selectedBusiness?.id === businessId) {
-        setSelectedBusiness(updatedBusiness);
-      }
-      
-      return updatedBusiness;
-    } catch (err) {
-      setError(err.message || 'Failed to add user to business');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+  const refreshBusinesses = () => {
+    fetchBusinesses();
   };
 
-  const removeUserFromBusiness = async (businessId, userId) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const updatedBusiness = await businessService.removeUserFromBusiness(businessId, userId);
-      setBusinesses(prev => prev.map(b => b.id === businessId ? updatedBusiness : b));
-      
-      if (selectedBusiness?.id === businessId) {
-        setSelectedBusiness(updatedBusiness);
+  // Load selected business from localStorage on mount
+  useEffect(() => {
+    const savedBusinessId = localStorage.getItem('selectedBusinessId');
+    if (savedBusinessId && businesses.length > 0) {
+      const savedBusiness = businesses.find(b => b.id === savedBusinessId);
+      if (savedBusiness) {
+        setSelectedBusiness(savedBusiness);
       }
-      
-      return updatedBusiness;
-    } catch (err) {
-      setError(err.message || 'Failed to remove user from business');
-      throw err;
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [businesses]);
+
+  // Save selected business to localStorage when it changes
+  useEffect(() => {
+    if (selectedBusiness) {
+      localStorage.setItem('selectedBusinessId', selectedBusiness.id);
+    } else {
+      localStorage.removeItem('selectedBusinessId');
+    }
+  }, [selectedBusiness]);
 
   const value = {
     businesses,
     selectedBusiness,
-    setSelectedBusiness,
     loading,
     error,
+    selectBusiness,
     createBusiness,
     updateBusiness,
     deleteBusiness,
-    addUserToBusiness,
-    removeUserFromBusiness,
-    refreshBusinesses: loadUserBusinesses
+    refreshBusinesses,
+    setSelectedBusiness
   };
 
   return (
@@ -155,12 +138,6 @@ export function BusinessProvider({ children }) {
       {children}
     </BusinessContext.Provider>
   );
-}
+};
 
-export function useBusiness() {
-  const context = useContext(BusinessContext);
-  if (!context) {
-    throw new Error('useBusiness must be used within a BusinessProvider');
-  }
-  return context;
-} 
+export default BusinessContext; 
