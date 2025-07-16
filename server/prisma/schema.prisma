@@ -29,6 +29,7 @@ model User {
   CreditCards      CreditCard[]
   CreditCardTransactions CreditCardTransaction[]
   MappingRule      MappingRule[]
+  ThirdParties     ThirdParty[]
 }
 
 model MappingRule {
@@ -57,180 +58,62 @@ model AccountCategory {
 
 // Account Heads (e.g., Cash, Bank, Accounts Receivable, etc.)
 model AccountHead {
-  id                String             @id
-  code              String             @unique
-  name              String
-  description       String?
-  categoryId        String
-  isCustom          Boolean            @default(false)
-  parentId          String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime
-  AccountCategory   AccountCategory    @relation(fields: [categoryId], references: [id])
-  AccountHead       AccountHead?       @relation("AccountHeadToAccountHead", fields: [parentId], references: [id])
-  other_AccountHead AccountHead[]      @relation("AccountHeadToAccountHead")
-  JournalEntryItem  JournalEntryItem[]
-  LedgerEntry       LedgerEntry[]
-
-  @@index([categoryId])
-  @@index([parentId])
-}
-
-// Journal Entries
-model JournalEntry {
-  id               String             @id @default(uuid())
-  date             DateTime
-  description      String
-  amount           Float
-  debitAccountId   String
-  creditAccountId  String
-  userId           String
-  businessId       String?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  creditAccount    Account            @relation("CreditAccount", fields: [creditAccountId], references: [id])
-  debitAccount     Account            @relation("DebitAccount", fields: [debitAccountId], references: [id])
-  User             User               @relation(fields: [userId], references: [id])
-  Business         Business?          @relation(fields: [businessId], references: [id])
-  JournalEntryItem JournalEntryItem[]
-  
-  // GST Fields (India-specific)
-  gstRate          Float?             // GST rate (5%, 12%, 18%, 28%)
-  gstAmount        Float?             // GST amount
-  gstin            String?            // GSTIN (15-digit)
-  hsnCode          String?            // HSN/SAC code
-  placeOfSupply    String?            // Place of supply (state)
-  isInterState     Boolean            @default(false) // IGST vs CGST+SGST
-  
-  // TDS Fields (India-specific)
-  tdsSection       String?            // TDS section (194C, 194J, etc.)
-  tdsRate          Float?             // TDS rate
-  tdsAmount        Float?             // TDS amount
-  panNumber        String?            // PAN number for TDS
-  
-  // Additional India-specific fields
-  isMsmeVendor     Boolean            @default(false) // MSME vendor flag
-  invoiceNumber    String?            // Invoice number
-  vendorName       String?            // Vendor/supplier name
-
-  @@index([creditAccountId])
-  @@index([date])
-  @@index([debitAccountId])
-  @@index([userId])
-  @@index([businessId])
-  @@index([gstin])
-}
-
-// Journal Entry Items (individual debit/credit lines)
-model JournalEntryItem {
-  id             String       @id
-  journalEntryId String
-  accountHeadId  String
-  description    String?
-  debitAmount    Decimal      @default(0)
-  creditAmount   Decimal      @default(0)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime
-  AccountHead    AccountHead  @relation(fields: [accountHeadId], references: [id])
-  JournalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
-
-  @@index([accountHeadId])
-  @@index([journalEntryId])
-}
-
-// Ledger Entries (for running balances)
-model LedgerEntry {
-  id            String      @id
-  accountHeadId String
-  date          DateTime
-  description   String
-  debitAmount   Decimal     @default(0)
-  creditAmount  Decimal     @default(0)
-  balance       Decimal
-  reference     String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime
-  AccountHead   AccountHead @relation(fields: [accountHeadId], references: [id])
-
-  @@index([accountHeadId])
-  @@index([date])
-}
-
-// Financial Year Settings
-model FinancialYear {
-  id        String   @id
-  startDate DateTime
-  endDate   DateTime
-  isActive  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-
-  @@unique([startDate, endDate])
-  @@index([isActive])
-}
-
-// Company Settings
-model CompanySettings {
-  id              String   @id
-  companyName     String
-  address         String?
-  taxNumber       String?
-  phone           String?
-  email           String?
-  fiscalYearStart DateTime
-  baseCurrency    String   @default("INR")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime
-}
-
-model Transaction {
-  id              String   @id @default(uuid())
-  date            DateTime
-  description     String
-  amount          Float
-  category        String
-  transactionType String
-  userId          String
-  businessId      String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  User            User     @relation(fields: [userId], references: [id])
-  Business        Business? @relation(fields: [businessId], references: [id])
-
-  @@index([category])
-  @@index([date])
-  @@index([transactionType])
-  @@index([userId])
-  @@index([businessId])
-}
-
-model Account {
-  id            String         @id @default(uuid())
-  name          String
-  type          String
-  code          String         @unique
-  userId        String
-  businessId    String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  User          User           @relation(fields: [userId], references: [id])
-  Business      Business?      @relation(fields: [businessId], references: [id])
-  creditEntries JournalEntry[] @relation("CreditAccount")
-  debitEntries  JournalEntry[] @relation("DebitAccount")
-  MappingRule   MappingRule[]
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  type        String   // asset, liability, equity, revenue, expense
+  description String?
+  categoryId  String
+  category    AccountCategory @relation(fields: [categoryId], references: [id])
+  parentId    String?
+  parent      AccountHead? @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children    AccountHead[] @relation("AccountHierarchy")
+  businessId  String?
+  business    Business? @relation(fields: [businessId], references: [id])
+  isCustom    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  debitJournalEntries  JournalEntry[] @relation("DebitAccount")
+  creditJournalEntries JournalEntry[] @relation("CreditAccount")
 
   @@index([code])
+  @@index([categoryId])
+  @@index([businessId])
   @@index([type])
+}
+
+// Third Party model for managing third-party entities
+model ThirdParty {
+  id            String   @id @default(uuid())
+  name          String
+  type          String   // CLIENT, FAMILY, FRIEND, BUSINESS_PARTNER, OTHER
+  email         String?
+  phone         String?
+  address       String?
+  notes         String?
+  userId        String   // User who created this third-party record
+  businessId    String?  // Optional: Associated business
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  User          User     @relation(fields: [userId], references: [id])
+  Business      Business? @relation(fields: [businessId], references: [id])
+  Transactions  Transaction[]
+
   @@index([userId])
   @@index([businessId])
+  @@index([type])
+  @@index([isActive])
 }
 
 // Business model for multi-tenant support
 model Business {
-  id                String         @id @default(uuid())
+  id                String   @id @default(uuid())
   name              String
-  registrationNumber String?        @unique
-  type              String         // sole_proprietorship, partnership, corporation, llc
+  type              String
+  registrationNumber String?
   description       String?
   incorporationDate DateTime?
   fiscalYearStart   DateTime?
@@ -245,87 +128,153 @@ model Business {
   email             String?
   website           String?
   ownerId           String
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  owner             User     @relation("BusinessOwner", fields: [ownerId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
   
   // Relations
-  Owner             User           @relation("BusinessOwner", fields: [ownerId], references: [id])
   Users             UserBusiness[]
   Accounts          Account[]
+  AccountHead       AccountHead[]
   JournalEntries    JournalEntry[]
   Transactions      Transaction[]
-  CreditCards       CreditCard[]
+  ThirdParties      ThirdParty[]
 
   @@index([ownerId])
   @@index([type])
 }
 
-// User-Business relationship for multi-tenant support
+// User-Business relationship for multi-tenant access
 model UserBusiness {
-  id         String   @id @default(uuid())
-  userId     String
-  businessId String
-  role       String   @default("VIEWER") // ADMIN, BUSINESS_OWNER, ACCOUNTANT, VIEWER
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
+  userId      String
+  businessId  String
+  role        String   // ADMIN, BUSINESS_OWNER, ACCOUNTANT, VIEWER
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
   // Relations
-  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  Business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  User        User     @relation(fields: [userId], references: [id])
+  Business    Business @relation(fields: [businessId], references: [id])
 
-  @@unique([userId, businessId])
+  @@id([userId, businessId])
   @@index([userId])
   @@index([businessId])
   @@index([role])
 }
 
-// Credit Card Management
-model CreditCard {
-  id                String                    @id @default(uuid())
-  cardName          String
-  cardNumber        String?                   // Last 4 digits only
-  cardType          String                    // Visa, Mastercard, Amex, RuPay
-  bankName          String
-  creditLimit       Float                     @default(0)
-  outstandingAmount Float                     @default(0)
-  dueDate           DateTime?
-  statementDate     DateTime?
-  userId            String
-  businessId        String?
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  
-  // Relations
-  User              User                      @relation(fields: [userId], references: [id])
-  Business          Business?                 @relation(fields: [businessId], references: [id])
-  transactions      CreditCardTransaction[]
+// Journal Entry model for double-entry bookkeeping
+model JournalEntry {
+  id              String   @id @default(uuid())
+  date            DateTime
+  reference       String?
+  description     String
+  debitAccountId  String
+  debitAccount    AccountHead @relation("DebitAccount", fields: [debitAccountId], references: [id])
+  creditAccountId String
+  creditAccount   AccountHead @relation("CreditAccount", fields: [creditAccountId], references: [id])
+  amount          Float
+  gstAmount       Float?   // GST amount if applicable
+  tdsAmount       Float?   // TDS amount if applicable
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  businessId      String?
+  business        Business? @relation(fields: [businessId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  @@index([date])
   @@index([userId])
   @@index([businessId])
-  @@index([cardType])
-  @@index([bankName])
+  @@index([debitAccountId])
+  @@index([creditAccountId])
 }
 
-model CreditCardTransaction {
-  id            String      @id @default(uuid())
-  date          DateTime
-  description   String
-  amount        Float
-  type          String      // DEBIT (purchase) or CREDIT (payment)
-  category      String?
-  merchant      String?
-  reference     String?
-  creditCardId  String
-  userId        String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+// Transaction model for manual transaction entry
+model Transaction {
+  id              String   @id @default(uuid())
+  date            DateTime
+  description     String
+  amount          Float
+  category        String
+  transactionType String
+  userId          String
+  businessId      String?
   
-  // Relations
-  creditCard    CreditCard  @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
-  User          User        @relation(fields: [userId], references: [id])
+  // Third-party tagging fields
+  isThirdParty    Boolean  @default(false)
+  thirdPartyName  String?  // Name of the person/entity on whose behalf transaction was done
+  thirdPartyType  String?  // Type: CLIENT, FAMILY, FRIEND, BUSINESS_PARTNER, OTHER
+  thirdPartyId    String?  // Optional: Link to a third-party entity record
+  notes           String?  // Additional notes about the third-party transaction
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  User            User     @relation(fields: [userId], references: [id])
+  Business        Business? @relation(fields: [businessId], references: [id])
+  ThirdParty      ThirdParty? @relation(fields: [thirdPartyId], references: [id])
 
-  @@index([creditCardId])
+  @@index([category])
+  @@index([date])
+  @@index([transactionType])
   @@index([userId])
+  @@index([businessId])
+  @@index([isThirdParty])
+  @@index([thirdPartyType])
+}
+
+model Account {
+  id            String         @id @default(uuid())
+  name          String
+  type          String
+  code          String         @unique
+  userId        String
+  businessId    String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  User          User           @relation(fields: [userId], references: [id])
+  Business      Business?      @relation(fields: [businessId], references: [id])
+  MappingRule   MappingRule[]
+
+  @@index([code])
+  @@index([type])
+  @@index([userId])
+  @@index([businessId])
+}
+
+// Credit Card model
+model CreditCard {
+  id              String   @id @default(uuid())
+  name            String
+  cardNumber      String?
+  cardType        String   // VISA, MASTERCARD, AMEX, etc.
+  bankName        String?
+  creditLimit     Float?
+  dueDate         Int?     // Day of month when payment is due
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  transactions    CreditCardTransaction[]
+
+  @@index([userId])
+  @@index([cardType])
+}
+
+// Credit Card Transaction model
+model CreditCardTransaction {
+  id              String   @id @default(uuid())
+  date            DateTime
+  description     String
+  amount          Float
+  type            String   // PURCHASE, PAYMENT, FEE, INTEREST, CASH_ADVANCE
+  category        String?
+  creditCardId    String
+  creditCard      CreditCard @relation(fields: [creditCardId], references: [id])
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
   @@index([date])
   @@index([type])
   @@index([category])
