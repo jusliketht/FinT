@@ -80,9 +80,9 @@ export class AccountHeadsService {
         businessId: businessId || null
       },
       include: {
-        Category: true,
-        Parent: true,
-        Children: true
+        category: true,
+        parent: true,
+        children: true
       },
       orderBy: { code: 'asc' }
     });
@@ -118,9 +118,9 @@ export class AccountHeadsService {
     return prisma.accountHead.create({
       data: createAccountHeadDto,
       include: {
-        Category: true,
-        Parent: true,
-        Children: true
+        category: true,
+        parent: true,
+        children: true
       }
     });
   }
@@ -156,9 +156,9 @@ export class AccountHeadsService {
       where: { id },
       data: updateAccountHeadDto,
       include: {
-        Category: true,
-        Parent: true,
-        Children: true
+        category: true,
+        parent: true,
+        children: true
       }
     });
   }
@@ -170,8 +170,9 @@ export class AccountHeadsService {
     const accountHead = await prisma.accountHead.findUnique({
       where: { id },
       include: {
-        Children: true,
-        JournalEntries: true
+        children: true,
+        debitJournalEntries: true,
+        creditJournalEntries: true
       }
     });
 
@@ -180,12 +181,12 @@ export class AccountHeadsService {
     }
 
     // Check if account has children
-    if (accountHead.Children.length > 0) {
+    if (accountHead.children.length > 0) {
       throw new BadRequestException('Cannot delete account with child accounts');
     }
 
     // Check if account has journal entries
-    if (accountHead.JournalEntries.length > 0) {
+    if (accountHead.debitJournalEntries.length > 0 || accountHead.creditJournalEntries.length > 0) {
       throw new BadRequestException('Cannot delete account with journal entries');
     }
 
@@ -203,9 +204,9 @@ export class AccountHeadsService {
         businessId: businessId || null
       },
       include: {
-        Category: true,
-        Parent: true,
-        Children: true
+        category: true,
+        parent: true,
+        children: true
       },
       orderBy: { code: 'asc' }
     });
@@ -213,7 +214,7 @@ export class AccountHeadsService {
     // Group by category
     const hierarchy = {};
     for (const account of accounts) {
-      const categoryName = account.Category.name;
+      const categoryName = account.category.name;
       if (!hierarchy[categoryName]) {
         hierarchy[categoryName] = [];
       }
@@ -230,9 +231,9 @@ export class AccountHeadsService {
     const accountHead = await prisma.accountHead.findUnique({
       where: { id },
       include: {
-        Category: true,
-        Parent: true,
-        Children: true
+        category: true,
+        parent: true,
+        children: true
       }
     });
 
@@ -252,9 +253,9 @@ export class AccountHeadsService {
         businessId: businessId || null
       },
       include: {
-        Category: true,
-        Parent: true,
-        Children: true
+        category: true,
+        parent: true,
+        children: true
       },
       orderBy: { code: 'asc' }
     });

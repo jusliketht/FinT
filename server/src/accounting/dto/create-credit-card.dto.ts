@@ -17,11 +17,15 @@ export class CreateCreditCardDto {
   @IsNumber()
   creditLimit: number;
 
-  @IsDateString()
+  @IsNumber()
   @IsOptional()
-  dueDate?: string;
+  dueDate?: number; // Day of month when payment is due
 
   @IsDateString()
   @IsOptional()
   statementDate?: string;
+
+  @IsString()
+  @IsOptional()
+  businessId?: string;
 } 

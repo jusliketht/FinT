@@ -36,6 +36,7 @@ model User {
   Bills            Bill[]
   InvoicePayments  InvoicePayment[]
   BillPayments     BillPayment[]
+  Reconciliations  Reconciliation[]
 }
 
 model MappingRule {
@@ -208,6 +209,8 @@ model Business {
   Vendors           Vendor[]
   Invoices          Invoice[]
   Bills             Bill[]
+  CreditCards       CreditCard[]
+  Reconciliations  Reconciliation[]
 
   @@index([ownerId])
   @@index([type])
@@ -215,9 +218,10 @@ model Business {
 
 // User-Business relationship for multi-tenant access
 model UserBusiness {
+  id          String   @id @default(uuid())
   userId      String
   businessId  String
-  role        String   // ADMIN, BUSINESS_OWNER, ACCOUNTANT, VIEWER
+  role        String   @default("VIEWER") // ADMIN, BUSINESS_OWNER, ACCOUNTANT, VIEWER
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -225,7 +229,7 @@ model UserBusiness {
   User        User     @relation(fields: [userId], references: [id])
   Business    Business @relation(fields: [businessId], references: [id])
 
-  @@id([userId, businessId])
+  @@unique([userId, businessId])
   @@index([userId])
   @@index([businessId])
   @@index([role])
@@ -236,6 +240,7 @@ model JournalEntry {
   id              String   @id @default(uuid())
   date            DateTime
   reference       String?
+  referenceNumber String?  @unique
   description     String
   debitAccountId  String
   debitAccount    AccountHead @relation("DebitAccount", fields: [debitAccountId], references: [id])
@@ -403,6 +408,47 @@ model BillPayment {
   @@index([userId])
 }
 
+// Reconciliation model
+model Reconciliation {
+  id            String   @id @default(uuid())
+  accountId     String
+  statementDate DateTime
+  closingBalance Float
+  isLocked      Boolean  @default(false)
+  userId        String
+  businessId    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  User          User     @relation(fields: [userId], references: [id])
+  Business      Business? @relation(fields: [businessId], references: [id])
+  account       Account  @relation(fields: [accountId], references: [id])
+  statementLines ReconciliationStatementLine[]
+
+  @@index([accountId])
+  @@index([statementDate])
+  @@index([userId])
+  @@index([businessId])
+}
+
+// Reconciliation Statement Line model
+model ReconciliationStatementLine {
+  id              String   @id @default(uuid())
+  reconciliationId String
+  reconciliation   Reconciliation @relation(fields: [reconciliationId], references: [id])
+  description     String
+  amount          Float
+  type            String   // DEBIT, CREDIT
+  transactionId   String?
+  isMatched       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([reconciliationId])
+  @@index([transactionId])
+}
+
 // Transaction model for manual transaction entry
 model Transaction {
   id              String   @id @default(uuid())
@@ -411,6 +457,9 @@ model Transaction {
   amount          Float
   category        String
   transactionType String
+  paymentMethod   String?  // Payment method (cash, check, bank_transfer, credit_card, other)
+  reference       String?  // Reference number or additional identifier
+  accountId       String?  // Optional: Link to a specific account
   userId          String
   businessId      String?
   
@@ -426,6 +475,7 @@ model Transaction {
   User            User     @relation(fields: [userId], references: [id])
   Business        Business? @relation(fields: [businessId], references: [id])
   ThirdParty      ThirdParty? @relation(fields: [thirdPartyId], references: [id])
+  Account         Account? @relation(fields: [accountId], references: [id])
 
   @@index([category])
   @@index([date])
@@ -434,6 +484,8 @@ model Transaction {
   @@index([businessId])
   @@index([isThirdParty])
   @@index([thirdPartyType])
+  @@index([paymentMethod])
+  @@index([accountId])
 }
 
 model Account {
@@ -448,6 +500,8 @@ model Account {
   User          User           @relation(fields: [userId], references: [id])
   Business      Business?      @relation(fields: [businessId], references: [id])
   MappingRule   MappingRule[]
+  Transactions  Transaction[]
+  Reconciliations Reconciliation[]
 
   @@index([code])
   @@index([type])
@@ -457,21 +511,27 @@ model Account {
 
 // Credit Card model
 model CreditCard {
-  id              String   @id @default(uuid())
-  name            String
-  cardNumber      String?
-  cardType        String   // VISA, MASTERCARD, AMEX, etc.
-  bankName        String?
-  creditLimit     Float?
-  dueDate         Int?     // Day of month when payment is due
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  transactions    CreditCardTransaction[]
+  id                String   @id @default(uuid())
+  cardName          String   // Name of the card
+  cardNumber        String?
+  cardType          String   // VISA, MASTERCARD, AMEX, etc.
+  bankName          String
+  creditLimit       Float    @default(0)
+  outstandingAmount Float    @default(0)
+  statementDate     DateTime?
+  dueDate           Int?     // Day of month when payment is due
+  userId            String
+  businessId        String?
+  user              User     @relation(fields: [userId], references: [id])
+  business          Business? @relation(fields: [businessId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  transactions      CreditCardTransaction[]
 
   @@index([userId])
   @@index([cardType])
+  @@index([bankName])
+  @@index([businessId])
 }
 
 // Credit Card Transaction model
@@ -482,6 +542,8 @@ model CreditCardTransaction {
   amount          Float
   type            String   // PURCHASE, PAYMENT, FEE, INTEREST, CASH_ADVANCE
   category        String?
+  merchant        String?  // Merchant name
+  reference       String?  // Reference number
   creditCardId    String
   creditCard      CreditCard @relation(fields: [creditCardId], references: [id])
   userId          String
@@ -492,4 +554,6 @@ model CreditCardTransaction {
   @@index([date])
   @@index([type])
   @@index([category])
+  @@index([creditCardId])
+  @@index([userId])
 }

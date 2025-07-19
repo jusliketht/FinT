@@ -35,7 +35,7 @@ export class InvoiceService {
       },
       include: {
         InvoiceItems: true,
-        Customer: true,
+        customer: true,
       },
     });
   }
@@ -58,7 +58,7 @@ export class InvoiceService {
       where,
       orderBy: { issueDate: 'desc' },
       include: {
-        Customer: true,
+        customer: true,
         InvoiceItems: true,
         _count: {
           select: { InvoicePayments: true },
@@ -71,7 +71,7 @@ export class InvoiceService {
     const invoice = await prisma.invoice.findFirst({
       where: { id, userId },
       include: {
-        Customer: true,
+        customer: true,
         InvoiceItems: true,
         InvoicePayments: {
           orderBy: { paymentDate: 'desc' },
@@ -125,7 +125,7 @@ export class InvoiceService {
         },
         include: {
           InvoiceItems: true,
-          Customer: true,
+          customer: true,
         },
       });
     }
@@ -135,7 +135,7 @@ export class InvoiceService {
       data: invoiceData,
       include: {
         InvoiceItems: true,
-        Customer: true,
+        customer: true,
       },
     });
   }
@@ -184,7 +184,7 @@ export class InvoiceService {
         balanceAmount: { gt: 0 },
       },
       include: {
-        Customer: true,
+        customer: true,
       },
     });
 

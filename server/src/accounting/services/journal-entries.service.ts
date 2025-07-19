@@ -7,75 +7,30 @@ const prisma = new PrismaClient();
 @Injectable()
 export class JournalEntriesService {
   async create(createJournalEntryDto: CreateJournalEntryDto, userId: string) {
-    const { 
-      date, 
-      description, 
-      debitAccountId, 
-      creditAccountId, 
+    const {
+      date,
+      description,
       amount,
-      // GST fields
-      gstRate,
+      debitAccountId,
+      creditAccountId,
       gstAmount,
-      gstin,
-      hsnCode,
-      placeOfSupply,
-      isInterState,
-      // TDS fields
-      tdsSection,
-      tdsRate,
       tdsAmount,
-      panNumber,
-      // Additional fields
-      isMsmeVendor,
-      invoiceNumber,
-      vendorName
+      businessId,
     } = createJournalEntryDto;
 
-    // Validate that accounts exist
+    // Validate accounts exist
     const [debitAccount, creditAccount] = await Promise.all([
-      prisma.account.findUnique({ where: { id: debitAccountId } }),
-      prisma.account.findUnique({ where: { id: creditAccountId } })
+      prisma.accountHead.findUnique({ where: { id: debitAccountId } }),
+      prisma.accountHead.findUnique({ where: { id: creditAccountId } }),
     ]);
 
     if (!debitAccount) {
       throw new BadRequestException('Debit account not found');
     }
-
     if (!creditAccount) {
       throw new BadRequestException('Credit account not found');
     }
 
-    // Validate GST fields if provided
-    if (gstRate && !this.isValidGSTRate(gstRate)) {
-      throw new BadRequestException('Invalid GST rate. Must be 0, 5, 12, 18, or 28');
-    }
-
-    if (gstin && !this.isValidGSTIN(gstin)) {
-      throw new BadRequestException('Invalid GSTIN format. Must be 15 characters');
-    }
-
-    // Validate TDS fields if provided
-    if (tdsSection && !this.isValidTDSSection(tdsSection)) {
-      throw new BadRequestException('Invalid TDS section');
-    }
-
-    if (panNumber && !this.isValidPAN(panNumber)) {
-      throw new BadRequestException('Invalid PAN format. Must be 10 characters');
-    }
-
-    // Auto-calculate GST amount if rate is provided but amount is not
-    let finalGstAmount = gstAmount;
-    if (gstRate && !gstAmount) {
-      finalGstAmount = (amount * gstRate) / 100;
-    }
-
-    // Auto-calculate TDS amount if rate is provided but amount is not
-    let finalTdsAmount = tdsAmount;
-    if (tdsRate && !tdsAmount) {
-      finalTdsAmount = (amount * tdsRate) / 100;
-    }
-
-    // Create journal entry
     const journalEntry = await prisma.journalEntry.create({
       data: {
         date: new Date(date),
@@ -84,27 +39,14 @@ export class JournalEntriesService {
         debitAccountId,
         creditAccountId,
         userId,
-        // GST fields
-        gstRate,
-        gstAmount: finalGstAmount,
-        gstin,
-        hsnCode,
-        placeOfSupply,
-        isInterState: isInterState || false,
-        // TDS fields
-        tdsSection,
-        tdsRate,
-        tdsAmount: finalTdsAmount,
-        panNumber,
-        // Additional fields
-        isMsmeVendor: isMsmeVendor || false,
-        invoiceNumber,
-        vendorName,
+        gstAmount,
+        tdsAmount,
+        businessId,
       },
       include: {
         debitAccount: true,
         creditAccount: true,
-        User: {
+        user: {
           select: {
             id: true,
             name: true,
@@ -125,22 +67,9 @@ export class JournalEntriesService {
       type: 'credit' | 'debit';
       debitAccountId: string;
       creditAccountId: string;
-      // GST fields
-      gstRate?: number;
       gstAmount?: number;
-      gstin?: string;
-      hsnCode?: string;
-      placeOfSupply?: string;
-      isInterState?: boolean;
-      // TDS fields
-      tdsSection?: string;
-      tdsRate?: number;
       tdsAmount?: number;
-      panNumber?: string;
-      // Additional fields
-      isMsmeVendor?: boolean;
-      invoiceNumber?: string;
-      vendorName?: string;
+      businessId?: string;
     }>,
     userId: string
   ) {
@@ -151,7 +80,7 @@ export class JournalEntriesService {
       accountIds.add(t.creditAccountId);
     });
 
-    const existingAccounts = await prisma.account.findMany({
+    const existingAccounts = await prisma.accountHead.findMany({
       where: { id: { in: Array.from(accountIds) } },
       select: { id: true }
     });
@@ -163,39 +92,11 @@ export class JournalEntriesService {
       throw new BadRequestException(`Accounts not found: ${missingAccounts.join(', ')}`);
     }
 
-    // Validate GST and TDS fields for all transactions
-    for (const transaction of transactions) {
-      if (transaction.gstRate && !this.isValidGSTRate(transaction.gstRate)) {
-        throw new BadRequestException(`Invalid GST rate in transaction: ${transaction.description}`);
-      }
-      if (transaction.gstin && !this.isValidGSTIN(transaction.gstin)) {
-        throw new BadRequestException(`Invalid GSTIN in transaction: ${transaction.description}`);
-      }
-      if (transaction.tdsSection && !this.isValidTDSSection(transaction.tdsSection)) {
-        throw new BadRequestException(`Invalid TDS section in transaction: ${transaction.description}`);
-      }
-      if (transaction.panNumber && !this.isValidPAN(transaction.panNumber)) {
-        throw new BadRequestException(`Invalid PAN in transaction: ${transaction.description}`);
-      }
-    }
-
     // Create journal entries in a transaction
     const createdEntries = await prisma.$transaction(async (tx) => {
       const entries = [];
       
       for (const transaction of transactions) {
-        // Auto-calculate GST amount if rate is provided but amount is not
-        let finalGstAmount = transaction.gstAmount;
-        if (transaction.gstRate && !transaction.gstAmount) {
-          finalGstAmount = (transaction.amount * transaction.gstRate) / 100;
-        }
-
-        // Auto-calculate TDS amount if rate is provided but amount is not
-        let finalTdsAmount = transaction.tdsAmount;
-        if (transaction.tdsRate && !transaction.tdsAmount) {
-          finalTdsAmount = (transaction.amount * transaction.tdsRate) / 100;
-        }
-
         const entry = await tx.journalEntry.create({
           data: {
             date: new Date(transaction.date),
@@ -204,27 +105,14 @@ export class JournalEntriesService {
             debitAccountId: transaction.debitAccountId,
             creditAccountId: transaction.creditAccountId,
             userId,
-            // GST fields
-            gstRate: transaction.gstRate,
-            gstAmount: finalGstAmount,
-            gstin: transaction.gstin,
-            hsnCode: transaction.hsnCode,
-            placeOfSupply: transaction.placeOfSupply,
-            isInterState: transaction.isInterState || false,
-            // TDS fields
-            tdsSection: transaction.tdsSection,
-            tdsRate: transaction.tdsRate,
-            tdsAmount: finalTdsAmount,
-            panNumber: transaction.panNumber,
-            // Additional fields
-            isMsmeVendor: transaction.isMsmeVendor || false,
-            invoiceNumber: transaction.invoiceNumber,
-            vendorName: transaction.vendorName,
+            gstAmount: transaction.gstAmount,
+            tdsAmount: transaction.tdsAmount,
+            businessId: transaction.businessId,
           },
           include: {
             debitAccount: true,
             creditAccount: true,
-            User: {
+            user: {
               select: {
                 id: true,
                 name: true,
@@ -283,7 +171,7 @@ export class JournalEntriesService {
         include: {
           debitAccount: true,
           creditAccount: true,
-          User: {
+          user: {
             select: {
               id: true,
               name: true,
@@ -317,7 +205,7 @@ export class JournalEntriesService {
       include: {
         debitAccount: true,
         creditAccount: true,
-        User: {
+        user: {
           select: {
             id: true,
             name: true,
@@ -350,65 +238,24 @@ export class JournalEntriesService {
       debitAccountId, 
       creditAccountId, 
       amount,
-      // GST fields
-      gstRate,
       gstAmount,
-      gstin,
-      hsnCode,
-      placeOfSupply,
-      isInterState,
-      // TDS fields
-      tdsSection,
-      tdsRate,
       tdsAmount,
-      panNumber,
-      // Additional fields
-      isMsmeVendor,
-      invoiceNumber,
-      vendorName
+      businessId
     } = updateJournalEntryDto;
 
     // Validate that accounts exist if provided
     if (debitAccountId) {
-      const debitAccount = await prisma.account.findUnique({ where: { id: debitAccountId } });
+      const debitAccount = await prisma.accountHead.findUnique({ where: { id: debitAccountId } });
       if (!debitAccount) {
         throw new BadRequestException('Debit account not found');
       }
     }
 
     if (creditAccountId) {
-      const creditAccount = await prisma.account.findUnique({ where: { id: creditAccountId } });
+      const creditAccount = await prisma.accountHead.findUnique({ where: { id: creditAccountId } });
       if (!creditAccount) {
         throw new BadRequestException('Credit account not found');
       }
-    }
-
-    // Validate GST and TDS fields if provided
-    if (gstRate && !this.isValidGSTRate(gstRate)) {
-      throw new BadRequestException('Invalid GST rate. Must be 0, 5, 12, 18, or 28');
-    }
-
-    if (gstin && !this.isValidGSTIN(gstin)) {
-      throw new BadRequestException('Invalid GSTIN format. Must be 15 characters');
-    }
-
-    if (tdsSection && !this.isValidTDSSection(tdsSection)) {
-      throw new BadRequestException('Invalid TDS section');
-    }
-
-    if (panNumber && !this.isValidPAN(panNumber)) {
-      throw new BadRequestException('Invalid PAN format. Must be 10 characters');
-    }
-
-    // Auto-calculate GST and TDS amounts if rates are provided
-    let finalGstAmount = gstAmount;
-    if (gstRate && !gstAmount && amount) {
-      finalGstAmount = (amount * gstRate) / 100;
-    }
-
-    let finalTdsAmount = tdsAmount;
-    if (tdsRate && !tdsAmount && amount) {
-      finalTdsAmount = (amount * tdsRate) / 100;
     }
 
     // Update journal entry
@@ -420,27 +267,14 @@ export class JournalEntriesService {
         ...(debitAccountId && { debitAccountId }),
         ...(creditAccountId && { creditAccountId }),
         ...(amount && { amount }),
-        // GST fields
-        ...(gstRate && { gstRate }),
-        ...(finalGstAmount && { gstAmount: finalGstAmount }),
-        ...(gstin && { gstin }),
-        ...(hsnCode && { hsnCode }),
-        ...(placeOfSupply && { placeOfSupply }),
-        ...(typeof isInterState === 'boolean' && { isInterState }),
-        // TDS fields
-        ...(tdsSection && { tdsSection }),
-        ...(tdsRate && { tdsRate }),
-        ...(finalTdsAmount && { tdsAmount: finalTdsAmount }),
-        ...(panNumber && { panNumber }),
-        // Additional fields
-        ...(typeof isMsmeVendor === 'boolean' && { isMsmeVendor }),
-        ...(invoiceNumber && { invoiceNumber }),
-        ...(vendorName && { vendorName }),
+        ...(gstAmount && { gstAmount }),
+        ...(tdsAmount && { tdsAmount }),
+        ...(businessId && { businessId }),
       },
       include: {
         debitAccount: true,
         creditAccount: true,
-        User: {
+        user: {
           select: {
             id: true,
             name: true,

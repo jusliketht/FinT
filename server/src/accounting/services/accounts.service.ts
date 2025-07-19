@@ -140,36 +140,44 @@ export class AccountsService {
 
     const accounts = await prisma.account.findMany({
       where: { businessId },
-      include: {
-        debitEntries: {
-          where: asOfDate ? {
-            date: { lte: asOfDate }
-          } : undefined
-        },
-        creditEntries: {
-          where: asOfDate ? {
-            date: { lte: asOfDate }
-          } : undefined
-        }
-      }
     });
 
-    const trialBalance = accounts.map(account => {
-      const totalDebits = account.debitEntries.reduce((sum, entry) => sum + entry.amount, 0);
-      const totalCredits = account.creditEntries.reduce((sum, entry) => sum + entry.amount, 0);
-      const balance = totalDebits - totalCredits;
+    const trialBalance = await Promise.all(
+      accounts.map(async (account) => {
+        // Get debit entries for this account
+        const debitEntries = await prisma.journalEntry.findMany({
+          where: {
+            debitAccountId: account.id,
+            businessId,
+            ...(asOfDate && { date: { lte: asOfDate } })
+          }
+        });
 
-      return {
-        accountId: account.id,
-        accountCode: account.code,
-        accountName: account.name,
-        accountType: account.type,
-        totalDebits,
-        totalCredits,
-        balance,
-        normalBalance: this.getNormalBalance(account.type)
-      };
-    });
+        // Get credit entries for this account
+        const creditEntries = await prisma.journalEntry.findMany({
+          where: {
+            creditAccountId: account.id,
+            businessId,
+            ...(asOfDate && { date: { lte: asOfDate } })
+          }
+        });
+
+        const totalDebits = debitEntries.reduce((sum, entry) => sum + entry.amount, 0);
+        const totalCredits = creditEntries.reduce((sum, entry) => sum + entry.amount, 0);
+        const balance = totalDebits - totalCredits;
+
+        return {
+          accountId: account.id,
+          accountCode: account.code,
+          accountName: account.name,
+          accountType: account.type,
+          totalDebits,
+          totalCredits,
+          balance,
+          normalBalance: this.getNormalBalance(account.type)
+        };
+      })
+    );
 
     return {
       asOfDate: asOfDate || new Date(),
@@ -184,29 +192,34 @@ export class AccountsService {
    */
   async getAccountBalance(accountId: string, asOfDate?: Date): Promise<number> {
     const account = await prisma.account.findUnique({
-      where: { id: accountId },
-      include: {
-        debitEntries: {
-          where: asOfDate ? {
-            date: { lte: asOfDate }
-          } : undefined
-        },
-        creditEntries: {
-          where: asOfDate ? {
-            date: { lte: asOfDate }
-          } : undefined
-        }
-      }
+      where: { id: accountId }
     });
 
     if (!account) {
       throw new NotFoundException('Account not found');
     }
 
-    const totalDebits = account.debitEntries.reduce((sum, entry) => sum + entry.amount, 0);
-    const totalCredits = account.creditEntries.reduce((sum, entry) => sum + entry.amount, 0);
-    
-    return totalDebits - totalCredits;
+    // Get debit entries for this account
+    const debitEntries = await prisma.journalEntry.findMany({
+      where: {
+        debitAccountId: accountId,
+        ...(asOfDate && { date: { lte: asOfDate } })
+      }
+    });
+
+    // Get credit entries for this account
+    const creditEntries = await prisma.journalEntry.findMany({
+      where: {
+        creditAccountId: accountId,
+        ...(asOfDate && { date: { lte: asOfDate } })
+      }
+    });
+
+    const totalDebits = debitEntries.reduce((sum, entry) => sum + entry.amount, 0);
+    const totalCredits = creditEntries.reduce((sum, entry) => sum + entry.amount, 0);
+    const balance = totalDebits - totalCredits;
+
+    return balance;
   }
 
   /**

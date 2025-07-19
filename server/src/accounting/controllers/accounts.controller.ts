@@ -22,7 +22,7 @@ export class AccountsController {
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 409, description: 'Account code already exists' })
   create(@Body() createAccountDto: CreateAccountDto, @Request() req) {
-    return this.accountsService.create({ ...createAccountDto, userId: req.user.id });
+    return this.accountsService.createAccount({ ...createAccountDto, userId: req.user.id });
   }
 
   @Get()
@@ -37,8 +37,12 @@ export class AccountsController {
   @Roles(UserRole.Admin, UserRole.Accountant, UserRole.Viewer)
   @ApiOperation({ summary: 'Get trial balance' })
   @ApiResponse({ status: 200, description: 'Return trial balance' })
-  getTrialBalance() {
-    return this.accountsService.getTrialBalance();
+  getTrialBalance(@Request() req, @Query('businessId') businessId: string, @Query('asOfDate') asOfDate?: string) {
+    if (!businessId) {
+      throw new Error('Business ID is required for trial balance');
+    }
+    const date = asOfDate ? new Date(asOfDate) : undefined;
+    return this.accountsService.getTrialBalance(businessId, req.user.id, date);
   }
 
   @Get(':id')

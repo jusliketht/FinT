@@ -17,6 +17,10 @@ export class CreateJournalEntryDto {
   @Min(0)
   amount: number;
 
+  @IsOptional()
+  @IsString()
+  businessId?: string;
+
   // GST Fields (India-specific)
   @IsOptional()
   @IsNumber()

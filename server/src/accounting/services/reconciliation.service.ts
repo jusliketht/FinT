@@ -265,11 +265,7 @@ export class ReconciliationService {
       where: { id: reconciliationId, userId },
       include: {
         account: true,
-        statementLines: {
-          include: {
-            transaction: true
-          }
-        }
+        statementLines: true
       }
     });
 

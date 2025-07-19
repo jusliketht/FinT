@@ -54,7 +54,7 @@ export class CreditCardsService {
     const skip = (page - 1) * limit;
     
     const [transactions, total] = await Promise.all([
-      this.prisma.creditCardTransaction.findMany({
+      prisma.creditCardTransaction.findMany({
         where: { 
           creditCardId: cardId,
           creditCard: { userId }
@@ -71,7 +71,7 @@ export class CreditCardsService {
           }
         }
       }),
-      this.prisma.creditCardTransaction.count({
+      prisma.creditCardTransaction.count({
         where: { 
           creditCardId: cardId,
           creditCard: { userId }
@@ -95,7 +95,7 @@ export class CreditCardsService {
       throw new Error('Credit card not found');
     }
 
-    const transaction = await this.prisma.creditCardTransaction.create({
+    const transaction = await prisma.creditCardTransaction.create({
       data: {
         ...transactionData,
         creditCardId: cardId,
@@ -110,7 +110,7 @@ export class CreditCardsService {
   }
 
   private async updateOutstandingAmount(cardId: string) {
-    const transactions = await this.prisma.creditCardTransaction.findMany({
+    const transactions = await prisma.creditCardTransaction.findMany({
       where: { creditCardId: cardId },
     });
 
@@ -122,7 +122,7 @@ export class CreditCardsService {
       }
     }, 0);
 
-    await this.prisma.creditCard.update({
+    await prisma.creditCard.update({
       where: { id: cardId },
       data: { outstandingAmount: totalOutstanding },
     });
