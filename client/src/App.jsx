@@ -4,23 +4,21 @@ import { AuthProvider } from './contexts/AuthContext';
 import { BusinessProvider } from './contexts/BusinessContext';
 import AppRoutes from './routes';
 import Layout from './components/layout/Layout';
-import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
+import theme from './theme/theme';
 
 function App() {
   return (
-    <ChakraProvider>
-      <ThemeProvider>
-        <ToastProvider>
-          <AuthProvider>
-            <BusinessProvider>
-              <Layout>
-                <AppRoutes />
-              </Layout>
-            </BusinessProvider>
-          </AuthProvider>
-        </ToastProvider>
-      </ThemeProvider>
+    <ChakraProvider theme={theme}>
+      <ToastProvider>
+        <AuthProvider>
+          <BusinessProvider>
+            <Layout>
+              <AppRoutes />
+            </Layout>
+          </BusinessProvider>
+        </AuthProvider>
+      </ToastProvider>
     </ChakraProvider>
   );
 }

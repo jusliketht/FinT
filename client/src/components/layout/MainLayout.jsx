@@ -1,20 +1,29 @@
 import React from 'react';
+import { Box, Flex, useColorModeValue } from '@chakra-ui/react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
 const MainLayout = ({ children }) => {
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+    <Flex direction="column" minH="100vh" bg={bgColor}>
       <Topbar />
-      <div className="flex flex-1">
+      <Flex flex="1">
         <Sidebar />
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
-          <div className="max-w-7xl mx-auto h-full">
+        <Box
+          as="main"
+          flex="1"
+          p={{ base: 4, md: 6 }}
+          overflow="auto"
+          bg={bgColor}
+        >
+          <Box maxW="7xl" mx="auto" h="full">
             {children}
-          </div>
-        </main>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Flex>
+    </Flex>
   );
 };
 

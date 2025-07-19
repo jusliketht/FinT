@@ -1,50 +1,147 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import {
+  Box,
+  VStack,
+  Text,
+  Flex,
+  Icon,
+  useColorModeValue,
+  useDisclosure,
+  IconButton,
+  Drawer,
+  DrawerBody,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+} from '@chakra-ui/react';
+import {
+  HamburgerIcon,
+  ViewIcon,
+  SettingsIcon,
+  InfoIcon,
+  RepeatIcon,
+  EditIcon,
+  CopyIcon,
+  StarIcon,
+  DownloadIcon,
+  ExternalLinkIcon,
+  PhoneIcon,
+  EmailIcon,
+  ChatIcon,
+  CalendarIcon,
+} from '@chakra-ui/icons';
 
 const navLinks = [
-  { label: 'Dashboard', to: '/', icon: '📊' },
-  { label: 'Businesses', to: '/businesses', icon: '🏢' },
-  { label: 'Transactions', to: '/transactions', icon: '💳' },
-  { label: 'Journal', to: '/journal', icon: '📝' },
-  { label: 'Ledgers', to: '/ledgers', icon: '📒' },
-  { label: 'Accounts', to: '/accounts', icon: '📚' },
-  { label: 'Bank Statements', to: '/bank-statements', icon: '📄' },
-  { label: 'Banking', to: '/banking', icon: '🏦' },
-  { label: 'Finance', to: '/finance', icon: '💰' },
-  { label: 'Customers', to: '/customers', icon: '👥' },
-  { label: 'Invoices', to: '/invoices', icon: '🧾' },
-  { label: 'Reports', to: '/reports', icon: '📈' },
-  { label: 'Trial Balance', to: '/reports/trial-balance', icon: '⚖️' },
-  { label: 'Profit & Loss', to: '/reports/profit-and-loss', icon: '📊' },
-  { label: 'Balance Sheet', to: '/reports/balance-sheet', icon: '📋' },
-  { label: 'Cash Flow', to: '/reports/cash-flow', icon: '💸' },
-  { label: 'AI Assistant', to: '/ai', icon: '🤖' },
-  { label: 'Account Types', to: '/account-types', icon: '🏷️' },
-  { label: 'Account Categories', to: '/account-categories', icon: '📂' },
-  { label: 'Settings', to: '/settings', icon: '⚙️' },
-  { label: 'Debug', to: '/debug', icon: '🔍' },
+  { label: 'Dashboard', to: '/', icon: ViewIcon },
+  { label: 'Transactions', to: '/transactions', icon: RepeatIcon },
+  { label: 'Reports', to: '/reports', icon: ViewIcon },
+  { label: 'Invoices', to: '/invoices', icon: EmailIcon },
+  { label: 'Business', to: '/businesses', icon: InfoIcon },
 ];
 
 const Sidebar = () => {
   const location = useLocation();
-  const isActive = (to) => (to === '/' ? location.pathname === '/' : location.pathname.startsWith(to));
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  
+  const bgColor = 'primary.900'; // Dark navy blue
+  const textColor = 'white';
+  const activeBg = 'primary.800';
+  const hoverBg = 'primary.700';
+
+  const isActive = (to) => 
+    to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+
+  const NavItem = ({ link }) => {
+    const isLinkActive = isActive(link.to);
+    
+    return (
+      <Link to={link.to}>
+        <Flex
+          align="center"
+          px={4}
+          py={3}
+          borderRadius="md"
+          cursor="pointer"
+          transition="all 0.2s"
+          bg={isLinkActive ? activeBg : 'transparent'}
+          color={textColor}
+          _hover={{
+            bg: isLinkActive ? activeBg : hoverBg,
+          }}
+        >
+          <Icon as={link.icon} boxSize={5} mr={3} />
+          <Text fontSize="sm" fontWeight="medium">
+            {link.label}
+          </Text>
+        </Flex>
+      </Link>
+    );
+  };
+
+  const SidebarContent = () => (
+    <VStack spacing={2} align="stretch" w="full">
+      {navLinks.map((link) => (
+        <NavItem key={link.to} link={link} />
+      ))}
+    </VStack>
+  );
 
   return (
-    <aside className="w-64 h-full bg-white dark:bg-gray-900 shadow-md flex flex-col p-4 md:block hidden">
-      <h1 className="text-xl font-bold mb-4">FinT</h1>
-      <nav className="flex flex-col space-y-2">
-         {navLinks.map((link) => (
-           <Link
-             key={link.to}
-             to={link.to}
-             className={`px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 ${isActive(link.to) ? 'bg-blue-100 dark:bg-blue-800 text-blue-600' : 'text-gray-700 dark:text-gray-200'}`}
-           >
-             <span className="inline-block w-6 mr-2">{link.icon}</span>
-             {link.label}
-           </Link>
-         ))}
-      </nav>
-    </aside>
+    <>
+      {/* Desktop Sidebar */}
+      <Box
+        as="aside"
+        w={{ base: 0, lg: '240px' }}
+        h="full"
+        bg={bgColor}
+        boxShadow="lg"
+        display={{ base: 'none', lg: 'block' }}
+      >
+        <Box p={6}>
+          <Text
+            fontSize="xl"
+            fontWeight="bold"
+            color={textColor}
+            mb={8}
+            fontFamily="heading"
+          >
+            FinT
+          </Text>
+          <SidebarContent />
+        </Box>
+      </Box>
+
+      {/* Mobile Menu Button */}
+      <IconButton
+        aria-label="Open menu"
+        icon={<HamburgerIcon />}
+        onClick={onOpen}
+        display={{ base: 'flex', lg: 'none' }}
+        position="fixed"
+        top="72px"
+        left={4}
+        zIndex="1001"
+        size="md"
+      />
+
+      {/* Mobile Drawer */}
+      <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader bg={bgColor} color={textColor}>
+            FinT
+          </DrawerHeader>
+          <DrawerBody p={0} bg={bgColor}>
+            <Box p={6}>
+              <SidebarContent />
+            </Box>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 };
 
