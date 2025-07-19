@@ -5,6 +5,8 @@ import { ReportsController } from './controllers/reports.controller';
 import { ReconciliationController } from './controllers/reconciliation.controller';
 import { BusinessController } from './controllers/business.controller';
 import { FinancialReportsController } from './controllers/financial-reports.controller';
+import { CustomerController } from './controllers/customer.controller';
+import { InvoiceController } from './controllers/invoice.controller';
 import { AccountsService } from './services/accounts.service';
 import { JournalEntriesService } from './services/journal-entries.service';
 import { ReportsService } from './services/reports.service';
@@ -14,6 +16,8 @@ import { AccountCategoriesService } from './services/account-categories.service'
 import { AccountHeadsService } from './services/account-heads.service';
 import { LedgerService } from './services/ledger.service';
 import { FinancialStatementsService } from './services/financial-statements.service';
+import { CustomerService } from './services/customer.service';
+import { InvoiceService } from './services/invoice.service';
 
 @Module({
   controllers: [
@@ -23,6 +27,8 @@ import { FinancialStatementsService } from './services/financial-statements.serv
     ReconciliationController,
     BusinessController,
     FinancialReportsController,
+    CustomerController,
+    InvoiceController,
   ],
   providers: [
     AccountsService,
@@ -34,6 +40,8 @@ import { FinancialStatementsService } from './services/financial-statements.serv
     AccountHeadsService,
     LedgerService,
     FinancialStatementsService,
+    CustomerService,
+    InvoiceService,
   ],
   exports: [
     AccountsService,
@@ -45,6 +53,8 @@ import { FinancialStatementsService } from './services/financial-statements.serv
     AccountHeadsService,
     LedgerService,
     FinancialStatementsService,
+    CustomerService,
+    InvoiceService,
   ],
 })
 export class AccountingModule {} 

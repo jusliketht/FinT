@@ -11,6 +11,8 @@ const navLinks = [
   { label: 'Bank Statements', to: '/bank-statements', icon: '📄' },
   { label: 'Banking', to: '/banking', icon: '🏦' },
   { label: 'Finance', to: '/finance', icon: '💰' },
+  { label: 'Customers', to: '/customers', icon: '👥' },
+  { label: 'Invoices', to: '/invoices', icon: '🧾' },
   { label: 'Reports', to: '/reports', icon: '📈' },
   { label: 'Trial Balance', to: '/reports/trial-balance', icon: '⚖️' },
   { label: 'Profit & Loss', to: '/reports/profit-and-loss', icon: '📊' },

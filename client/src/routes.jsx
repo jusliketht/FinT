@@ -31,6 +31,10 @@ const ProfitAndLoss = lazy(() => import('./pages/reports/ProfitAndLoss'));
 const BalanceSheet = lazy(() => import('./pages/reports/BalanceSheet'));
 const CashFlow = lazy(() => import('./pages/reports/CashFlow'));
 
+// Invoice and Bill Management
+const CustomerList = lazy(() => import('./components/customers/CustomerList'));
+const InvoiceList = lazy(() => import('./components/invoices/InvoiceList'));
+
 // Protected route component
 const ProtectedRoute = ({ children, requireBusiness = true }) => {
   const { user } = useAuth();
@@ -179,6 +183,22 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <CashFlow />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customers"
+            element={
+              <ProtectedRoute>
+                <CustomerList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/invoices"
+            element={
+              <ProtectedRoute>
+                <InvoiceList />
               </ProtectedRoute>
             }
           />
