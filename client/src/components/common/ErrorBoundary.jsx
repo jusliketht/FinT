@@ -1,14 +1,16 @@
 import React from 'react';
 import {
   Box,
+  VStack,
+  Heading,
+  Text,
   Button,
   Alert,
+  AlertIcon,
   AlertTitle,
   AlertDescription,
-  Container,
-  Code,
-  HStack
 } from '@chakra-ui/react';
+import { WarningIcon, RefreshIcon } from '@chakra-ui/icons';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -26,20 +28,20 @@ class ErrorBoundary extends React.Component {
       errorInfo: errorInfo,
     });
 
-    // Log error to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error caught by boundary:', error, errorInfo);
-    }
+    // Log error to console for debugging
+    console.error('Error caught by boundary:', error, errorInfo);
 
-    // In production, you might want to log to an error reporting service
-    // logErrorToService(error, errorInfo);
+    // In production, you would send this to an error reporting service
+    // Example: Sentry.captureException(error, { extra: errorInfo });
   }
 
-  handleReload = () => {
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null });
     window.location.reload();
   };
 
   handleGoHome = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null });
     window.location.href = '/';
   };
 
@@ -47,66 +49,76 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <Box
+          minH="100vh"
           display="flex"
-          flexDirection="column"
           alignItems="center"
           justifyContent="center"
-          minH="100vh"
+          bg="gray.50"
           p={6}
-          textAlign="center"
         >
-          <Container maxW="container.md">
-            <Alert
-              status="error"
-              variant="subtle"
-              flexDirection="column"
-              alignItems="center"
-              justifyContent="center"
-              textAlign="center"
-              borderRadius="lg"
-              p={6}
-              mb={6}
-            >
-              <AlertTitle mt={4} mb={1} fontSize="lg">
-                Something went wrong
-              </AlertTitle>
-              <AlertDescription maxW="sm">
-                We're sorry, but something unexpected happened. Please try refreshing the page or contact support if the problem persists.
-              </AlertDescription>
-              
-              {process.env.NODE_ENV === 'development' && this.state.error && (
-                <Box mt={4} textAlign="left" w="100%">
-                  <Code
-                    p={3}
-                    w="100%"
-                    display="block"
-                    whiteSpace="pre"
-                    children={this.state.error.toString()}
-                    bg="gray.50"
-                    color="red.600"
-                    borderRadius="md"
-                    fontSize="sm"
-                    overflowX="auto"
-                  />
-                </Box>
-              )}
+          <VStack spacing={6} maxW="500px" textAlign="center">
+            <Alert status="error" borderRadius="lg">
+              <AlertIcon />
+              <Box>
+                <AlertTitle>Something went wrong!</AlertTitle>
+                <AlertDescription>
+                  We encountered an unexpected error. Please try refreshing the page or contact support if the problem persists.
+                </AlertDescription>
+              </Box>
             </Alert>
 
-            <HStack spacing={4} justify="center" wrap="wrap">
+            <VStack spacing={4}>
+              <Heading size="lg" color="gray.800">
+                Oops! Something broke
+              </Heading>
+              <Text color="gray.600">
+                We're sorry, but something unexpected happened. Our team has been notified and is working to fix this issue.
+              </Text>
+            </VStack>
+
+            <VStack spacing={3} w="full">
               <Button
+                leftIcon={<RefreshIcon />}
                 colorScheme="blue"
-                onClick={this.handleReload}
+                size="lg"
+                w="full"
+                onClick={this.handleRetry}
               >
                 Refresh Page
               </Button>
               <Button
                 variant="outline"
+                size="lg"
+                w="full"
                 onClick={this.handleGoHome}
               >
-                Go to Home
+                Go to Dashboard
               </Button>
-            </HStack>
-          </Container>
+            </VStack>
+
+            {process.env.NODE_ENV === 'development' && this.state.error && (
+              <Box
+                mt={6}
+                p={4}
+                bg="gray.100"
+                borderRadius="md"
+                w="full"
+                textAlign="left"
+              >
+                <Text fontSize="sm" fontWeight="bold" mb={2}>
+                  Error Details (Development Only):
+                </Text>
+                <Text fontSize="xs" fontFamily="mono" color="red.600">
+                  {this.state.error.toString()}
+                </Text>
+                {this.state.errorInfo && (
+                  <Text fontSize="xs" fontFamily="mono" color="gray.600" mt={2}>
+                    {this.state.errorInfo.componentStack}
+                  </Text>
+                )}
+              </Box>
+            )}
+          </VStack>
         </Box>
       );
     }

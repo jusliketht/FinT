@@ -10,206 +10,386 @@ import {
   Button,
   FormControl,
   FormLabel,
+  FormHelperText,
+  FormErrorMessage,
   Input,
   Select,
+  Textarea,
   VStack,
   HStack,
   Text,
   useToast,
-  Spinner,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  useDisclosure,
+  Box,
+  Divider,
+  Flex,
+  Badge,
 } from '@chakra-ui/react';
-import transactionService from '../../services/transactionService';
-import accountService from '../../services/accountService';
+import { AddIcon, CalendarIcon, InfoIcon } from '@chakra-ui/icons';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import { transactionSchema, formatCurrency } from '../../utils/validation';
+import { useApi } from '../../services/api';
 import { useBusiness } from '../../contexts/BusinessContext';
+import { LoadingSpinner } from '../common/LoadingStates';
 
-const TransactionForm = ({ isOpen, onClose, transaction = null, onSuccess }) => {
+const TransactionForm = ({ isOpen, onClose, transaction, onSuccess }) => {
   const { selectedBusiness } = useBusiness();
   const toast = useToast();
-  
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    description: '',
-    amount: '',
-    status: 'paid'
+  const api = useApi();
+  const [loading, setLoading] = useState(false);
+  const [accounts, setAccounts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Form validation schema
+  const validationSchema = Yup.object().shape({
+    date: Yup.date()
+      .required('Date is required')
+      .max(new Date(), 'Date cannot be in the future'),
+    amount: Yup.number()
+      .required('Amount is required')
+      .positive('Amount must be positive')
+      .typeError('Amount must be a valid number'),
+    description: Yup.string()
+      .required('Description is required')
+      .min(3, 'Description must be at least 3 characters')
+      .max(200, 'Description must be less than 200 characters'),
+    type: Yup.string()
+      .required('Transaction type is required')
+      .oneOf(['income', 'expense', 'transfer'], 'Invalid transaction type'),
+    category: Yup.string()
+      .required('Category is required'),
+    accountId: Yup.string()
+      .required('Account is required'),
+    reference: Yup.string()
+      .max(100, 'Reference must be less than 100 characters'),
+    notes: Yup.string()
+      .max(500, 'Notes must be less than 500 characters'),
   });
 
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-
-  useEffect(() => {
-    if (transaction) {
-      setFormData({
-        date: new Date(transaction.date).toISOString().split('T')[0],
-        description: transaction.description || '',
-        amount: transaction.amount?.toString() || '',
-        status: transaction.status || 'paid'
-      });
-    } else {
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        description: '',
-        amount: '',
-        status: 'paid'
-      });
-    }
-  }, [transaction, isOpen]);
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.date) {
-      newErrors.date = 'Date is required';
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
-    }
-
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      newErrors.amount = 'Amount must be greater than 0';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const transactionData = {
-        ...formData,
-        amount: parseFloat(formData.amount),
-        businessId: selectedBusiness?.id
-      };
-
-      if (transaction) {
-        await transactionService.update(transaction.id, transactionData);
-        toast({
-          title: 'Success',
-          description: 'Transaction updated successfully',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-      } else {
-        await transactionService.create(transactionData);
-        toast({
-          title: 'Success',
-          description: 'Transaction created successfully',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
+  // Formik form setup
+  const formik = useFormik({
+    initialValues: {
+      date: transaction?.date ? new Date(transaction.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      amount: transaction?.amount || '',
+      description: transaction?.description || '',
+      type: transaction?.type || 'expense',
+      category: transaction?.category || '',
+      accountId: transaction?.accountId || '',
+      reference: transaction?.reference || '',
+      notes: transaction?.notes || '',
+    },
+    validationSchema,
+    onSubmit: async (values) => {
+      if (!selectedBusiness) {
+        toast.showError('Please select a business first');
+        return;
       }
 
-      onSuccess();
-      onClose();
+      setSubmitting(true);
+      try {
+        const data = {
+          ...values,
+          businessId: selectedBusiness.id,
+          amount: parseFloat(values.amount),
+        };
+
+        if (transaction) {
+          await api.put(`/transactions/${transaction.id}`, data, {}, {
+            successMessage: 'Transaction updated successfully',
+            errorMessage: 'Failed to update transaction',
+          });
+        } else {
+          await api.post('/transactions', data, {}, {
+            successMessage: 'Transaction created successfully',
+            errorMessage: 'Failed to create transaction',
+          });
+        }
+
+        onSuccess();
+        onClose();
+      } catch (error) {
+        console.error('Transaction form error:', error);
+      } finally {
+        setSubmitting(false);
+      }
+    },
+  });
+
+  // Load accounts and categories
+  useEffect(() => {
+    if (isOpen && selectedBusiness) {
+      loadFormData();
+    }
+  }, [isOpen, selectedBusiness]);
+
+  const loadFormData = async () => {
+    setLoading(true);
+    try {
+      const [accountsData, categoriesData] = await Promise.all([
+        api.get('/accounts', { params: { businessId: selectedBusiness.id } }),
+        api.get('/account-categories'),
+      ]);
+      
+      setAccounts(accountsData.data || []);
+      setCategories(categoriesData.data || []);
     } catch (error) {
-      console.error('Error saving transaction:', error);
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to save transaction',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      console.error('Error loading form data:', error);
+      toast.showError('Failed to load form data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  // Filter categories by transaction type
+  const filteredCategories = categories.filter(cat => 
+    cat.type === formik.values.type || cat.type === 'general'
+  );
 
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
+  // Filter accounts by transaction type
+  const filteredAccounts = accounts.filter(acc => {
+    if (formik.values.type === 'income') {
+      return acc.type === 'REVENUE' || acc.type === 'ASSET';
+    } else if (formik.values.type === 'expense') {
+      return acc.type === 'EXPENSE' || acc.type === 'ASSET';
+    } else if (formik.values.type === 'transfer') {
+      return acc.type === 'ASSET';
     }
+    return true;
+  });
+
+  const handleAmountChange = (value) => {
+    formik.setFieldValue('amount', value);
   };
 
+  const getFieldError = (fieldName) => {
+    return formik.touched[fieldName] && formik.errors[fieldName];
+  };
+
+  const isFieldInvalid = (fieldName) => {
+    return formik.touched[fieldName] && formik.errors[fieldName];
+  };
+
+  if (loading) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} size="xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalBody>
+            <LoadingSpinner message="Loading form data..." />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    );
+  }
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>
-          {transaction ? 'Edit Transaction' : 'Add Transaction'}
-        </ModalHeader>
-        <ModalCloseButton />
-        
-        <ModalBody>
-          <VStack spacing={4}>
-            <FormControl isInvalid={!!errors.date}>
-              <FormLabel>Date</FormLabel>
-              <Input
-                type="date"
-                value={formData.date}
-                onChange={(e) => handleInputChange('date', e.target.value)}
-                size="md"
-              />
-            </FormControl>
+        <form onSubmit={formik.handleSubmit}>
+          <ModalHeader>
+            {transaction ? 'Edit Transaction' : 'Add Transaction'}
+          </ModalHeader>
+          <ModalCloseButton />
+          
+          <ModalBody>
+            <VStack spacing={6} align="stretch">
+              {/* Transaction Type Selection */}
+              <FormControl isInvalid={isFieldInvalid('type')}>
+                <FormLabel>Transaction Type</FormLabel>
+                <Select
+                  name="type"
+                  value={formik.values.type}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                >
+                  <option value="expense">Expense</option>
+                  <option value="income">Income</option>
+                  <option value="transfer">Transfer</option>
+                </Select>
+                <FormErrorMessage>{getFieldError('type')}</FormErrorMessage>
+              </FormControl>
 
-            <FormControl isInvalid={!!errors.description}>
-              <FormLabel>Description</FormLabel>
-              <Input
-                placeholder="Enter transaction description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                size="md"
-              />
-            </FormControl>
+              {/* Date and Amount */}
+              <HStack spacing={4}>
+                <FormControl isInvalid={isFieldInvalid('date')} isRequired>
+                  <FormLabel>Date</FormLabel>
+                  <Input
+                    type="date"
+                    name="date"
+                    value={formik.values.date}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                  />
+                  <FormErrorMessage>{getFieldError('date')}</FormErrorMessage>
+                </FormControl>
 
-            <FormControl isInvalid={!!errors.amount}>
-              <FormLabel>Amount</FormLabel>
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={formData.amount}
-                onChange={(e) => handleInputChange('amount', e.target.value)}
-                size="md"
-                leftAddon="$"
-              />
-            </FormControl>
+                <FormControl isInvalid={isFieldInvalid('amount')} isRequired>
+                  <FormLabel>Amount</FormLabel>
+                  <NumberInput
+                    value={formik.values.amount}
+                    onChange={handleAmountChange}
+                    min={0}
+                    precision={2}
+                  >
+                    <NumberInputField
+                      name="amount"
+                      onBlur={formik.handleBlur}
+                      placeholder="0.00"
+                    />
+                    <NumberInputStepper>
+                      <NumberIncrementStepper />
+                      <NumberDecrementStepper />
+                    </NumberInputStepper>
+                  </NumberInput>
+                  <FormHelperText>
+                    {formik.values.amount && formatCurrency(formik.values.amount)}
+                  </FormHelperText>
+                  <FormErrorMessage>{getFieldError('amount')}</FormErrorMessage>
+                </FormControl>
+              </HStack>
 
-            <FormControl>
-              <FormLabel>Status</FormLabel>
-              <Select
-                value={formData.status}
-                onChange={(e) => handleInputChange('status', e.target.value)}
-                size="md"
+              {/* Description */}
+              <FormControl isInvalid={isFieldInvalid('description')} isRequired>
+                <FormLabel>Description</FormLabel>
+                <Input
+                  name="description"
+                  value={formik.values.description}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Enter transaction description"
+                />
+                <FormHelperText>
+                  {formik.values.description.length}/200 characters
+                </FormHelperText>
+                <FormErrorMessage>{getFieldError('description')}</FormErrorMessage>
+              </FormControl>
+
+              {/* Category and Account */}
+              <HStack spacing={4}>
+                <FormControl isInvalid={isFieldInvalid('category')} isRequired>
+                  <FormLabel>Category</FormLabel>
+                  <Select
+                    name="category"
+                    value={formik.values.category}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    placeholder="Select category"
+                  >
+                    {filteredCategories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <FormErrorMessage>{getFieldError('category')}</FormErrorMessage>
+                </FormControl>
+
+                <FormControl isInvalid={isFieldInvalid('accountId')} isRequired>
+                  <FormLabel>Account</FormLabel>
+                  <Select
+                    name="accountId"
+                    value={formik.values.accountId}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    placeholder="Select account"
+                  >
+                    {filteredAccounts.map(account => (
+                      <option key={account.id} value={account.id}>
+                        {account.name} ({account.code})
+                      </option>
+                    ))}
+                  </Select>
+                  <FormErrorMessage>{getFieldError('accountId')}</FormErrorMessage>
+                </FormControl>
+              </HStack>
+
+              {/* Reference */}
+              <FormControl isInvalid={isFieldInvalid('reference')}>
+                <FormLabel>Reference</FormLabel>
+                <Input
+                  name="reference"
+                  value={formik.values.reference}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Optional reference number or ID"
+                />
+                <FormHelperText>
+                  Invoice number, receipt number, or other reference
+                </FormHelperText>
+                <FormErrorMessage>{getFieldError('reference')}</FormErrorMessage>
+              </FormControl>
+
+              {/* Notes */}
+              <FormControl isInvalid={isFieldInvalid('notes')}>
+                <FormLabel>Notes</FormLabel>
+                <Textarea
+                  name="notes"
+                  value={formik.values.notes}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Additional notes (optional)"
+                  rows={3}
+                />
+                <FormHelperText>
+                  {formik.values.notes.length}/500 characters
+                </FormHelperText>
+                <FormErrorMessage>{getFieldError('notes')}</FormErrorMessage>
+              </FormControl>
+
+              {/* Validation Summary */}
+              {Object.keys(formik.errors).length > 0 && (
+                <Alert status="error" borderRadius="md">
+                  <AlertIcon />
+                  <Box>
+                    <AlertTitle>Please fix the following errors:</AlertTitle>
+                    <AlertDescription>
+                      <VStack align="start" spacing={1} mt={2}>
+                        {Object.entries(formik.errors).map(([field, error]) => (
+                          <Text key={field} fontSize="sm">
+                            • {error}
+                          </Text>
+                        ))}
+                      </VStack>
+                    </AlertDescription>
+                  </Box>
+                </Alert>
+              )}
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter>
+            <HStack spacing={3}>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                isDisabled={submitting}
               >
-                <option value="paid">Paid</option>
-                <option value="pending">Pending</option>
-                <option value="overdue">Overdue</option>
-              </Select>
-            </FormControl>
-          </VStack>
-        </ModalBody>
-
-        <ModalFooter>
-          <HStack spacing={3}>
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              colorScheme="blue"
-              onClick={handleSubmit}
-              isLoading={loading}
-              loadingText="Saving..."
-            >
-              {transaction ? 'Update Transaction' : 'Add Transaction'}
-            </Button>
-          </HStack>
-        </ModalFooter>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                colorScheme="blue"
+                isLoading={submitting}
+                loadingText="Saving..."
+                isDisabled={!formik.isValid || submitting}
+              >
+                {transaction ? 'Update Transaction' : 'Create Transaction'}
+              </Button>
+            </HStack>
+          </ModalFooter>
+        </form>
       </ModalContent>
     </Modal>
   );

@@ -22,6 +22,7 @@ import {
   Td,
   TableContainer,
   IconButton,
+  Divider,
 } from '@chakra-ui/react';
 import {
   ViewIcon,
@@ -30,6 +31,8 @@ import {
   ChevronRightIcon,
   ArrowUpIcon,
   ArrowDownIcon,
+  AttachmentIcon,
+  SettingsIcon,
 } from '@chakra-ui/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -119,6 +122,23 @@ const Dashboard = () => {
     </Card>
   );
 
+  const QuickActionButton = ({ icon, label, to, colorScheme = "blue", variant = "solid" }) => (
+    <Button
+      as={Link}
+      to={to}
+      leftIcon={<Icon as={icon} />}
+      colorScheme={colorScheme}
+      variant={variant}
+      size="lg"
+      w="full"
+      h="60px"
+      fontSize="md"
+      fontWeight="medium"
+    >
+      {label}
+    </Button>
+  );
+
   return (
     <Box maxW="7xl" mx="auto" p={6}>
       {/* Header */}
@@ -170,6 +190,41 @@ const Dashboard = () => {
           trend="up"
         />
       </SimpleGrid>
+
+      {/* Quick Actions Section */}
+      <Card bg={cardBg} borderRadius="lg" boxShadow="md" mb={8}>
+        <CardBody p={6}>
+          <Heading size="md" mb={6}>
+            Quick Actions
+          </Heading>
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
+            <QuickActionButton
+              icon={AddIcon}
+              label="Add Transaction"
+              to="/journal/new"
+              colorScheme="blue"
+            />
+            <QuickActionButton
+              icon={ViewIcon}
+              label="Generate Report"
+              to="/reports"
+              colorScheme="green"
+            />
+            <QuickActionButton
+              icon={AttachmentIcon}
+              label="Upload Statement"
+              to="/bank-statements"
+              colorScheme="purple"
+            />
+            <QuickActionButton
+              icon={SettingsIcon}
+              label="Chart of Accounts"
+              to="/accounts"
+              colorScheme="orange"
+            />
+          </SimpleGrid>
+        </CardBody>
+      </Card>
 
       {/* Recent Transactions */}
       <Card bg={cardBg} borderRadius="lg" boxShadow="md">
