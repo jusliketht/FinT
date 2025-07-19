@@ -29,7 +29,7 @@ import {
   InputGroup,
   InputLeftElement
 } from '@chakra-ui/react';
-import { SearchIcon, DownloadIcon, PrintIcon, RefreshIcon } from '@chakra-ui/icons';
+import { SearchIcon, DownloadIcon, ViewIcon, RepeatIcon } from '@chakra-ui/icons';
 import { useApi } from '../../hooks/useApi';
 
 const GeneralLedger = () => {
@@ -202,7 +202,7 @@ const GeneralLedger = () => {
           </Box>
           <HStack spacing={3}>
             <Button
-              leftIcon={<RefreshIcon />}
+              leftIcon={<RepeatIcon />}
               onClick={handleGenerate}
               colorScheme="blue"
               variant="outline"
@@ -218,7 +218,7 @@ const GeneralLedger = () => {
               Export PDF
             </Button>
             <Button
-              leftIcon={<PrintIcon />}
+              leftIcon={<ViewIcon />}
               onClick={() => window.print()}
               colorScheme="purple"
             >

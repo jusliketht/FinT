@@ -15,10 +15,12 @@ import {
   Button,
   useToast
 } from '@chakra-ui/react';
-import { DownloadIcon, PrintIcon } from '@chakra-ui/icons';
+import { DownloadIcon, ViewIcon } from '@chakra-ui/icons';
 import IncomeStatement from '../../components/reports/IncomeStatement';
 import BalanceSheet from '../../components/reports/BalanceSheet';
 import TrialBalance from '../../components/reports/TrialBalance';
+import CashFlow from '../../components/reports/CashFlow';
+import ProfitAndLoss from '../../components/reports/ProfitAndLoss';
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -55,7 +57,7 @@ const Reports = () => {
               Export All
             </Button>
             <Button
-              leftIcon={<PrintIcon />}
+              leftIcon={<ViewIcon />}
               onClick={() => window.print()}
               colorScheme="purple"
               variant="outline"
@@ -88,14 +90,7 @@ const Reports = () => {
                   <TrialBalance />
                 </TabPanel>
                 <TabPanel>
-                  <Box textAlign="center" py={10}>
-                    <Text fontSize="lg" color="gray.600">
-                      Cash Flow Statement coming soon...
-                    </Text>
-                    <Text fontSize="sm" color="gray.500" mt={2}>
-                      This report will show cash inflows and outflows
-                    </Text>
-                  </Box>
+                  <CashFlow />
                 </TabPanel>
                 <TabPanel>
                   <Box textAlign="center" py={10}>

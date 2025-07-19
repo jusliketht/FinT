@@ -26,10 +26,10 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Transactions = lazy(() => import('./pages/TransactionsPage'));
 
 // Financial Reports
-const TrialBalance = lazy(() => import('./pages/reports/TrialBalance'));
-const ProfitAndLoss = lazy(() => import('./pages/reports/ProfitAndLoss'));
-const BalanceSheet = lazy(() => import('./pages/reports/BalanceSheet'));
-const CashFlow = lazy(() => import('./pages/reports/CashFlow'));
+const TrialBalance = lazy(() => import('./components/reports/TrialBalance'));
+const ProfitAndLoss = lazy(() => import('./components/reports/ProfitAndLoss'));
+const BalanceSheet = lazy(() => import('./components/reports/BalanceSheet'));
+const CashFlow = lazy(() => import('./components/reports/CashFlow'));
 
 // Invoice and Bill Management
 const CustomerList = lazy(() => import('./components/customers/CustomerList'));

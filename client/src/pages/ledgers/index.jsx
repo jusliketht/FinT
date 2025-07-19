@@ -15,7 +15,7 @@ import {
   Button,
   useToast
 } from '@chakra-ui/react';
-import { DownloadIcon, PrintIcon } from '@chakra-ui/icons';
+import { DownloadIcon, ViewIcon } from '@chakra-ui/icons';
 import GeneralLedger from './GeneralLedger';
 import TrialBalance from './TrialBalance';
 
@@ -54,7 +54,7 @@ const Ledgers = () => {
               Export All
             </Button>
             <Button
-              leftIcon={<PrintIcon />}
+              leftIcon={<ViewIcon />}
               onClick={() => window.print()}
               colorScheme="purple"
               variant="outline"

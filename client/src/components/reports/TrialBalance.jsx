@@ -25,7 +25,7 @@ import {
   useToast,
   Badge
 } from '@chakra-ui/react';
-import { DownloadIcon, PrintIcon, RefreshIcon } from '@chakra-ui/icons';
+import { DownloadIcon, ViewIcon, RepeatIcon } from '@chakra-ui/icons';
 import { useApi } from '../../hooks/useApi';
 
 const TrialBalance = () => {
@@ -143,7 +143,7 @@ const TrialBalance = () => {
           </Box>
           <HStack spacing={3}>
             <Button
-              leftIcon={<RefreshIcon />}
+              leftIcon={<RepeatIcon />}
               onClick={handleGenerate}
               colorScheme="blue"
               variant="outline"
@@ -158,7 +158,7 @@ const TrialBalance = () => {
               Export PDF
             </Button>
             <Button
-              leftIcon={<PrintIcon />}
+              leftIcon={<ViewIcon />}
               onClick={() => window.print()}
               colorScheme="purple"
             >

@@ -34,7 +34,7 @@ import {
   Avatar,
   AvatarGroup
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, ViewIcon, UsersIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, DeleteIcon, ViewIcon, InfoIcon } from '@chakra-ui/icons';
 import businessService from '../../services/businessService';
 import BusinessForm from './BusinessForm';
 import BusinessUsers from './BusinessUsers';
@@ -213,7 +213,7 @@ const BusinessList = () => {
                   </VStack>
                   <HStack spacing={2}>
                     <IconButton
-                      icon={<UsersIcon />}
+                      icon={<InfoIcon />}
                       aria-label="View users"
                       size="sm"
                       variant="ghost"
