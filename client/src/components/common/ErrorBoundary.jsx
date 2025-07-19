@@ -10,7 +10,7 @@ import {
   AlertTitle,
   AlertDescription,
 } from '@chakra-ui/react';
-import { WarningIcon, RefreshIcon } from '@chakra-ui/icons';
+import { WarningIcon, RepeatIcon } from '@chakra-ui/icons';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -78,7 +78,7 @@ class ErrorBoundary extends React.Component {
 
             <VStack spacing={3} w="full">
               <Button
-                leftIcon={<RefreshIcon />}
+                leftIcon={<RepeatIcon />}
                 colorScheme="blue"
                 size="lg"
                 w="full"

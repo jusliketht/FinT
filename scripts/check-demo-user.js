@@ -29,7 +29,8 @@ async function checkAndCreateDemoUser() {
         name: 'Demo User',
         email: 'demo@fint.com',
         password: hashedPassword,
-        role: 'ADMIN'
+        role: 'ADMIN',
+        updatedAt: new Date()
       }
     });
 

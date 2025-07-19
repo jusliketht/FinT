@@ -1,54 +1,54 @@
-import api from './api';
+import apiService from './api';
 
 class UserService {
   async createUser(userData) {
-    const response = await api.post('/users', userData);
-    return response.data;
+    const response = await apiService.post('/users', userData);
+    return response;
   }
 
   async getAllUsers() {
-    const response = await api.get('/users');
-    return response.data;
+    const response = await apiService.get('/users');
+    return response;
   }
 
   async getCurrentUser() {
-    const response = await api.get('/users/me');
-    return response.data;
+    const response = await apiService.get('/users/me');
+    return response;
   }
 
   async getUser(id) {
-    const response = await api.get(`/users/${id}`);
-    return response.data;
+    const response = await apiService.get(`/users/${id}`);
+    return response;
   }
 
   async updateUser(id, userData) {
-    const response = await api.patch(`/users/${id}`, userData);
-    return response.data;
+    const response = await apiService.patch(`/users/${id}`, userData);
+    return response;
   }
 
   async updateProfile(userData) {
-    const response = await api.patch('/users/me', userData);
-    return response.data;
+    const response = await apiService.patch('/users/me', userData);
+    return response;
   }
 
   async deleteUser(id) {
-    const response = await api.delete(`/users/${id}`);
-    return response.data;
+    const response = await apiService.delete(`/users/${id}`);
+    return response;
   }
 
   async updateUserRole(id, role) {
-    const response = await api.patch(`/users/${id}/role`, { role });
-    return response.data;
+    const response = await apiService.patch(`/users/${id}/role`, { role });
+    return response;
   }
 
   async updateUserPermissions(id, permissions) {
-    const response = await api.patch(`/users/${id}/permissions`, { permissions });
-    return response.data;
+    const response = await apiService.patch(`/users/${id}/permissions`, { permissions });
+    return response;
   }
 
   async getUserBusinesses(id) {
-    const response = await api.get(`/users/${id}/businesses`);
-    return response.data;
+    const response = await apiService.get(`/users/${id}/businesses`);
+    return response;
   }
 
   async getCurrentUserBusinesses() {
@@ -57,8 +57,8 @@ class UserService {
   }
 
   async login(credentials) {
-    const response = await api.post('/auth/login', credentials);
-    return response.data;
+    const response = await apiService.post('/auth/login', credentials);
+    return response;
   }
 
   async logout() {
@@ -68,29 +68,29 @@ class UserService {
   }
 
   async changePassword(currentPassword, newPassword) {
-    const response = await api.post('/users/me/change-password', {
+    const response = await apiService.post('/users/me/change-password', {
       currentPassword,
       newPassword
     });
-    return response.data;
+    return response;
   }
 
   async resetPassword(email) {
-    const response = await api.post('/auth/reset-password', { email });
-    return response.data;
+    const response = await apiService.post('/auth/reset-password', { email });
+    return response;
   }
 
   async verifyResetToken(token) {
-    const response = await api.get(`/auth/reset-password/${token}`);
-    return response.data;
+    const response = await apiService.get(`/auth/reset-password/${token}`);
+    return response;
   }
 
   async setNewPassword(token, newPassword) {
-    const response = await api.post('/auth/reset-password', {
+    const response = await apiService.post('/auth/reset-password', {
       token,
       newPassword
     });
-    return response.data;
+    return response;
   }
 }
 

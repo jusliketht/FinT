@@ -1,15 +1,34 @@
 import React, { useState, useEffect } from 'react';
-// import { Container, Box, Typography, Alert, Dialog, Tabs, Tab } from '@mui/material';
-import { useSnackbar } from 'notistack';
+import {
+  Box,
+  Container,
+  Heading,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  useToast,
+} from '@chakra-ui/react';
 import ChartOfAccounts from '../../components/accounts/ChartOfAccounts';
-import AccountForm from '../../components/accounts/AccountForm';
-import AccountCategoryManager from '../../components/accounts/AccountCategoryManager';
+import AccountForm from '../../components/features/accounts/AccountForm';
+import AccountCategoryManager from '../../components/features/account-categories/AccountCategoriesManager';
 import accountService from '../../services/accountService';
 import accountCategoryService from '../../services/accountCategoryService';
 import accountTypeService from '../../services/accountTypeService';
 
 const ChartOfAccountsPage = () => {
-  const { enqueueSnackbar } = useSnackbar();
+  const toast = useToast();
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [accountTypes, setAccountTypes] = useState([]);
@@ -36,7 +55,13 @@ const ChartOfAccountsPage = () => {
       setAccountTypes(typesResponse.data);
     } catch (err) {
       setError('Failed to fetch data');
-      enqueueSnackbar('Failed to load data', { variant: 'error' });
+      toast({
+        title: 'Failed to load data',
+        description: err.message || 'Failed to load data',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -60,11 +85,23 @@ const ChartOfAccountsPage = () => {
     try {
       setLoading(true);
       await accountService.delete(account.id);
-      enqueueSnackbar('Account deleted successfully', { variant: 'success' });
+      toast({
+        title: 'Account deleted successfully',
+        description: 'Account deleted successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
       fetchData();
     } catch (err) {
       setError(err.message || 'Failed to delete account');
-      enqueueSnackbar('Failed to delete account', { variant: 'error' });
+      toast({
+        title: 'Failed to delete account',
+        description: err.message || 'Failed to delete account',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -75,16 +112,34 @@ const ChartOfAccountsPage = () => {
       setLoading(true);
       if (selectedAccount) {
         await accountService.update(selectedAccount.id, values);
-        enqueueSnackbar('Account updated successfully', { variant: 'success' });
+        toast({
+          title: 'Account updated successfully',
+          description: 'Account updated successfully',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
       } else {
         await accountService.create(values);
-        enqueueSnackbar('Account created successfully', { variant: 'success' });
+        toast({
+          title: 'Account created successfully',
+          description: 'Account created successfully',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
       }
       setIsFormOpen(false);
       fetchData();
     } catch (err) {
       setError(err.message || 'Failed to save account');
-      enqueueSnackbar('Failed to save account', { variant: 'error' });
+      toast({
+        title: 'Failed to save account',
+        description: err.message || 'Failed to save account',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -94,11 +149,23 @@ const ChartOfAccountsPage = () => {
     try {
       setLoading(true);
       await accountCategoryService.create(values);
-      enqueueSnackbar('Category created successfully', { variant: 'success' });
+      toast({
+        title: 'Category created successfully',
+        description: 'Category created successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
       fetchData();
     } catch (err) {
       setError(err.message || 'Failed to create category');
-      enqueueSnackbar('Failed to create category', { variant: 'error' });
+      toast({
+        title: 'Failed to create category',
+        description: err.message || 'Failed to create category',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -108,11 +175,23 @@ const ChartOfAccountsPage = () => {
     try {
       setLoading(true);
       await accountCategoryService.update(id, values);
-      enqueueSnackbar('Category updated successfully', { variant: 'success' });
+      toast({
+        title: 'Category updated successfully',
+        description: 'Category updated successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
       fetchData();
     } catch (err) {
       setError(err.message || 'Failed to update category');
-      enqueueSnackbar('Failed to update category', { variant: 'error' });
+      toast({
+        title: 'Failed to update category',
+        description: err.message || 'Failed to update category',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -126,11 +205,23 @@ const ChartOfAccountsPage = () => {
     try {
       setLoading(true);
       await accountCategoryService.delete(id);
-      enqueueSnackbar('Category deleted successfully', { variant: 'success' });
+      toast({
+        title: 'Category deleted successfully',
+        description: 'Category deleted successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
       fetchData();
     } catch (err) {
       setError(err.message || 'Failed to delete category');
-      enqueueSnackbar('Failed to delete category', { variant: 'error' });
+      toast({
+        title: 'Failed to delete category',
+        description: err.message || 'Failed to delete category',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -140,11 +231,23 @@ const ChartOfAccountsPage = () => {
     try {
       setLoading(true);
       await accountTypeService.create(values);
-      enqueueSnackbar('Account type created successfully', { variant: 'success' });
+      toast({
+        title: 'Account type created successfully',
+        description: 'Account type created successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
       fetchData();
     } catch (err) {
       setError(err.message || 'Failed to create account type');
-      enqueueSnackbar('Failed to create account type', { variant: 'error' });
+      toast({
+        title: 'Failed to create account type',
+        description: err.message || 'Failed to create account type',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -154,11 +257,23 @@ const ChartOfAccountsPage = () => {
     try {
       setLoading(true);
       await accountTypeService.update(id, values);
-      enqueueSnackbar('Account type updated successfully', { variant: 'success' });
+      toast({
+        title: 'Account type updated successfully',
+        description: 'Account type updated successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
       fetchData();
     } catch (err) {
       setError(err.message || 'Failed to update account type');
-      enqueueSnackbar('Failed to update account type', { variant: 'error' });
+      toast({
+        title: 'Failed to update account type',
+        description: err.message || 'Failed to update account type',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -172,72 +287,93 @@ const ChartOfAccountsPage = () => {
     try {
       setLoading(true);
       await accountTypeService.delete(id);
-      enqueueSnackbar('Account type deleted successfully', { variant: 'success' });
+      toast({
+        title: 'Account type deleted successfully',
+        description: 'Account type deleted successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
       fetchData();
     } catch (err) {
       setError(err.message || 'Failed to delete account type');
-      enqueueSnackbar('Failed to delete account type', { variant: 'error' });
+      toast({
+        title: 'Failed to delete account type',
+        description: err.message || 'Failed to delete account type',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
+    <Container maxW="lg" mt={4} mb={4}>
+      <Heading size="lg" mb={4}>
         Chart of Accounts
-      </Typography>
+      </Heading>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
+        <Alert status="error" mb={4} onClose={() => setError(null)}>
+          <AlertIcon />
+          <AlertTitle>Error!</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-          <Tab label="Accounts" />
-          <Tab label="Categories & Types" />
-        </Tabs>
-      </Box>
+      <Tabs index={activeTab} onChange={setActiveTab} mb={4}>
+        <TabList>
+          <Tab>Accounts</Tab>
+          <Tab>Categories & Types</Tab>
+        </TabList>
 
-      {activeTab === 0 ? (
-        <ChartOfAccounts
-          accounts={accounts}
-          onAdd={handleAdd}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          isLoading={loading}
-        />
-      ) : (
-        <AccountCategoryManager
-          categories={categories}
-          accountTypes={accountTypes}
-          onAddCategory={handleAddCategory}
-          onEditCategory={handleEditCategory}
-          onDeleteCategory={handleDeleteCategory}
-          onAddType={handleAddType}
-          onEditType={handleEditType}
-          onDeleteType={handleDeleteType}
-          isLoading={loading}
-        />
-      )}
+        <TabPanels>
+          <TabPanel>
+            <ChartOfAccounts
+              accounts={accounts}
+              onAdd={handleAdd}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              isLoading={loading}
+            />
+          </TabPanel>
+          <TabPanel>
+            <AccountCategoryManager
+              categories={categories}
+              accountTypes={accountTypes}
+              onAddCategory={handleAddCategory}
+              onEditCategory={handleEditCategory}
+              onDeleteCategory={handleDeleteCategory}
+              onAddType={handleAddType}
+              onEditType={handleEditType}
+              onDeleteType={handleDeleteType}
+              isLoading={loading}
+            />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
 
-      <Dialog
-        open={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <AccountForm
-          account={selectedAccount}
-          onSubmit={handleSubmit}
-          onCancel={() => setIsFormOpen(false)}
-          isLoading={loading}
-          categories={categories}
-          accountTypes={accountTypes}
-        />
-      </Dialog>
+      <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} size="xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            {selectedAccount ? 'Edit Account' : 'Add New Account'}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <AccountForm
+              account={selectedAccount}
+              onSubmit={handleSubmit}
+              onCancel={() => setIsFormOpen(false)}
+              isLoading={loading}
+              categories={categories}
+              accountTypes={accountTypes}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Container>
   );
 };

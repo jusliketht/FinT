@@ -40,14 +40,36 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const data = await userService.login({ email, password });
-      setUser(data.user);
-      localStorage.setItem('token', data.access_token);
-      return { success: true, data };
+      
+      // Check if the response has the expected structure
+      if (data && data.user && data.access_token) {
+        setUser(data.user);
+        localStorage.setItem('token', data.access_token);
+        return { success: true, data };
+      } else {
+        console.error('Invalid response structure:', data);
+        return { 
+          success: false, 
+          error: 'Invalid response from server' 
+        };
+      }
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Handle different error response formats
+      let errorMessage = 'Login failed';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Login failed' 
+        error: errorMessage 
       };
     }
   };
