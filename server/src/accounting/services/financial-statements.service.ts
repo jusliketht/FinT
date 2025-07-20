@@ -5,142 +5,73 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class FinancialStatementsService {
-  async getProfitAndLoss(businessId: string, startDate: Date, endDate: Date): Promise<any> {
-    const incomeCategory = await prisma.accountCategory.findFirst({ where: { name: 'Revenue' } });
-    const expenseCategory = await prisma.accountCategory.findFirst({ where: { name: 'Expenses' } });
-
-    if (!incomeCategory || !expenseCategory) {
-      throw new Error('Standard Revenue or Expenses categories not found. Please ensure they are set up.');
-    }
-
-    const incomeAccounts = await prisma.accountHead.findMany({ where: { categoryId: incomeCategory.id } });
-    const expenseAccounts = await prisma.accountHead.findMany({ where: { categoryId: expenseCategory.id } });
-
-    const incomeAccountIds = incomeAccounts.map(acc => acc.id);
-    const expenseAccountIds = expenseAccounts.map(acc => acc.id);
-
-    const incomeTransactions = await prisma.journalEntry.aggregate({
-      where: {
-        creditAccountId: { in: incomeAccountIds },
-        businessId: businessId,
-        date: { gte: startDate, lte: endDate },
-      },
-      _sum: { amount: true },
-    });
-
-    const expenseTransactions = await prisma.journalEntry.aggregate({
-      where: {
-        debitAccountId: { in: expenseAccountIds },
-        businessId: businessId,
-        date: { gte: startDate, lte: endDate },
-      },
-      _sum: { amount: true },
-    });
-
-    const totalIncome = incomeTransactions._sum.amount || 0;
-    const totalExpenses = expenseTransactions._sum.amount || 0;
-
-    const netProfitLoss = totalIncome - totalExpenses;
-
+  async getIncomeStatement(businessId: string, startDate: Date, endDate: Date): Promise<any> {
+    // Get account balances for the period using journal entry lines
+    const accountBalances = await this.getAccountBalances(businessId, endDate, startDate);
+    
+    const revenue = accountBalances.filter(a => a.type === 'REVENUE');
+    const expenses = accountBalances.filter(a => a.type === 'EXPENSE');
+    
+    const totalRevenue = this.sumBalances(revenue);
+    const totalExpenses = this.sumBalances(expenses);
+    
     return {
-      totalIncome,
+      fromDate: startDate,
+      toDate: endDate,
+      revenue: this.groupAccountsByCategory(revenue),
+      expenses: this.groupAccountsByCategory(expenses),
+      totalRevenue,
       totalExpenses,
-      netProfitLoss,
-      period: {
-        startDate,
-        endDate
-      }
+      netIncome: totalRevenue - totalExpenses
     };
   }
 
   async getBalanceSheet(businessId: string, asOfDate: Date): Promise<any> {
-    const assetCategory = await prisma.accountCategory.findFirst({ where: { name: 'Assets' } });
-    const liabilityCategory = await prisma.accountCategory.findFirst({ where: { name: 'Liabilities' } });
-    const equityCategory = await prisma.accountCategory.findFirst({ where: { name: 'Equity' } });
-
-    if (!assetCategory || !liabilityCategory || !equityCategory) {
-      throw new Error('Standard Asset, Liability, or Equity categories not found. Please ensure they are set up.');
-    }
-
-    const assetAccounts = await prisma.accountHead.findMany({ where: { categoryId: assetCategory.id } });
-    const liabilityAccounts = await prisma.accountHead.findMany({ where: { categoryId: liabilityCategory.id } });
-    const equityAccounts = await prisma.accountHead.findMany({ where: { categoryId: equityCategory.id } });
-
-    const getAccountBalance = async (accountId: string, date: Date) => {
-      const debitEntries = await prisma.journalEntry.aggregate({
-        where: {
-          debitAccountId: accountId,
-          businessId: businessId,
-          date: { lte: date },
-        },
-        _sum: { amount: true },
-      });
-
-      const creditEntries = await prisma.journalEntry.aggregate({
-        where: {
-          creditAccountId: accountId,
-          businessId: businessId,
-          date: { lte: date },
-        },
-        _sum: { amount: true },
-      });
-
-      const debitTotal = debitEntries._sum.amount || 0;
-      const creditTotal = creditEntries._sum.amount || 0;
-      
-      return debitTotal - creditTotal;
-    };
-
-    let totalAssets = 0;
-    for (const acc of assetAccounts) {
-      totalAssets += await getAccountBalance(acc.id, asOfDate);
-    }
-
-    let totalLiabilities = 0;
-    for (const acc of liabilityAccounts) {
-      totalLiabilities += await getAccountBalance(acc.id, asOfDate);
-    }
-
-    let totalEquity = 0;
-    for (const acc of equityAccounts) {
-      totalEquity += await getAccountBalance(acc.id, asOfDate);
-    }
-
-    // Retained Earnings from P&L for the period up to asOfDate
-    const pnlUpToDate = await this.getProfitAndLoss(businessId, new Date(0), asOfDate);
-    totalEquity += pnlUpToDate.netProfitLoss;
-
+    // Get account balances as of the specified date using journal entry lines
+    const accountBalances = await this.getAccountBalances(businessId, asOfDate);
+    
+    const assets = accountBalances.filter(a => a.type === 'ASSET');
+    const liabilities = accountBalances.filter(a => a.type === 'LIABILITY');
+    const equity = accountBalances.filter(a => a.type === 'EQUITY');
+    
     return {
-      totalAssets,
-      totalLiabilities,
-      totalEquity,
-      isBalanced: totalAssets === (totalLiabilities + totalEquity),
-      asOfDate
+      asOfDate,
+      assets: this.groupAccountsByCategory(assets),
+      liabilities: this.groupAccountsByCategory(liabilities),
+      equity: this.groupAccountsByCategory(equity),
+      totalAssets: this.sumBalances(assets),
+      totalLiabilities: this.sumBalances(liabilities),
+      totalEquity: this.sumBalances(equity)
     };
   }
 
   async getCashFlowStatement(businessId: string, startDate: Date, endDate: Date): Promise<any> {
+    // Get cash account balances for the period
     const cashAccounts = await prisma.accountHead.findMany({
       where: {
-        name: { in: ['Cash', 'Bank'] },
-      },
+        name: { contains: 'Cash' },
+        businessId: businessId
+      }
     });
 
     const cashAccountIds = cashAccounts.map(acc => acc.id);
 
-    const cashMovements = await prisma.journalEntry.findMany({
+    // Get cash movements from journal entry lines
+    const cashMovements = await prisma.journalEntryLine.findMany({
       where: {
-        OR: [
-          { debitAccountId: { in: cashAccountIds } },
-          { creditAccountId: { in: cashAccountIds } }
-        ],
-        businessId: businessId,
-        date: { gte: startDate, lte: endDate },
+        accountId: { in: cashAccountIds },
+        JournalEntry: {
+          businessId: businessId,
+          date: { gte: startDate, lte: endDate }
+        }
       },
-      orderBy: { date: 'asc' },
       include: {
-        debitAccount: true,
-        creditAccount: true,
+        JournalEntry: {
+          select: { description: true, date: true }
+        }
+      },
+      orderBy: {
+        JournalEntry: { date: 'asc' }
       }
     });
 
@@ -149,26 +80,17 @@ export class FinancialStatementsService {
     let financingActivities = 0;
 
     for (const movement of cashMovements) {
-      const description = movement.description.toLowerCase();
-      let amount = 0;
-      
-      // Determine if this is a cash inflow or outflow
-      if (cashAccountIds.includes(movement.debitAccountId)) {
-        // Cash is being debited (outflow)
-        amount = -movement.amount;
-      } else if (cashAccountIds.includes(movement.creditAccountId)) {
-        // Cash is being credited (inflow)
-        amount = movement.amount;
-      }
+      const description = movement.JournalEntry.description.toLowerCase();
+      const netAmount = movement.debitAmount - movement.creditAmount;
       
       if (description.includes('sale') || description.includes('revenue')) {
-        operatingActivities += amount;
+        operatingActivities += netAmount;
       } else if (description.includes('equipment') || description.includes('investment')) {
-        investingActivities += amount;
+        investingActivities += netAmount;
       } else if (description.includes('loan') || description.includes('equity')) {
-        financingActivities += amount;
+        financingActivities += netAmount;
       } else {
-        operatingActivities += amount;
+        operatingActivities += netAmount;
       }
     }
 
@@ -184,5 +106,96 @@ export class FinancialStatementsService {
         endDate
       }
     };
+  }
+
+  private async getAccountBalances(
+    businessId: string, 
+    asOfDate: Date, 
+    fromDate?: Date
+  ): Promise<any[]> {
+    // Query to get account balances from journal entry lines
+    const whereClause = fromDate ? 
+      `je.date BETWEEN '${fromDate.toISOString()}' AND '${asOfDate.toISOString()}'` :
+      `je.date <= '${asOfDate.toISOString()}'`;
+
+    return prisma.$queryRaw`
+      SELECT 
+        a.id,
+        a.code,
+        a.name,
+        a.type,
+        COALESCE(SUM(jel."debitAmount") - SUM(jel."creditAmount"), 0) as balance
+      FROM "AccountHead" a
+      LEFT JOIN "JournalEntryLine" jel ON a.id = jel."accountId"
+      LEFT JOIN "JournalEntry" je ON jel."journalEntryId" = je.id
+      WHERE (je."businessId" = ${businessId} OR je."businessId" IS NULL)
+        AND ${whereClause}
+      GROUP BY a.id, a.code, a.name, a.type
+      ORDER BY a.code
+    `;
+  }
+
+  private sumBalances(accounts: any[]): number {
+    return accounts.reduce((sum, account) => sum + parseFloat(account.balance || 0), 0);
+  }
+
+  private groupAccountsByCategory(accounts: any[]): any[] {
+    const grouped = {};
+    
+    accounts.forEach(account => {
+      const category = account.code.substring(0, 2) + '00'; // Get category code
+      if (!grouped[category]) {
+        grouped[category] = {
+          categoryCode: category,
+          categoryName: this.getCategoryName(category),
+          accounts: []
+        };
+      }
+      grouped[category].accounts.push(account);
+    });
+    
+    return Object.values(grouped);
+  }
+
+  async getTrialBalance(businessId: string, asOfDate: Date): Promise<any[]> {
+    // Generate trial balance from journal entry lines
+    const balances = await prisma.$queryRaw`
+      SELECT 
+        a.id,
+        a.code,
+        a.name,
+        a.type,
+        COALESCE(SUM(jel."debitAmount"), 0) as totalDebits,
+        COALESCE(SUM(jel."creditAmount"), 0) as totalCredits,
+        (COALESCE(SUM(jel."debitAmount"), 0) - COALESCE(SUM(jel."creditAmount"), 0)) as balance
+      FROM "AccountHead" a
+      LEFT JOIN "JournalEntryLine" jel ON a.id = jel."accountId"
+      LEFT JOIN "JournalEntry" je ON jel."journalEntryId" = je.id
+      WHERE (je."businessId" = ${businessId} OR je."businessId" IS NULL)
+        AND je.date <= ${asOfDate}
+      GROUP BY a.id, a.code, a.name, a.type
+      ORDER BY a.code
+    `;
+    
+    return balances;
+  }
+
+  private getCategoryName(categoryCode: string): string {
+    const categoryMap = {
+      '10': 'Current Assets',
+      '12': 'Non-Current Assets',
+      '21': 'Current Liabilities',
+      '22': 'Non-Current Liabilities',
+      '31': 'Owner\'s Equity',
+      '32': 'Retained Earnings',
+      '41': 'Sales Revenue',
+      '42': 'Other Income',
+      '51': 'Cost of Goods Sold',
+      '52': 'Operating Expenses',
+      '53': 'Administrative Expenses',
+      '54': 'Financial Expenses'
+    };
+    
+    return categoryMap[categoryCode] || 'Other';
   }
 } 

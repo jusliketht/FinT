@@ -1,320 +1,239 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
+  Heading,
+  Text,
   VStack,
   HStack,
-  Text,
-  Heading,
-  Card,
-  CardBody,
+  Divider,
+  Button,
+  Input,
+  FormControl,
+  FormLabel,
+  useToast,
   Table,
   Thead,
   Tbody,
   Tr,
   Th,
   Td,
-  Button,
-  Select,
-  Input,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatGroup,
-  Badge,
   Spinner,
   Alert,
-  AlertIcon,
-  useToast
+  AlertIcon
 } from '@chakra-ui/react';
-import { DownloadIcon, ViewIcon, RepeatIcon } from '@chakra-ui/icons';
-import { useApi } from '../../hooks/useApi';
+import { DownloadIcon } from '@chakra-ui/icons';
+import financialStatementsService from '../../services/financialStatementsService';
+import { useBusiness } from '../../contexts/BusinessContext';
 
 const IncomeStatement = () => {
-  const api = useApi();
-  const toast = useToast();
+  const { selectedBusiness } = useBusiness();
+  const { showToast } = useToast();
+  const [incomeStatement, setIncomeStatement] = useState(null);
+  const [fromDate, setFromDate] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]);
+  const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
-  const [reportData, setReportData] = useState(null);
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0], // Start of year
-    endDate: new Date().toISOString().split('T')[0] // Today
-  });
 
-  const fetchReport = async () => {
+  const fetchIncomeStatement = async () => {
+    if (!selectedBusiness) {
+      showToast('Please select a business first', 'error');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await api.get('/accounting/reports/income-statement', {
-        params: dateRange
-      });
-      setReportData(response.data);
+      const data = await financialStatementsService.getIncomeStatement(
+        selectedBusiness.id,
+        new Date(fromDate),
+        new Date(toDate)
+      );
+      setIncomeStatement(data);
     } catch (error) {
+      showToast('Failed to generate income statement', 'error');
       console.error('Error fetching income statement:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load income statement',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchReport();
-  }, []);
-
-  const handleDateChange = (field, value) => {
-    setDateRange(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleGenerate = () => {
-    fetchReport();
-  };
-
-  const handleExport = async (format) => {
-    try {
-      const response = await api.get('/accounting/reports/income-statement/export', {
-        params: { ...dateRange, format },
-        responseType: 'blob'
-      });
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `income-statement-${dateRange.startDate}-${dateRange.endDate}.${format}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      toast({
-        title: 'Export Failed',
-        description: 'Failed to export report',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+    if (selectedBusiness) {
+      fetchIncomeStatement();
     }
-  };
+  }, [selectedBusiness, fromDate, toDate]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'INR',
+      currency: 'INR'
     }).format(amount || 0);
   };
 
-  const calculateNetIncome = () => {
-    if (!reportData) return 0;
-    const totalRevenue = reportData.revenue?.total || 0;
-    const totalExpenses = reportData.expenses?.total || 0;
-    return totalRevenue - totalExpenses;
+  const renderAccountSection = (title, accounts, total) => (
+    <Box>
+      <Heading size="md" mb={4}>{title}</Heading>
+      <Table variant="simple" size="sm">
+        <Thead>
+          <Tr>
+            <Th>Account</Th>
+            <Th isNumeric>Amount</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {accounts.map((category) => (
+            <React.Fragment key={category.categoryCode}>
+              <Tr bg="gray.50">
+                <Td fontWeight="bold" colSpan={2}>
+                  {category.categoryName}
+                </Td>
+              </Tr>
+              {category.accounts.map((account) => (
+                <Tr key={account.id}>
+                  <Td pl={8}>{account.name}</Td>
+                  <Td isNumeric>{formatCurrency(account.balance)}</Td>
+                </Tr>
+              ))}
+            </React.Fragment>
+          ))}
+        </Tbody>
+      </Table>
+      <Box mt={4} p={3} bg="blue.50" borderRadius="md">
+        <Text fontWeight="bold">
+          Total {title}: {formatCurrency(total)}
+        </Text>
+      </Box>
+    </Box>
+  );
+
+  const exportToPDF = async () => {
+    try {
+      const blob = await financialStatementsService.exportToPDF(
+        selectedBusiness.id,
+        'income-statement',
+        { fromDate, toDate }
+      );
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `income-statement-${fromDate}-to-${toDate}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      showToast('Failed to export PDF', 'error');
+    }
   };
 
-  if (loading) {
+  if (!selectedBusiness) {
     return (
-      <Box textAlign="center" py={10}>
-        <Spinner size="xl" />
-        <Text mt={4}>Generating Income Statement...</Text>
-      </Box>
+      <Alert status="info">
+        <AlertIcon />
+        Please select a business to view the income statement
+      </Alert>
     );
   }
 
   return (
     <Box p={6}>
       <VStack spacing={6} align="stretch">
-        {/* Header */}
         <HStack justify="space-between">
           <Box>
-            <Heading size="lg" mb={2}>Income Statement</Heading>
+            <Heading size="lg">Income Statement</Heading>
             <Text color="gray.600">
-              Profit and Loss Statement for the period
+              {selectedBusiness.name} - {new Date(fromDate).toLocaleDateString()} to {new Date(toDate).toLocaleDateString()}
             </Text>
           </Box>
           <HStack spacing={3}>
+            <FormControl w="200px">
+              <FormLabel>From Date</FormLabel>
+              <Input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
+            </FormControl>
+            <FormControl w="200px">
+              <FormLabel>To Date</FormLabel>
+              <Input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+            </FormControl>
             <Button
-              leftIcon={<RepeatIcon />}
-              onClick={handleGenerate}
+              leftIcon={<DownloadIcon />}
+              onClick={exportToPDF}
               colorScheme="blue"
               variant="outline"
             >
-              Refresh
-            </Button>
-            <Button
-              leftIcon={<DownloadIcon />}
-              onClick={() => handleExport('pdf')}
-              colorScheme="green"
-            >
               Export PDF
-            </Button>
-            <Button
-              leftIcon={<ViewIcon />}
-              onClick={() => window.print()}
-              colorScheme="purple"
-            >
-              Print
             </Button>
           </HStack>
         </HStack>
 
-        {/* Date Range Controls */}
-        <Card>
-          <CardBody>
-            <HStack spacing={4}>
-              <Box>
-                <Text fontSize="sm" fontWeight="medium" mb={1}>Start Date</Text>
-                <Input
-                  type="date"
-                  value={dateRange.startDate}
-                  onChange={(e) => handleDateChange('startDate', e.target.value)}
-                  size="sm"
-                />
-              </Box>
-              <Box>
-                <Text fontSize="sm" fontWeight="medium" mb={1}>End Date</Text>
-                <Input
-                  type="date"
-                  value={dateRange.endDate}
-                  onChange={(e) => handleDateChange('endDate', e.target.value)}
-                  size="sm"
-                />
-              </Box>
-              <Button onClick={handleGenerate} colorScheme="blue" size="sm">
-                Generate Report
-              </Button>
-            </HStack>
-          </CardBody>
-        </Card>
+        {loading ? (
+          <Box textAlign="center" py={10}>
+            <Spinner size="xl" />
+            <Text mt={4}>Generating income statement...</Text>
+          </Box>
+        ) : incomeStatement ? (
+          <VStack spacing={8} align="stretch">
+            {/* Revenue */}
+            {renderAccountSection('Revenue', incomeStatement.revenue, incomeStatement.totalRevenue)}
 
-        {/* Summary Stats */}
-        {reportData && (
-          <StatGroup>
-            <Stat>
-              <StatLabel>Total Revenue</StatLabel>
-              <StatNumber color="green.500">
-                {formatCurrency(reportData.revenue?.total || 0)}
-              </StatNumber>
-            </Stat>
-            <Stat>
-              <StatLabel>Total Expenses</StatLabel>
-              <StatNumber color="red.500">
-                {formatCurrency(reportData.expenses?.total || 0)}
-              </StatNumber>
-            </Stat>
-            <Stat>
-              <StatLabel>Net Income</StatLabel>
-              <StatNumber color={calculateNetIncome() >= 0 ? 'green.500' : 'red.500'}>
-                {formatCurrency(calculateNetIncome())}
-              </StatNumber>
-            </Stat>
-          </StatGroup>
-        )}
+            <Divider />
 
-        {/* Income Statement Details */}
-        {reportData ? (
-          <Card>
-            <CardBody>
-              <VStack spacing={6} align="stretch">
-                {/* Revenue Section */}
-                <Box>
-                  <Heading size="md" mb={4} color="green.600">Revenue</Heading>
-                  <Table variant="simple" size="sm">
-                    <Thead>
-                      <Tr>
-                        <Th>Account</Th>
-                        <Th isNumeric>Amount</Th>
-                        <Th isNumeric>% of Revenue</Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
-                      {reportData.revenue?.accounts?.map((account) => (
-                        <Tr key={account.id}>
-                          <Td>{account.name}</Td>
-                          <Td isNumeric color="green.500" fontWeight="medium">
-                            {formatCurrency(account.balance)}
-                          </Td>
-                          <Td isNumeric>
-                            {reportData.revenue.total > 0 
-                              ? ((account.balance / reportData.revenue.total) * 100).toFixed(1) + '%'
-                              : '0%'
-                            }
-                          </Td>
-                        </Tr>
-                      ))}
-                      <Tr bg="green.50" fontWeight="bold">
-                        <Td>Total Revenue</Td>
-                        <Td isNumeric color="green.600">
-                          {formatCurrency(reportData.revenue?.total || 0)}
-                        </Td>
-                        <Td isNumeric>100%</Td>
-                      </Tr>
-                    </Tbody>
-                  </Table>
-                </Box>
+            {/* Expenses */}
+            {renderAccountSection('Expenses', incomeStatement.expenses, incomeStatement.totalExpenses)}
 
-                {/* Expenses Section */}
-                <Box>
-                  <Heading size="md" mb={4} color="red.600">Expenses</Heading>
-                  <Table variant="simple" size="sm">
-                    <Thead>
-                      <Tr>
-                        <Th>Account</Th>
-                        <Th isNumeric>Amount</Th>
-                        <Th isNumeric>% of Revenue</Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
-                      {reportData.expenses?.accounts?.map((account) => (
-                        <Tr key={account.id}>
-                          <Td>{account.name}</Td>
-                          <Td isNumeric color="red.500" fontWeight="medium">
-                            {formatCurrency(account.balance)}
-                          </Td>
-                          <Td isNumeric>
-                            {reportData.revenue.total > 0 
-                              ? ((account.balance / reportData.revenue.total) * 100).toFixed(1) + '%'
-                              : '0%'
-                            }
-                          </Td>
-                        </Tr>
-                      ))}
-                      <Tr bg="red.50" fontWeight="bold">
-                        <Td>Total Expenses</Td>
-                        <Td isNumeric color="red.600">
-                          {formatCurrency(reportData.expenses?.total || 0)}
-                        </Td>
-                        <Td isNumeric>
-                          {reportData.revenue.total > 0 
-                            ? ((reportData.expenses.total / reportData.revenue.total) * 100).toFixed(1) + '%'
-                            : '0%'
-                          }
-                        </Td>
-                      </Tr>
-                    </Tbody>
-                  </Table>
-                </Box>
+            <Divider />
 
-                {/* Net Income */}
-                <Box borderTop="2px solid" borderColor="gray.200" pt={4}>
-                  <HStack justify="space-between">
-                    <Heading size="md" color={calculateNetIncome() >= 0 ? 'green.600' : 'red.600'}>
-                      Net Income
-                    </Heading>
-                    <Text fontSize="xl" fontWeight="bold" color={calculateNetIncome() >= 0 ? 'green.600' : 'red.600'}>
-                      {formatCurrency(calculateNetIncome())}
-                    </Text>
-                  </HStack>
-                  <Text fontSize="sm" color="gray.600" mt={2}>
-                    {calculateNetIncome() >= 0 ? 'Profit' : 'Loss'} for the period
+            {/* Net Income */}
+            <Box p={6} bg="gray.50" borderRadius="lg">
+              <VStack spacing={3}>
+                <HStack justify="space-between" w="full">
+                  <Text fontWeight="bold">Total Revenue:</Text>
+                  <Text fontWeight="bold" color="green.600">
+                    {formatCurrency(incomeStatement.totalRevenue)}
                   </Text>
-                </Box>
+                </HStack>
+                <HStack justify="space-between" w="full">
+                  <Text fontWeight="bold">Total Expenses:</Text>
+                  <Text fontWeight="bold" color="red.600">
+                    ({formatCurrency(incomeStatement.totalExpenses)})
+                  </Text>
+                </HStack>
+                <Divider />
+                <HStack justify="space-between" w="full">
+                  <Text fontWeight="bold" fontSize="lg">Net Income:</Text>
+                  <Text 
+                    fontWeight="bold" 
+                    fontSize="lg"
+                    color={incomeStatement.netIncome >= 0 ? 'green.600' : 'red.600'}
+                  >
+                    {formatCurrency(incomeStatement.netIncome)}
+                  </Text>
+                </HStack>
+                
+                {incomeStatement.netIncome >= 0 ? (
+                  <Alert status="success">
+                    <AlertIcon />
+                    Net profit for the period ✓
+                  </Alert>
+                ) : (
+                  <Alert status="warning">
+                    <AlertIcon />
+                    Net loss for the period
+                  </Alert>
+                )}
               </VStack>
-            </CardBody>
-          </Card>
+            </Box>
+          </VStack>
         ) : (
           <Alert status="info">
             <AlertIcon />
-            No data available for the selected period. Please generate a report.
+            No income statement data available
           </Alert>
         )}
       </VStack>

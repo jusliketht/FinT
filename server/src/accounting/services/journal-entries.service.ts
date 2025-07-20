@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { CreateJournalEntryDto, UpdateJournalEntryDto } from '../dto';
+import { CreateJournalEntryDto, UpdateJournalEntryDto, JournalEntryLineDto } from '../dto';
 
 const prisma = new PrismaClient();
 
@@ -10,50 +10,69 @@ export class JournalEntriesService {
     const {
       date,
       description,
-      amount,
-      debitAccountId,
-      creditAccountId,
-      gstAmount,
-      tdsAmount,
+      reference,
+      lines,
       businessId,
+      isAdjusting,
     } = createJournalEntryDto;
 
-    // Validate accounts exist
-    const [debitAccount, creditAccount] = await Promise.all([
-      prisma.accountHead.findUnique({ where: { id: debitAccountId } }),
-      prisma.accountHead.findUnique({ where: { id: creditAccountId } }),
-    ]);
-
-    if (!debitAccount) {
-      throw new BadRequestException('Debit account not found');
-    }
-    if (!creditAccount) {
-      throw new BadRequestException('Credit account not found');
+    // Validate double-entry rules
+    const totalDebits = lines.reduce((sum, line) => sum + (line.debitAmount || 0), 0);
+    const totalCredits = lines.reduce((sum, line) => sum + (line.creditAmount || 0), 0);
+    
+    if (Math.abs(totalDebits - totalCredits) > 0.01) {
+      throw new BadRequestException('Debits must equal credits in double-entry system');
     }
 
-    const journalEntry = await prisma.journalEntry.create({
-      data: {
-        date: new Date(date),
-        description,
-        amount,
-        debitAccountId,
-        creditAccountId,
-        userId,
-        gstAmount,
-        tdsAmount,
-        businessId,
-      },
-      include: {
-        debitAccount: true,
-        creditAccount: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+    // Validate all accounts exist
+    const accountIds = lines.map(line => line.accountId);
+    const existingAccounts = await prisma.accountHead.findMany({
+      where: { id: { in: accountIds } },
+      select: { id: true, name: true }
+    });
+
+    const existingAccountIds = new Set(existingAccounts.map(a => a.id));
+    const missingAccounts = accountIds.filter(id => !existingAccountIds.has(id));
+
+    if (missingAccounts.length > 0) {
+      throw new BadRequestException(`Accounts not found: ${missingAccounts.join(', ')}`);
+    }
+
+    // Create journal entry with lines in a transaction
+    const journalEntry = await prisma.$transaction(async (tx) => {
+      const entry = await tx.journalEntry.create({
+        data: {
+          date: new Date(date),
+          description,
+          reference,
+          totalAmount: totalDebits,
+          userId,
+          businessId,
+          isAdjusting: isAdjusting || false,
+          JournalEntryLines: {
+            create: lines.map(line => ({
+              accountId: line.accountId,
+              debitAmount: line.debitAmount || 0,
+              creditAmount: line.creditAmount || 0,
+              description: line.description,
+            }))
+          }
+        },
+        include: {
+          JournalEntryLines: {
+            include: { Account: true }
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
           }
         }
-      }
+      });
+
+      return entry;
     });
 
     return journalEntry;
@@ -73,60 +92,36 @@ export class JournalEntriesService {
     }>,
     userId: string
   ) {
-    // Validate all accounts exist first
-    const accountIds = new Set<string>();
-    transactions.forEach(t => {
-      accountIds.add(t.debitAccountId);
-      accountIds.add(t.creditAccountId);
-    });
-
-    const existingAccounts = await prisma.accountHead.findMany({
-      where: { id: { in: Array.from(accountIds) } },
-      select: { id: true }
-    });
-
-    const existingAccountIds = new Set(existingAccounts.map(a => a.id));
-    const missingAccounts = Array.from(accountIds).filter(id => !existingAccountIds.has(id));
-
-    if (missingAccounts.length > 0) {
-      throw new BadRequestException(`Accounts not found: ${missingAccounts.join(', ')}`);
-    }
-
-    // Create journal entries in a transaction
-    const createdEntries = await prisma.$transaction(async (tx) => {
-      const entries = [];
+    // Convert old format to new double-entry format
+    const journalEntries = transactions.map(transaction => {
+      const lines: JournalEntryLineDto[] = [];
       
-      for (const transaction of transactions) {
-        const entry = await tx.journalEntry.create({
-          data: {
-            date: new Date(transaction.date),
-            description: transaction.description,
-            amount: transaction.amount,
-            debitAccountId: transaction.debitAccountId,
-            creditAccountId: transaction.creditAccountId,
-            userId,
-            gstAmount: transaction.gstAmount,
-            tdsAmount: transaction.tdsAmount,
-            businessId: transaction.businessId,
-          },
-          include: {
-            debitAccount: true,
-            creditAccount: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            }
-          }
-        });
-        
-        entries.push(entry);
+      if (transaction.type === 'debit') {
+        lines.push(
+          { accountId: transaction.debitAccountId, debitAmount: transaction.amount, creditAmount: 0 },
+          { accountId: transaction.creditAccountId, debitAmount: 0, creditAmount: transaction.amount }
+        );
+      } else {
+        lines.push(
+          { accountId: transaction.creditAccountId, debitAmount: transaction.amount, creditAmount: 0 },
+          { accountId: transaction.debitAccountId, debitAmount: 0, creditAmount: transaction.amount }
+        );
       }
-      
-      return entries;
+
+      return {
+        date: transaction.date,
+        description: transaction.description,
+        lines,
+        businessId: transaction.businessId,
+      };
     });
+
+    // Create journal entries using the new create method
+    const createdEntries = [];
+    for (const entryData of journalEntries) {
+      const entry = await this.create(entryData, userId);
+      createdEntries.push(entry);
+    }
 
     return {
       message: `Successfully created ${createdEntries.length} journal entries`,
@@ -169,8 +164,9 @@ export class JournalEntriesService {
       prisma.journalEntry.findMany({
         where: { userId },
         include: {
-          debitAccount: true,
-          creditAccount: true,
+          JournalEntryLines: {
+            include: { Account: true }
+          },
           user: {
             select: {
               id: true,
@@ -203,8 +199,9 @@ export class JournalEntriesService {
     const journalEntry = await prisma.journalEntry.findFirst({
       where: { id, userId },
       include: {
-        debitAccount: true,
-        creditAccount: true,
+        JournalEntryLines: {
+          include: { Account: true }
+        },
         user: {
           select: {
             id: true,
@@ -235,26 +232,19 @@ export class JournalEntriesService {
     const { 
       date, 
       description, 
-      debitAccountId, 
-      creditAccountId, 
-      amount,
-      gstAmount,
-      tdsAmount,
-      businessId
+      reference,
+      lines,
+      businessId,
+      isAdjusting
     } = updateJournalEntryDto;
 
-    // Validate that accounts exist if provided
-    if (debitAccountId) {
-      const debitAccount = await prisma.accountHead.findUnique({ where: { id: debitAccountId } });
-      if (!debitAccount) {
-        throw new BadRequestException('Debit account not found');
-      }
-    }
-
-    if (creditAccountId) {
-      const creditAccount = await prisma.accountHead.findUnique({ where: { id: creditAccountId } });
-      if (!creditAccount) {
-        throw new BadRequestException('Credit account not found');
+    // If lines are provided, validate double-entry rules
+    if (lines && lines.length > 0) {
+      const totalDebits = lines.reduce((sum, line) => sum + (line.debitAmount || 0), 0);
+      const totalCredits = lines.reduce((sum, line) => sum + (line.creditAmount || 0), 0);
+      
+      if (Math.abs(totalDebits - totalCredits) > 0.01) {
+        throw new BadRequestException('Debits must equal credits in double-entry system');
       }
     }
 
@@ -264,16 +254,15 @@ export class JournalEntriesService {
       data: {
         ...(date && { date: new Date(date) }),
         ...(description && { description }),
-        ...(debitAccountId && { debitAccountId }),
-        ...(creditAccountId && { creditAccountId }),
-        ...(amount && { amount }),
-        ...(gstAmount && { gstAmount }),
-        ...(tdsAmount && { tdsAmount }),
+        ...(reference && { reference }),
         ...(businessId && { businessId }),
+        ...(isAdjusting !== undefined && { isAdjusting }),
+        ...(lines && { totalAmount: lines.reduce((sum, line) => sum + (line.debitAmount || 0), 0) }),
       },
       include: {
-        debitAccount: true,
-        creditAccount: true,
+        JournalEntryLines: {
+          include: { Account: true }
+        },
         user: {
           select: {
             id: true,
@@ -310,7 +299,7 @@ export class JournalEntriesService {
       by: ['date'],
       where: { userId },
       _sum: {
-        amount: true
+        totalAmount: true
       },
       _count: {
         id: true
@@ -320,5 +309,28 @@ export class JournalEntriesService {
     });
 
     return summary;
+  }
+
+  async getTrialBalance(businessId: string, asOfDate: Date): Promise<any[]> {
+    // Generate trial balance from journal entry lines
+    const balances = await prisma.$queryRaw`
+      SELECT 
+        a.id,
+        a.code,
+        a.name,
+        a.type,
+        COALESCE(SUM(jel."debitAmount"), 0) as totalDebits,
+        COALESCE(SUM(jel."creditAmount"), 0) as totalCredits,
+        (COALESCE(SUM(jel."debitAmount"), 0) - COALESCE(SUM(jel."creditAmount"), 0)) as balance
+      FROM "AccountHead" a
+      LEFT JOIN "JournalEntryLine" jel ON a.id = jel."accountId"
+      LEFT JOIN "JournalEntry" je ON jel."journalEntryId" = je.id
+      WHERE (je."businessId" = ${businessId} OR je."businessId" IS NULL)
+        AND je.date <= ${asOfDate}
+      GROUP BY a.id, a.code, a.name, a.type
+      ORDER BY a.code
+    `;
+    
+    return balances;
   }
 } 

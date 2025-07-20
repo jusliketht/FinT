@@ -26,11 +26,26 @@ const journalEntryService = {
 
   /**
    * Create a new journal entry
-   * @param {Object} entryData - Journal entry data
+   * @param {Object} entryData - Journal entry data with lines
    * @returns {Promise<Object>} - Created journal entry
    */
   create: async (entryData) => {
-    const response = await api.post(RESOURCE_URL, entryData);
+    // Transform frontend data to backend format
+    const backendData = {
+      date: entryData.date,
+      description: entryData.description,
+      reference: entryData.reference,
+      lines: entryData.lines.map(line => ({
+        accountId: line.accountId,
+        debitAmount: parseFloat(line.debit) || 0,
+        creditAmount: parseFloat(line.credit) || 0,
+        description: line.description
+      })),
+      businessId: entryData.businessId,
+      isAdjusting: entryData.status === 'adjusting'
+    };
+    
+    const response = await api.post(RESOURCE_URL, backendData);
     return response.data;
   },
 
@@ -47,11 +62,26 @@ const journalEntryService = {
   /**
    * Update an existing journal entry
    * @param {string} id - Journal entry ID
-   * @param {Object} entryData - Updated journal entry data
+   * @param {Object} entryData - Updated journal entry data with lines
    * @returns {Promise<Object>} - Updated journal entry
    */
   update: async (id, entryData) => {
-    const response = await api.put(`${RESOURCE_URL}/${id}`, entryData);
+    // Transform frontend data to backend format
+    const backendData = {
+      date: entryData.date,
+      description: entryData.description,
+      reference: entryData.reference,
+      lines: entryData.lines.map(line => ({
+        accountId: line.accountId,
+        debitAmount: parseFloat(line.debit) || 0,
+        creditAmount: parseFloat(line.credit) || 0,
+        description: line.description
+      })),
+      businessId: entryData.businessId,
+      isAdjusting: entryData.status === 'adjusting'
+    };
+    
+    const response = await api.put(`${RESOURCE_URL}/${id}`, backendData);
     return response.data;
   },
 
@@ -82,6 +112,19 @@ const journalEntryService = {
    */
   reverse: async (id) => {
     const response = await api.put(`${RESOURCE_URL}/${id}/reverse`);
+    return response.data;
+  },
+
+  /**
+   * Get trial balance for a business
+   * @param {string} businessId - Business ID
+   * @param {Date} asOfDate - As of date for trial balance
+   * @returns {Promise<Array>} - Trial balance data
+   */
+  getTrialBalance: async (businessId, asOfDate = new Date()) => {
+    const response = await api.get(`${RESOURCE_URL}/trial-balance`, {
+      params: { businessId, asOfDate: asOfDate.toISOString() }
+    });
     return response.data;
   }
 };

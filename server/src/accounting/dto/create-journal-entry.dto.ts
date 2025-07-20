@@ -1,4 +1,5 @@
-import { IsString, IsDateString, IsNumber, Min, IsOptional, IsBoolean, IsIn } from 'class-validator';
+import { IsString, IsDateString, IsNumber, Min, IsOptional, IsBoolean, ValidateNested, ArrayMinSize, Type } from 'class-validator';
+import { JournalEntryLineDto } from './journal-entry-line.dto';
 
 export class CreateJournalEntryDto {
   @IsDateString()
@@ -7,31 +8,25 @@ export class CreateJournalEntryDto {
   @IsString()
   description: string;
 
+  @IsOptional()
   @IsString()
-  debitAccountId: string;
+  reference?: string;
 
-  @IsString()
-  creditAccountId: string;
-
-  @IsNumber()
-  @Min(0)
-  amount: number;
+  @ValidateNested({ each: true })
+  @Type(() => JournalEntryLineDto)
+  @ArrayMinSize(2)
+  @IsBalanced() // Custom validator for balanced entries
+  lines: JournalEntryLineDto[];
 
   @IsOptional()
   @IsString()
   businessId?: string;
 
-  // GST Fields (India-specific)
   @IsOptional()
-  @IsNumber()
-  @Min(0)
-  gstRate?: number; // GST rate (5%, 12%, 18%, 28%)
+  @IsBoolean()
+  isAdjusting?: boolean;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  gstAmount?: number; // GST amount
-
+  // GST Fields (India-specific) - moved to line level
   @IsOptional()
   @IsString()
   gstin?: string; // GSTIN (15-digit)
@@ -48,20 +43,10 @@ export class CreateJournalEntryDto {
   @IsBoolean()
   isInterState?: boolean; // IGST vs CGST+SGST
 
-  // TDS Fields (India-specific)
+  // TDS Fields (India-specific) - moved to line level
   @IsOptional()
   @IsString()
   tdsSection?: string; // TDS section (194C, 194J, etc.)
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  tdsRate?: number; // TDS rate
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  tdsAmount?: number; // TDS amount
 
   @IsOptional()
   @IsString()
@@ -79,4 +64,12 @@ export class CreateJournalEntryDto {
   @IsOptional()
   @IsString()
   vendorName?: string; // Vendor/supplier name
+}
+
+// Custom validator for balanced entries
+export function IsBalanced(validationOptions?: any) {
+  return function (object: Object, propertyName: string) {
+    // This will be implemented in the service layer
+    // For now, we'll validate in the service
+  };
 } 

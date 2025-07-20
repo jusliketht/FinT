@@ -38,30 +38,45 @@ model Account {
 }
 
 model JournalEntry {
-  id              String      @id @default(uuid())
+  id              String             @id @default(uuid())
   date            DateTime
   description     String
-  amount          Float
-  debitAccountId  String
-  creditAccountId String
-  userId          String
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  businessId      String?
-  gstAmount       Float?
-  tdsAmount       Float?
   reference       String?
-  referenceNumber String?     @unique
-  Business        Business?   @relation(fields: [businessId], references: [id])
-  creditAccount   AccountHead @relation("CreditAccount", fields: [creditAccountId], references: [id])
-  debitAccount    AccountHead @relation("DebitAccount", fields: [debitAccountId], references: [id])
-  User            User        @relation(fields: [userId], references: [id])
-
-  @@index([creditAccountId])
+  totalAmount     Float              // For validation - sum of debits should equal sum of credits
+  userId          String
+  businessId      String?
+  isAdjusting     Boolean            @default(false)
+  isReversed      Boolean            @default(false)
+  reversalEntryId String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  
+  Business        Business?          @relation(fields: [businessId], references: [id])
+  User            User               @relation(fields: [userId], references: [id])
+  JournalEntryLines JournalEntryLine[]
+  ReversalEntry   JournalEntry?      @relation("JournalEntryReversal", fields: [reversalEntryId], references: [id])
+  ReversedBy      JournalEntry[]     @relation("JournalEntryReversal")
+  
   @@index([date])
-  @@index([debitAccountId])
   @@index([userId])
   @@index([businessId])
+}
+
+model JournalEntryLine {
+  id              String       @id @default(uuid())
+  journalEntryId  String
+  accountId       String
+  debitAmount     Float        @default(0)
+  creditAmount    Float        @default(0)
+  description     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  JournalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  Account         AccountHead  @relation(fields: [accountId], references: [id])
+  
+  @@index([journalEntryId])
+  @@index([accountId])
 }
 
 model Transaction {
@@ -171,8 +186,7 @@ model AccountHead {
   AccountCategory   AccountCategory @relation(fields: [categoryId], references: [id])
   AccountHead       AccountHead?    @relation("AccountHeadToAccountHead", fields: [parentId], references: [id])
   other_AccountHead AccountHead[]   @relation("AccountHeadToAccountHead")
-  creditEntries     JournalEntry[]  @relation("CreditAccount")
-  debitEntries      JournalEntry[]  @relation("DebitAccount")
+  JournalEntryLines JournalEntryLine[]
 
   @@index([categoryId])
   @@index([businessId])
@@ -534,9 +548,82 @@ model BankStatement {
   // Relations
   User        User     @relation(fields: [userId], references: [id])
   Business    Business? @relation(fields: [businessId], references: [id])
+  BankStatementLines BankStatementLine[]
+  BankReconciliations BankReconciliation[]
 
   @@index([userId])
   @@index([businessId])
   @@index([bankType])
   @@index([status])
+}
+
+// Enhanced Bank Reconciliation Models
+model BankReconciliation {
+  id                    String                     @id @default(uuid())
+  accountId             String
+  bankStatementId       String?
+  reconciliationDate    DateTime
+  statementBalance      Float
+  bookBalance           Float
+  adjustedBalance       Float
+  isReconciled          Boolean                    @default(false)
+  userId                String
+  businessId            String?
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  
+  Account               Account                    @relation(fields: [accountId], references: [id])
+  BankStatement         BankStatement?             @relation(fields: [bankStatementId], references: [id])
+  Business              Business?                  @relation(fields: [businessId], references: [id])
+  User                  User                       @relation(fields: [userId], references: [id])
+  ReconciliationItems   BankReconciliationItem[]
+  
+  @@index([accountId])
+  @@index([reconciliationDate])
+  @@index([userId])
+  @@index([businessId])
+}
+
+model BankReconciliationItem {
+  id                    String              @id @default(uuid())
+  reconciliationId      String
+  transactionId         String?
+  statementLineId       String?
+  type                  String              // 'OUTSTANDING_DEPOSIT', 'OUTSTANDING_CHECK', 'BANK_CHARGE', 'ADJUSTMENT'
+  description           String
+  amount                Float
+  isCleared             Boolean             @default(false)
+  clearingDate          DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  BankReconciliation    BankReconciliation  @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+  Transaction           Transaction?        @relation(fields: [transactionId], references: [id])
+  
+  @@index([reconciliationId])
+  @@index([transactionId])
+  @@index([type])
+}
+
+// Enhanced BankStatement model with lines
+model BankStatementLine {
+  id                String         @id @default(uuid())
+  bankStatementId   String
+  transactionDate   DateTime
+  description       String
+  amount            Float
+  balance           Float
+  transactionType   String         // 'DEBIT', 'CREDIT'
+  reference         String?
+  isMatched         Boolean        @default(false)
+  matchedTransactionId String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  BankStatement     BankStatement  @relation(fields: [bankStatementId], references: [id], onDelete: Cascade)
+  MatchedTransaction Transaction? @relation(fields: [matchedTransactionId], references: [id])
+  
+  @@index([bankStatementId])
+  @@index([transactionDate])
+  @@index([isMatched])
 }

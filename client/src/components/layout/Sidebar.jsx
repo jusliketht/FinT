@@ -35,6 +35,7 @@ import {
 
 const navLinks = [
   { label: 'Dashboard', to: '/', icon: ViewIcon },
+  { label: 'Journal Entries', to: '/journal', icon: EditIcon },
   { label: 'Transactions', to: '/transactions', icon: RepeatIcon },
   { label: 'Reports', to: '/reports', icon: ViewIcon },
   { label: 'Invoices', to: '/invoices', icon: EmailIcon },
