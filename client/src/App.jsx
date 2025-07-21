@@ -76,7 +76,7 @@ function App() {
                       } />
                       
                       <Route path="/transactions" element={
-                        <ProtectedRoute requireAuth={true} requireBusiness={true}>
+                        <ProtectedRoute requireAuth={true} requireBusiness={false}>
                           <Layout>
                             <TransactionsPage />
                           </Layout>
@@ -84,7 +84,7 @@ function App() {
                       } />
                       
                       <Route path="/reports" element={
-                        <ProtectedRoute requireAuth={true} requireBusiness={true}>
+                        <ProtectedRoute requireAuth={true} requireBusiness={false}>
                           <Layout>
                             <Reports />
                           </Layout>
@@ -100,7 +100,7 @@ function App() {
                       } />
                       
                       <Route path="/accounts" element={
-                        <ProtectedRoute requireAuth={true} requireBusiness={true}>
+                        <ProtectedRoute requireAuth={true} requireBusiness={false}>
                           <Layout>
                             <ChartOfAccountsPage />
                           </Layout>
@@ -133,7 +133,7 @@ function App() {
                       
                       {/* Journal Routes */}
                       <Route path="/journal" element={
-                        <ProtectedRoute requireAuth={true} requireBusiness={true}>
+                        <ProtectedRoute requireAuth={true} requireBusiness={false}>
                           <Layout>
                             <Navigate to="/transactions" replace />
                           </Layout>
@@ -141,7 +141,7 @@ function App() {
                       } />
                       
                       <Route path="/journal/new" element={
-                        <ProtectedRoute requireAuth={true} requireBusiness={true}>
+                        <ProtectedRoute requireAuth={true} requireBusiness={false}>
                           <Layout>
                             <Navigate to="/transactions" replace />
                           </Layout>

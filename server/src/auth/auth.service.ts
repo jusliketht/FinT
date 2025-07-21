@@ -24,7 +24,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { email: user.email, sub: user.id, role: user.role };
+    const payload = { email: user.email, sub: user.id };
     const access_token = this.jwtService.sign(payload);
 
     // Remove password from response
@@ -56,13 +56,12 @@ export class AuthService {
         name: registerDto.name,
         email: registerDto.email,
         password: hashedPassword,
-        role: 'ADMIN', // First user gets admin role
         updatedAt: new Date(),
       },
     });
 
     // Generate JWT token
-    const payload = { email: user.email, sub: user.id, role: user.role };
+    const payload = { email: user.email, sub: user.id };
     const access_token = this.jwtService.sign(payload);
 
     // Remove password from response

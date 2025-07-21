@@ -14,12 +14,28 @@ export const useBusiness = () => {
 export const BusinessProvider = ({ children }) => {
   const [businesses, setBusinesses] = useState([]);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
+  const [isPersonalMode, setIsPersonalMode] = useState(true); // Default to personal mode
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchBusinesses();
+    loadSavedContext();
   }, []);
+
+  const loadSavedContext = () => {
+    // Load saved context from localStorage
+    const savedBusinessId = localStorage.getItem('selectedBusinessId');
+    const savedMode = localStorage.getItem('isPersonalMode');
+    
+    if (savedMode === 'false' && savedBusinessId) {
+      setIsPersonalMode(false);
+      // Business will be set after fetchBusinesses completes
+    } else {
+      setIsPersonalMode(true);
+      setSelectedBusiness(null);
+    }
+  };
 
   const fetchBusinesses = async () => {
     try {
@@ -28,8 +44,24 @@ export const BusinessProvider = ({ children }) => {
       const data = await businessService.getAll();
       setBusinesses(data);
       
-      // Auto-select first business if none selected
-      if (data.length > 0 && !selectedBusiness) {
+      // Auto-select saved business if not in personal mode
+      const savedBusinessId = localStorage.getItem('selectedBusinessId');
+      const savedMode = localStorage.getItem('isPersonalMode');
+      
+      if (savedMode === 'false' && savedBusinessId && data.length > 0) {
+        const savedBusiness = data.find(b => b.id === savedBusinessId);
+        if (savedBusiness) {
+          setSelectedBusiness(savedBusiness);
+          setIsPersonalMode(false);
+        } else {
+          // Saved business not found, switch to personal mode
+          setIsPersonalMode(true);
+          setSelectedBusiness(null);
+          localStorage.setItem('isPersonalMode', 'true');
+          localStorage.removeItem('selectedBusinessId');
+        }
+      } else if (data.length > 0 && !selectedBusiness && !isPersonalMode) {
+        // Auto-select first business if none selected and not in personal mode
         setSelectedBusiness(data[0]);
       }
     } catch (err) {
@@ -42,8 +74,25 @@ export const BusinessProvider = ({ children }) => {
 
   const selectBusiness = (business) => {
     setSelectedBusiness(business);
-    // Store selected business in localStorage for persistence
+    setIsPersonalMode(false);
+    // Store selected business and mode in localStorage for persistence
     localStorage.setItem('selectedBusinessId', business?.id || '');
+    localStorage.setItem('isPersonalMode', 'false');
+  };
+
+  const switchToPersonalMode = () => {
+    setSelectedBusiness(null);
+    setIsPersonalMode(true);
+    localStorage.setItem('isPersonalMode', 'true');
+    localStorage.removeItem('selectedBusinessId');
+  };
+
+  const switchToBusinessMode = (business) => {
+    if (business) {
+      selectBusiness(business);
+    } else if (businesses.length > 0) {
+      selectBusiness(businesses[0]);
+    }
   };
 
   const createBusiness = async (businessData) => {
@@ -52,8 +101,8 @@ export const BusinessProvider = ({ children }) => {
       setBusinesses(prev => [...prev, newBusiness]);
       
       // Auto-select newly created business
-      if (!selectedBusiness) {
-        setSelectedBusiness(newBusiness);
+      if (!selectedBusiness && !isPersonalMode) {
+        selectBusiness(newBusiness);
       }
       
       return newBusiness;
@@ -62,17 +111,13 @@ export const BusinessProvider = ({ children }) => {
     }
   };
 
-  const updateBusiness = async (businessId, businessData) => {
+  const updateBusiness = async (id, data) => {
     try {
-      const updatedBusiness = await businessService.update(businessId, businessData);
-      setBusinesses(prev => 
-        prev.map(business => 
-          business.id === businessId ? updatedBusiness : business
-        )
-      );
+      const updatedBusiness = await businessService.update(id, data);
+      setBusinesses(prev => prev.map(b => b.id === id ? updatedBusiness : b));
       
       // Update selected business if it's the one being updated
-      if (selectedBusiness?.id === businessId) {
+      if (selectedBusiness?.id === id) {
         setSelectedBusiness(updatedBusiness);
       }
       
@@ -82,55 +127,52 @@ export const BusinessProvider = ({ children }) => {
     }
   };
 
-  const deleteBusiness = async (businessId) => {
+  const deleteBusiness = async (id) => {
     try {
-      await businessService.delete(businessId);
-      setBusinesses(prev => prev.filter(business => business.id !== businessId));
+      await businessService.delete(id);
+      setBusinesses(prev => prev.filter(b => b.id !== id));
       
-      // Clear selected business if it's the one being deleted
-      if (selectedBusiness?.id === businessId) {
-        setSelectedBusiness(null);
+      // If deleted business was selected, switch to personal mode
+      if (selectedBusiness?.id === id) {
+        switchToPersonalMode();
       }
     } catch (err) {
       throw err;
     }
   };
 
-  const refreshBusinesses = () => {
-    fetchBusinesses();
+  const getCurrentContext = () => {
+    if (isPersonalMode) {
+      return {
+        type: 'personal',
+        name: 'Personal',
+        id: null,
+        description: 'Personal financial management'
+      };
+    }
+    
+    return {
+      type: 'business',
+      name: selectedBusiness?.name || 'Business',
+      id: selectedBusiness?.id,
+      description: selectedBusiness?.description || 'Business financial management'
+    };
   };
-
-  // Load selected business from localStorage on mount
-  useEffect(() => {
-    const savedBusinessId = localStorage.getItem('selectedBusinessId');
-    if (savedBusinessId && businesses.length > 0) {
-      const savedBusiness = businesses.find(b => b.id === savedBusinessId);
-      if (savedBusiness) {
-        setSelectedBusiness(savedBusiness);
-      }
-    }
-  }, [businesses]);
-
-  // Save selected business to localStorage when it changes
-  useEffect(() => {
-    if (selectedBusiness) {
-      localStorage.setItem('selectedBusinessId', selectedBusiness.id);
-    } else {
-      localStorage.removeItem('selectedBusinessId');
-    }
-  }, [selectedBusiness]);
 
   const value = {
     businesses,
     selectedBusiness,
+    isPersonalMode,
     loading,
     error,
     selectBusiness,
+    switchToPersonalMode,
+    switchToBusinessMode,
     createBusiness,
     updateBusiness,
     deleteBusiness,
-    refreshBusinesses,
-    setSelectedBusiness
+    getCurrentContext,
+    refreshBusinesses: fetchBusinesses
   };
 
   return (
@@ -138,6 +180,4 @@ export const BusinessProvider = ({ children }) => {
       {children}
     </BusinessContext.Provider>
   );
-};
-
-export default BusinessContext; 
+}; 

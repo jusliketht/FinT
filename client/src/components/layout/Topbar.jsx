@@ -18,6 +18,7 @@ import {
   SearchIcon,
   ChevronDownIcon 
 } from '@chakra-ui/icons';
+import ContextSwitcher from '../common/ContextSwitcher';
 
 const Topbar = () => {
   const bgColor = useColorModeValue('primary.900', 'gray.800');
@@ -73,6 +74,11 @@ const Topbar = () => {
               }}
             />
           </InputGroup>
+        </Flex>
+
+        {/* Context Switcher */}
+        <Flex align="center" mr={4}>
+          <ContextSwitcher />
         </Flex>
 
         {/* Right Side - User Menu */}

@@ -5,6 +5,8 @@ import { UserRole, BusinessType } from '../../constants/enums';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { CreateBusinessDto } from '../dto/business/create-business.dto';
+import { UpdateBusinessDto } from '../dto/business/update-business.dto';
 
 @ApiTags('Businesses')
 @Controller('businesses')
@@ -17,7 +19,7 @@ export class BusinessController {
   @Roles(UserRole.Admin, UserRole.BusinessOwner)
   @ApiOperation({ summary: 'Create a new business' })
   @ApiResponse({ status: 201, description: 'Business created successfully' })
-  create(@Body() createBusinessDto: any, @Request() req) {
+  create(@Body() createBusinessDto: CreateBusinessDto, @Request() req) {
     return this.businessService.create({
       ...createBusinessDto,
       ownerId: req.user.id
@@ -51,7 +53,7 @@ export class BusinessController {
   @Roles(UserRole.Admin, UserRole.BusinessOwner)
   @ApiOperation({ summary: 'Update a business' })
   @ApiResponse({ status: 200, description: 'Business updated successfully' })
-  update(@Param('id') id: string, @Body() updateBusinessDto: any) {
+  update(@Param('id') id: string, @Body() updateBusinessDto: UpdateBusinessDto) {
     return this.businessService.update(id, updateBusinessDto);
   }
 

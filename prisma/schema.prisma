@@ -19,6 +19,9 @@ model User {
   // Relations
   Businesses UserBusiness[]
   OwnerOf    Business[] @relation("BusinessOwner")
+  Accounts   Account[]
+  Transactions Transaction[]
+  JournalEntries JournalEntry[]
 
   @@index([email])
 }
@@ -48,6 +51,9 @@ model Business {
   // Relations
   Owner              User         @relation("BusinessOwner", fields: [ownerId], references: [id])
   Users              UserBusiness[]
+  Accounts           Account[]
+  Transactions       Transaction[]
+  JournalEntries     JournalEntry[]
   InventoryItems     InventoryItem[]
   Locations          Location[]
   PurchaseOrders     PurchaseOrder[]
@@ -72,6 +78,100 @@ model UserBusiness {
   @@index([userId])
   @@index([businessId])
   @@index([role])
+}
+
+// Financial Models
+model Account {
+  id          String   @id @default(uuid())
+  code        String
+  name        String
+  type        String   // asset, liability, equity, revenue, expense
+  description String?
+  isActive    Boolean  @default(true)
+  userId      String?  // null for business accounts
+  businessId  String?  // null for personal accounts
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  User        User?    @relation(fields: [userId], references: [id])
+  Business    Business? @relation(fields: [businessId], references: [id])
+  Transactions Transaction[]
+  JournalEntryLines JournalEntryLine[]
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([type])
+  @@index([code])
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  date          DateTime
+  description   String
+  amount        Float
+  type          String   // income, expense, transfer, adjustment
+  category      String
+  paymentMethod String?
+  reference     String?
+  notes         String?
+  userId        String
+  businessId    String?  // null for personal transactions
+  accountId     String
+  thirdPartyId  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  User          User     @relation(fields: [userId], references: [id])
+  Business      Business? @relation(fields: [businessId], references: [id])
+  Account       Account  @relation(fields: [accountId], references: [id])
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([date])
+  @@index([type])
+  @@index([category])
+}
+
+model JournalEntry {
+  id              String   @id @default(uuid())
+  date            DateTime
+  description     String
+  referenceNumber String?
+  status          String   @default("DRAFT") // DRAFT, POSTED, VOID
+  userId          String
+  businessId      String?  // null for personal journal entries
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  User            User     @relation(fields: [userId], references: [id])
+  Business        Business? @relation(fields: [businessId], references: [id])
+  Lines           JournalEntryLine[]
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([date])
+  @@index([status])
+}
+
+model JournalEntryLine {
+  id             String   @id @default(uuid())
+  journalEntryId String
+  accountId      String
+  description    String?
+  debit          Float    @default(0)
+  credit         Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  JournalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  Account        Account      @relation(fields: [accountId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([accountId])
 }
 
 // Phase 3: Inventory Management Models

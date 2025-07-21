@@ -16,7 +16,7 @@ export class TransactionsService {
       date: createTransactionDto.date,
       paymentMethod: createTransactionDto.paymentMethod || 'CASH',
       reference: createTransactionDto.reference,
-      businessId: createTransactionDto.businessId,
+      businessId: createTransactionDto.businessId || null, // Allow null for personal transactions
       accountId: createTransactionDto.accountId,
       thirdPartyId: createTransactionDto.thirdPartyId,
       userId,
@@ -24,15 +24,17 @@ export class TransactionsService {
       updatedAt: new Date()
     };
 
-    // Generate journal entries
-    await this.generateJournalEntriesForTransaction(transaction);
+    // Generate journal entries only if businessId is provided
+    if (createTransactionDto.businessId) {
+      await this.generateJournalEntriesForTransaction(transaction);
+    }
 
     return transaction;
   }
 
-  async getTransactionCategories(userId: string): Promise<string[]> {
-    // Placeholder implementation
-    return [
+  async getTransactionCategories(userId: string, businessId?: string): Promise<string[]> {
+    // Placeholder implementation - can be customized based on context
+    const personalCategories = [
       'Salary',
       'Freelance',
       'Investment',
@@ -49,10 +51,34 @@ export class TransactionsService {
       'Travel',
       'Other'
     ];
+
+    const businessCategories = [
+      'Service Revenue',
+      'Product Sales',
+      'Consulting Fees',
+      'Office Supplies',
+      'Employee Salaries',
+      'Marketing',
+      'Professional Services',
+      'Equipment',
+      'Software Licenses',
+      'Travel Expenses',
+      'Business Insurance',
+      'Legal Fees',
+      'Accounting Fees',
+      'Other'
+    ];
+
+    return businessId ? businessCategories : personalCategories;
   }
 
   async generateJournalEntriesForTransaction(transaction: any): Promise<any[]> {
     try {
+      // Only generate journal entries for business transactions
+      if (!transaction.businessId) {
+        return [];
+      }
+
       // Placeholder implementation
       const journalEntry = {
         id: `je_${Date.now()}`,
@@ -95,7 +121,7 @@ export class TransactionsService {
         date: new Date(),
         paymentMethod: 'BANK_TRANSFER',
         reference: 'SAL-001',
-        businessId: query.businessId || 'business_1',
+        businessId: query.businessId || null, // Can be null for personal transactions
         userId,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -109,24 +135,29 @@ export class TransactionsService {
         date: new Date(),
         paymentMethod: 'CASH',
         reference: 'EXP-001',
-        businessId: query.businessId || 'business_1',
+        businessId: query.businessId || null, // Can be null for personal transactions
         userId,
         createdAt: new Date(),
         updatedAt: new Date()
       }
     ];
 
+    // Filter by businessId if provided
+    const filteredTransactions = query.businessId 
+      ? transactions.filter(t => t.businessId === query.businessId)
+      : transactions.filter(t => !t.businessId); // Personal transactions
+
     const page = query.page || 1;
     const limit = query.limit || 20;
     const skip = (page - 1) * limit;
 
     return {
-      transactions: transactions.slice(skip, skip + limit),
+      transactions: filteredTransactions.slice(skip, skip + limit),
       pagination: {
         page,
         limit,
-        total: transactions.length,
-        pages: Math.ceil(transactions.length / limit)
+        total: filteredTransactions.length,
+        pages: Math.ceil(filteredTransactions.length / limit)
       }
     };
   }
@@ -142,7 +173,7 @@ export class TransactionsService {
       date: new Date(),
       paymentMethod: 'BANK_TRANSFER',
       reference: 'SAL-001',
-      businessId: 'business_1',
+      businessId: null, // Can be null for personal transactions
       userId,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -166,7 +197,7 @@ export class TransactionsService {
       date: new Date(),
       paymentMethod: 'BANK_TRANSFER',
       reference: 'SAL-001',
-      businessId: 'business_1',
+      businessId: null, // Can be null for personal transactions
       userId,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -194,7 +225,7 @@ export class TransactionsService {
       date: new Date(),
       paymentMethod: 'BANK_TRANSFER',
       reference: 'SAL-001',
-      businessId: 'business_1',
+      businessId: null, // Can be null for personal transactions
       userId,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -209,22 +240,30 @@ export class TransactionsService {
 
   async getTransactionStats(userId: string, businessId?: string) {
     // Placeholder implementation
+    const isPersonal = !businessId;
+    
     return {
       total: 100,
-      income: 50000,
-      expense: 30000,
-      net: 20000,
-      byCategory: {
+      income: isPersonal ? 50000 : 100000,
+      expense: isPersonal ? 30000 : 60000,
+      net: isPersonal ? 20000 : 40000,
+      byCategory: isPersonal ? {
         'Salary': 40000,
         'Food & Dining': 8000,
         'Transportation': 5000,
         'Entertainment': 3000
+      } : {
+        'Service Revenue': 80000,
+        'Office Supplies': 15000,
+        'Employee Salaries': 25000,
+        'Marketing': 10000
       },
       byMonth: [
-        { month: 'Jan', income: 5000, expense: 3000 },
-        { month: 'Feb', income: 5000, expense: 3500 },
-        { month: 'Mar', income: 5000, expense: 2800 }
-      ]
+        { month: 'Jan', income: isPersonal ? 5000 : 10000, expense: isPersonal ? 3000 : 6000 },
+        { month: 'Feb', income: isPersonal ? 5000 : 10000, expense: isPersonal ? 3500 : 7000 },
+        { month: 'Mar', income: isPersonal ? 5000 : 10000, expense: isPersonal ? 2800 : 5600 }
+      ],
+      context: isPersonal ? 'Personal' : 'Business'
     };
   }
 } 

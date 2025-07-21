@@ -1,1 +1,347 @@
-generator client { provider = "prisma-client-js" }
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Core models for Phase 3
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  Businesses UserBusiness[]
+  OwnerOf    Business[] @relation("BusinessOwner")
+  Accounts   Account[]
+  Transactions Transaction[]
+  JournalEntries JournalEntry[]
+
+  @@index([email])
+}
+
+model Business {
+  id                 String   @id @default(uuid())
+  name               String
+  type               String
+  description        String?
+  address            String?
+  phone              String?
+  email              String?
+  website            String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  city               String?
+  country            String?
+  fiscalYearEnd      DateTime?
+  fiscalYearStart    DateTime?
+  incorporationDate  DateTime?
+  ownerId            String
+  postalCode         String?
+  registrationNumber String?
+  state              String?
+  taxId              String?
+
+  // Relations
+  Owner              User         @relation("BusinessOwner", fields: [ownerId], references: [id])
+  Users              UserBusiness[]
+  Accounts           Account[]
+  Transactions       Transaction[]
+  JournalEntries     JournalEntry[]
+  InventoryItems     InventoryItem[]
+  Locations          Location[]
+  PurchaseOrders     PurchaseOrder[]
+  SalesOrders        SalesOrder[]
+  InventoryMovements InventoryMovement[] @relation("BusinessToInventoryMovement")
+
+  @@index([ownerId])
+  @@index([type])
+}
+
+model UserBusiness {
+  userId     String
+  businessId String
+  role       String   @default("VIEWER")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  id         String   @id @default(uuid())
+  Business   Business @relation(fields: [businessId], references: [id])
+  User       User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, businessId])
+  @@index([userId])
+  @@index([businessId])
+  @@index([role])
+}
+
+// Financial Models
+model Account {
+  id          String   @id @default(uuid())
+  code        String
+  name        String
+  type        String   // asset, liability, equity, revenue, expense
+  description String?
+  isActive    Boolean  @default(true)
+  userId      String?  // null for business accounts
+  businessId  String?  // null for personal accounts
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  User        User?    @relation(fields: [userId], references: [id])
+  Business    Business? @relation(fields: [businessId], references: [id])
+  Transactions Transaction[]
+  JournalEntryLines JournalEntryLine[]
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([type])
+  @@index([code])
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  date          DateTime
+  description   String
+  amount        Float
+  type          String   // income, expense, transfer, adjustment
+  category      String
+  paymentMethod String?
+  reference     String?
+  notes         String?
+  userId        String
+  businessId    String?  // null for personal transactions
+  accountId     String
+  thirdPartyId  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  User          User     @relation(fields: [userId], references: [id])
+  Business      Business? @relation(fields: [businessId], references: [id])
+  Account       Account  @relation(fields: [accountId], references: [id])
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([date])
+  @@index([type])
+  @@index([category])
+}
+
+model JournalEntry {
+  id              String   @id @default(uuid())
+  date            DateTime
+  description     String
+  referenceNumber String?
+  status          String   @default("DRAFT") // DRAFT, POSTED, VOID
+  userId          String
+  businessId      String?  // null for personal journal entries
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  User            User     @relation(fields: [userId], references: [id])
+  Business        Business? @relation(fields: [businessId], references: [id])
+  Lines           JournalEntryLine[]
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([date])
+  @@index([status])
+}
+
+model JournalEntryLine {
+  id             String   @id @default(uuid())
+  journalEntryId String
+  accountId      String
+  description    String?
+  debit          Float    @default(0)
+  credit         Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  JournalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  Account        Account      @relation(fields: [accountId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([accountId])
+}
+
+// Phase 3: Inventory Management Models
+model InventoryItem {
+  id                String              @id @default(uuid())
+  sku               String              @unique
+  name              String
+  description       String?
+  category          String?
+  unitOfMeasure     String              @default("EACH")
+  costMethod        String              @default("FIFO") // FIFO, LIFO, AVERAGE
+  reorderLevel      Float               @default(0)
+  reorderQuantity   Float               @default(0)
+  isActive          Boolean             @default(true)
+  businessId        String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  Business          Business            @relation(fields: [businessId], references: [id])
+  InventoryLevels   InventoryLevel[]
+  InventoryMovements InventoryMovement[]
+  PurchaseOrderItems PurchaseOrderItem[]
+  SalesOrderItems   SalesOrderItem[]
+
+  @@index([businessId])
+  @@index([sku])
+  @@index([category])
+}
+
+model InventoryLevel {
+  id            String   @id @default(uuid())
+  inventoryItemId String
+  locationId    String
+  quantity      Float    @default(0)
+  unitCost      Float    @default(0)
+  totalValue    Float    @default(0)
+  lastUpdated   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  InventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  Location      Location      @relation(fields: [locationId], references: [id])
+
+  @@unique([inventoryItemId, locationId])
+  @@index([inventoryItemId])
+  @@index([locationId])
+}
+
+model InventoryMovement {
+  id            String   @id @default(uuid())
+  inventoryItemId String
+  locationId    String
+  movementType  String // 'IN', 'OUT', 'TRANSFER', 'ADJUSTMENT'
+  quantity      Float
+  unitCost      Float?
+  totalValue    Float?
+  referenceId   String? // PO, SO, or other reference
+  description   String?
+  movementDate  DateTime @default(now())
+  businessId    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  InventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  Location      Location      @relation(fields: [locationId], references: [id])
+  Business      Business      @relation("BusinessToInventoryMovement", fields: [businessId], references: [id])
+
+  @@index([inventoryItemId])
+  @@index([locationId])
+  @@index([movementType])
+  @@index([movementDate])
+  @@index([businessId])
+}
+
+model Location {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  type        String   @default("WAREHOUSE") // WAREHOUSE, STORE, OFFICE
+  address     String?
+  isActive    Boolean  @default(true)
+  businessId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  Business          Business          @relation(fields: [businessId], references: [id])
+  InventoryLevels   InventoryLevel[]
+  InventoryMovements InventoryMovement[]
+
+  @@index([businessId])
+  @@index([code])
+  @@index([type])
+}
+
+model PurchaseOrder {
+  id            String   @id @default(uuid())
+  poNumber      String   @unique
+  vendorId      String?
+  vendorName    String
+  orderDate     DateTime @default(now())
+  expectedDate  DateTime?
+  status        String   @default("DRAFT") // DRAFT, ORDERED, RECEIVED, CANCELLED
+  totalAmount   Float    @default(0)
+  businessId    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  Business          Business          @relation(fields: [businessId], references: [id])
+  PurchaseOrderItems PurchaseOrderItem[]
+
+  @@index([businessId])
+  @@index([poNumber])
+  @@index([status])
+  @@index([orderDate])
+}
+
+model PurchaseOrderItem {
+  id             String   @id @default(uuid())
+  purchaseOrderId String
+  inventoryItemId String
+  quantity       Float
+  unitCost       Float
+  totalCost      Float
+  receivedQuantity Float  @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  PurchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  InventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@index([purchaseOrderId])
+  @@index([inventoryItemId])
+}
+
+model SalesOrder {
+  id            String   @id @default(uuid())
+  soNumber      String   @unique
+  customerId    String?
+  customerName  String
+  orderDate     DateTime @default(now())
+  expectedDate  DateTime?
+  status        String   @default("DRAFT") // DRAFT, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
+  totalAmount   Float    @default(0)
+  businessId    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  Business      Business        @relation(fields: [businessId], references: [id])
+  SalesOrderItems SalesOrderItem[]
+
+  @@index([businessId])
+  @@index([soNumber])
+  @@index([status])
+  @@index([orderDate])
+}
+
+model SalesOrderItem {
+  id            String   @id @default(uuid())
+  salesOrderId  String
+  inventoryItemId String
+  quantity      Float
+  unitPrice     Float
+  totalPrice    Float
+  shippedQuantity Float  @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  SalesOrder   SalesOrder   @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  InventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@index([salesOrderId])
+  @@index([inventoryItemId])
+} 

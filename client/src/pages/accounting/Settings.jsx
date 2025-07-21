@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
-// import {
-//   Box,
-//   Typography,
-//   Tabs,
-//   Tab,
-//   Paper,
-//   Button,
-//   Alert,
-//   useTheme,
-//   useMediaQuery,
-//   CircularProgress,
-//   IconButton,
-//   Tooltip,
-//   Drawer,
-// } from '@mui/material';
+import {
+  Box,
+  Text,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel,
+  Button,
+  Alert,
+  AlertIcon,
+  Spinner,
+  IconButton,
+  Tooltip,
+  useDisclosure,
+  VStack,
+  HStack
+} from '@chakra-ui/react';
+import { AddIcon } from '@chakra-ui/icons';
+import axios from 'axios';
 import AccountForm from '../../components/accounting/AccountForm';
 import AccountTree from '../../components/accounting/AccountTree';
 
@@ -119,59 +124,33 @@ const Settings = () => {
   });
 
   const renderAccountHeadsTab = () => (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box h="100%" display="flex" flexDirection="column">
       <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 2,
-          flexWrap: 'wrap',
-          gap: 1,
-        }}
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2}
+        flexWrap="wrap"
+        gap={1}
       >
-        <Typography variant="h6">Chart of Accounts</Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          {/* {isMobile ? (
-            <Tooltip title="Filter & Search">
-              <IconButton onClick={() => setFilterDrawerOpen(true)}>
-                <FilterListIcon />
-              </IconButton>
-            </Tooltip>
-          ) : (
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-              <SearchIcon color="action" />
-              <input
-                type="text"
-                placeholder="Search accounts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  border: 'none',
-                  borderBottom: `1px solid ${theme.palette.divider}`,
-                  padding: '4px 8px',
-                  outline: 'none',
-                  width: 200,
-                }}
-              />
-            </Box>
-          )} */}
+        <Text fontSize="lg" fontWeight="semibold">Chart of Accounts</Text>
+        <HStack spacing={2}>
           <Button
-            variant="contained"
-            startIcon={<AddIcon />}
+            colorScheme="blue"
+            leftIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
           >
-            {/* {isMobile ? '' : 'Add Account'} */}
+            Add Account
           </Button>
-        </Box>
+        </HStack>
       </Box>
 
       {loading && accounts.length === 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-          <CircularProgress />
+        <Box display="flex" justifyContent="center" alignItems="center" flex={1}>
+          <Spinner size="lg" />
         </Box>
       ) : (
-        <Box sx={{ flex: 1, minHeight: 0 }}>
+        <Box flex={1} minH={0}>
           <AccountTree
             accounts={filteredAccounts}
             onEdit={handleOpenDialog}
@@ -187,34 +166,33 @@ const Settings = () => {
   );
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Typography variant="h4" gutterBottom>
+    <Box h="100%" display="flex" flexDirection="column">
+      <Text fontSize="2xl" fontWeight="bold" mb={4}>
         Accounting Settings
-      </Typography>
+      </Text>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+      {error && <Alert status="error" mb={2}><AlertIcon />{error}</Alert>}
+      {success && <Alert status="success" mb={2}><AlertIcon />{success}</Alert>}
 
-      <Paper sx={{ mb: 2 }}>
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          variant={/* isMobile ? 'fullWidth' : 'standard' */}
-        >
-          <Tab label="Account Heads" />
-          <Tab label="General Settings" />
-          <Tab label="Tax Settings" />
+      <Box mb={4}>
+        <Tabs index={activeTab} onChange={setActiveTab}>
+          <TabList>
+            <Tab>Account Heads</Tab>
+            <Tab>General Settings</Tab>
+            <Tab>Tax Settings</Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel>
+              {renderAccountHeadsTab()}
+            </TabPanel>
+            <TabPanel>
+              <Text>General settings content will go here</Text>
+            </TabPanel>
+            <TabPanel>
+              <Text>Tax settings content will go here</Text>
+            </TabPanel>
+          </TabPanels>
         </Tabs>
-      </Paper>
-
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        {activeTab === 0 && renderAccountHeadsTab()}
-        {activeTab === 1 && (
-          <Typography>General settings content will go here</Typography>
-        )}
-        {activeTab === 2 && (
-          <Typography>Tax settings content will go here</Typography>
-        )}
       </Box>
 
       <AccountForm
@@ -226,8 +204,6 @@ const Settings = () => {
         loading={loading}
         error={error}
       />
-
-      {/* Drawer removed for Chakra UI v3 compatibility */}
     </Box>
   );
 };

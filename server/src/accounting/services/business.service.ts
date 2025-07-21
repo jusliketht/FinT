@@ -1,12 +1,15 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaClient, Business, UserBusiness } from '@prisma/client';
 import { BusinessType } from '../../constants/enums';
+import { CreateBusinessDto } from '../dto/business/create-business.dto';
+import { UpdateBusinessDto } from '../dto/business/update-business.dto';
+import { AddUserToBusinessDto } from '../dto/business/add-user-to-business.dto';
 
 const prisma = new PrismaClient();
 
 @Injectable()
 export class BusinessService {
-  async create(createBusinessDto: any) {
+  async create(createBusinessDto: CreateBusinessDto & { ownerId: string }) {
     // Create business and assign owner as ADMIN
     const business = await prisma.business.create({
       data: {
@@ -155,7 +158,7 @@ export class BusinessService {
     return business;
   }
 
-  async update(id: string, updateBusinessDto: any) {
+  async update(id: string, updateBusinessDto: UpdateBusinessDto) {
     const business = await prisma.business.update({
       where: { id },
       data: updateBusinessDto,

@@ -1,7 +1,26 @@
 import React, { useState, useEffect } from 'react';
-// import { Box, Typography, TextField, Button, Grid, MenuItem, IconButton, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-// import AddIcon from '@mui/icons-material/Add';
-// import RemoveIcon from '@mui/icons-material/Remove';
+import {
+  Box,
+  Button,
+  Text,
+  Input,
+  Select,
+  IconButton,
+  Alert,
+  AlertIcon,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Grid,
+  GridItem,
+  VStack,
+  HStack,
+  useDisclosure
+} from '@chakra-ui/react';
+import { AddIcon, CloseIcon } from '@chakra-ui/icons';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -82,9 +101,9 @@ const AddJournalEntry = () => {
   const handleOpenDialog = () => {
     setNewAccount({ name: '', type: '', code: '' });
     setAccountError('');
-    setOpenDialog(true);
+    onOpen();
   };
-  const handleCloseDialog = () => setOpenDialog(false);
+  const handleCloseDialog = () => onClose();
   const handleAccountChange = (field, value) => setNewAccount(acc => ({ ...acc, [field]: value }));
   const handleAddAccount = async () => {
     setAccountError('');
@@ -95,140 +114,142 @@ const AddJournalEntry = () => {
     try {
       await axios.post('/api/v1/accounts', newAccount);
       fetchAccounts();
-      setOpenDialog(false);
+      onClose();
     } catch (err) {
       setAccountError(err.response?.data?.message || 'Error adding account head');
     }
   };
 
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
   return (
-    <Box sx={{ maxWidth: 700, mx: 'auto', mt: 4 }}>
-      <Button variant="outlined" sx={{ mb: 2 }} onClick={() => navigate('/accounting/journal')}>
+    <Box maxW="700px" mx="auto" mt={4} p={4}>
+      <Button variant="outline" mb={2} onClick={() => navigate('/accounting/journal')}>
         Back to Journal
       </Button>
-      <Typography variant="h5" gutterBottom>
+      <Text fontSize="xl" fontWeight="bold" mb={4}>
         Add Journal Entry
-      </Typography>
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+      </Text>
+      {error && <Alert status="error" mb={2}><AlertIcon />{error}</Alert>}
+      {success && <Alert status="success" mb={2}><AlertIcon />{success}</Alert>}
       <form onSubmit={handleSubmit}>
-        <TextField
-          label="Date"
-          type="date"
-          value={date}
-          onChange={e => setDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          fullWidth
-          sx={{ mb: 2 }}
-          required
-        />
-        <TextField
-          label="Description"
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          fullWidth
-          sx={{ mb: 2 }}
-          required
-        />
-        <Typography variant="subtitle1" sx={{ mb: 1 }}>
-          Lines
-        </Typography>
-        {lines.map((line, idx) => (
-          <Grid container spacing={2} alignItems="center" key={idx} sx={{ mb: 1 }}>
-            <Grid item xs={5} sx={{ display: 'flex', alignItems: 'center' }}>
-              <TextField
-                select
-                label="Account"
-                value={line.accountId}
-                onChange={e => handleLineChange(idx, 'accountId', e.target.value)}
-                fullWidth
-                required
-              >
-                {accounts.map(acc => (
-                  <MenuItem key={acc.id} value={acc.id}>{acc.name}</MenuItem>
-                ))}
-              </TextField>
-              <IconButton sx={{ ml: 1 }} onClick={handleOpenDialog} size="small" color="primary">
-                <AddIcon />
-              </IconButton>
+        <VStack spacing={4} align="stretch">
+          <Input
+            type="date"
+            value={date}
+            onChange={e => setDate(e.target.value)}
+            placeholder="Date"
+            required
+          />
+          <Input
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Description"
+            required
+          />
+          <Text fontWeight="semibold">Lines</Text>
+          {lines.map((line, idx) => (
+            <Grid templateColumns="repeat(12, 1fr)" gap={2} key={idx} alignItems="center">
+              <GridItem colSpan={5}>
+                <HStack>
+                  <Select
+                    value={line.accountId}
+                    onChange={e => handleLineChange(idx, 'accountId', e.target.value)}
+                    placeholder="Select Account"
+                    required
+                  >
+                    {accounts.map(acc => (
+                      <option key={acc.id} value={acc.id}>{acc.name}</option>
+                    ))}
+                  </Select>
+                  <IconButton
+                    size="sm"
+                    colorScheme="blue"
+                    onClick={onOpen}
+                    icon={<AddIcon />}
+                    aria-label="Add account"
+                  />
+                </HStack>
+              </GridItem>
+              <GridItem colSpan={3}>
+                <Select
+                  value={line.type}
+                  onChange={e => handleLineChange(idx, 'type', e.target.value)}
+                  required
+                >
+                  <option value="debit">Debit</option>
+                  <option value="credit">Credit</option>
+                </Select>
+              </GridItem>
+              <GridItem colSpan={3}>
+                <Input
+                  type="number"
+                  value={line.amount}
+                  onChange={e => handleLineChange(idx, 'amount', e.target.value)}
+                  placeholder="Amount"
+                  required
+                />
+              </GridItem>
+              <GridItem colSpan={1}>
+                <IconButton
+                  onClick={() => removeLine(idx)}
+                  isDisabled={lines.length === 1}
+                  icon={<CloseIcon />}
+                  aria-label="Remove line"
+                />
+              </GridItem>
             </Grid>
-            <Grid item xs={3}>
-              <TextField
-                select
-                label="Type"
-                value={line.type}
-                onChange={e => handleLineChange(idx, 'type', e.target.value)}
-                fullWidth
-                required
-              >
-                <MenuItem value="debit">Debit</MenuItem>
-                <MenuItem value="credit">Credit</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={3}>
-              <TextField
-                label="Amount"
-                type="number"
-                value={line.amount}
-                onChange={e => handleLineChange(idx, 'amount', e.target.value)}
-                fullWidth
-                required
-              />
-            </Grid>
-            <Grid item xs={1}>
-              <IconButton onClick={() => removeLine(idx)} disabled={lines.length === 1}>
-                <RemoveIcon />
-              </IconButton>
-            </Grid>
-          </Grid>
-        ))}
-        <Button startIcon={<AddIcon />} onClick={addLine} sx={{ mb: 2 }}>
-          Add Line
-        </Button>
-        <Box>
-          <Button type="submit" variant="contained" color="primary" disabled={loading}>
+          ))}
+          <Button leftIcon={<AddIcon />} onClick={addLine} variant="outline">
+            Add Line
+          </Button>
+          <Button type="submit" colorScheme="blue" isLoading={loading}>
             Submit Entry
           </Button>
-        </Box>
+        </VStack>
       </form>
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Add Account Head</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Account Name"
-            value={newAccount.name}
-            onChange={e => handleAccountChange('name', e.target.value)}
-            fullWidth
-            sx={{ mb: 2 }}
-            required
-          />
-          <TextField
-            label="Account Code"
-            value={newAccount.code}
-            onChange={e => handleAccountChange('code', e.target.value)}
-            fullWidth
-            sx={{ mb: 2 }}
-            required
-          />
-          <TextField
-            select
-            label="Type"
-            value={newAccount.type}
-            onChange={e => handleAccountChange('type', e.target.value)}
-            fullWidth
-            required
-          >
-            {accountTypes.map(type => (
-              <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-            ))}
-          </TextField>
-          {accountError && <Alert severity="error" sx={{ mt: 2 }}>{accountError}</Alert>}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleAddAccount} variant="contained">Add</Button>
-        </DialogActions>
-      </Dialog>
+
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Add Account Head</ModalHeader>
+          <ModalBody>
+            <VStack spacing={4}>
+              <Input
+                value={newAccount.name}
+                onChange={e => handleAccountChange('name', e.target.value)}
+                placeholder="Account Name"
+                required
+              />
+              <Input
+                value={newAccount.code}
+                onChange={e => handleAccountChange('code', e.target.value)}
+                placeholder="Account Code"
+                required
+              />
+              <Select
+                value={newAccount.type}
+                onChange={e => handleAccountChange('type', e.target.value)}
+                placeholder="Select Type"
+                required
+              >
+                {accountTypes.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </Select>
+              {accountError && <Alert status="error"><AlertIcon />{accountError}</Alert>}
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>
+              Cancel
+            </Button>
+            <Button colorScheme="blue" onClick={handleAddAccount}>
+              Add
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

@@ -91,16 +91,11 @@ const TransactionForm = ({ isOpen, onClose, transaction, onSuccess }) => {
     },
     validationSchema,
     onSubmit: async (values) => {
-      if (!selectedBusiness) {
-        toast.showError('Please select a business first');
-        return;
-      }
-
       setSubmitting(true);
       try {
         const data = {
           ...values,
-          businessId: selectedBusiness.id,
+          businessId: selectedBusiness?.id || null, // Allow null for personal transactions
           amount: parseFloat(values.amount),
         };
 
@@ -128,7 +123,7 @@ const TransactionForm = ({ isOpen, onClose, transaction, onSuccess }) => {
 
   // Load accounts and categories
   useEffect(() => {
-    if (isOpen && selectedBusiness) {
+    if (isOpen) {
       loadFormData();
     }
   }, [isOpen, selectedBusiness]);
@@ -137,7 +132,12 @@ const TransactionForm = ({ isOpen, onClose, transaction, onSuccess }) => {
     setLoading(true);
     try {
       const [accountsData, categoriesData] = await Promise.all([
-        api.get('/accounts', { params: { businessId: selectedBusiness.id } }),
+        api.get('/accounts', { 
+          params: { 
+            businessId: selectedBusiness?.id || null,
+            includePersonal: !selectedBusiness // Include personal accounts if no business selected
+          } 
+        }),
         api.get('/account-categories'),
       ]);
       
