@@ -7,123 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model AccountCategory {
-  id          String        @id @default(uuid())
-  name        String        @unique
-  description String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  AccountHead AccountHead[]
-}
+// Core models for Phase 3
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-model Account {
-  id                 String               @id @default(uuid())
-  name               String
-  type               String
-  code               String               @unique
-  userId             String
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  businessId         String?
-  Business           Business?            @relation(fields: [businessId], references: [id])
-  User               User                 @relation(fields: [userId], references: [id])
-  MappingRule        MappingRule[]
-  Reconciliations    Reconciliation[]
-  Transaction        Transaction[]
-  BankReconciliation BankReconciliation[]
+  // Relations
+  Businesses UserBusiness[]
+  OwnerOf    Business[] @relation("BusinessOwner")
 
-  @@index([code])
-  @@index([type])
-  @@index([userId])
-  @@index([businessId])
-}
-
-model JournalEntry {
-  id                 String   @id @default(uuid())
-  date               DateTime
-  description        String
-  reference          String?
-  totalAmount        Float // For validation - sum of debits should equal sum of credits
-  userId             String
-  businessId         String?
-  isAdjusting        Boolean  @default(false)
-  isClosing          Boolean  @default(false)
-  isReversed         Boolean  @default(false)
-  reversalEntryId    String?
-  accountingPeriodId String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  Business          Business?          @relation(fields: [businessId], references: [id])
-  User              User               @relation(fields: [userId], references: [id])
-  AccountingPeriod  AccountingPeriod?  @relation("PeriodAdjustments", fields: [accountingPeriodId], references: [id])
-  JournalEntryLines JournalEntryLine[]
-  ReversalEntry     JournalEntry?      @relation("JournalEntryReversal", fields: [reversalEntryId], references: [id])
-  ReversedBy        JournalEntry[]     @relation("JournalEntryReversal")
-
-  @@index([date])
-  @@index([userId])
-  @@index([businessId])
-  @@index([accountingPeriodId])
-}
-
-model JournalEntryLine {
-  id             String   @id @default(uuid())
-  journalEntryId String
-  accountId      String
-  debitAmount    Float    @default(0)
-  creditAmount   Float    @default(0)
-  description    String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  JournalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  Account      AccountHead  @relation(fields: [accountId], references: [id])
-
-  @@index([journalEntryId])
-  @@index([accountId])
-}
-
-model Transaction {
-  id                     String                   @id @default(uuid())
-  date                   DateTime
-  description            String
-  amount                 Float
-  category               String
-  transactionType        String
-  userId                 String
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
-  businessId             String?
-  isThirdParty           Boolean                  @default(false)
-  notes                  String?
-  thirdPartyId           String?
-  thirdPartyName         String?
-  thirdPartyType         String?
-  accountId              String?
-  paymentMethod          String?
-  reference              String?
-  Account                Account?                 @relation(fields: [accountId], references: [id])
-  Business               Business?                @relation(fields: [businessId], references: [id])
-  ThirdParty             ThirdParty?              @relation(fields: [thirdPartyId], references: [id])
-  User                   User                     @relation(fields: [userId], references: [id])
-  TaxTransactions        TaxTransaction[]
-  BankReconciliationItem BankReconciliationItem[]
-  BankStatementLine      BankStatementLine[]
-
-  @@index([category])
-  @@index([date])
-  @@index([transactionType])
-  @@index([userId])
-  @@index([businessId])
-  @@index([accountId])
-  @@index([isThirdParty])
-  @@index([paymentMethod])
-  @@index([thirdPartyType])
+  @@index([email])
 }
 
 model Business {
-  id                 String               @id @default(uuid())
+  id                 String   @id @default(uuid())
   name               String
   type               String
   description        String?
@@ -131,8 +32,8 @@ model Business {
   phone              String?
   email              String?
   website            String?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
   city               String?
   country            String?
   fiscalYearEnd      DateTime?
@@ -143,28 +44,15 @@ model Business {
   registrationNumber String?
   state              String?
   taxId              String?
-  Accounts           Account[]
-  AccountHead        AccountHead[]
-  BankStatements     BankStatement[]
-  Bill               Bill[]
-  Owner              User                 @relation("BusinessOwner", fields: [ownerId], references: [id])
-  CreditCard         CreditCard[]
-  Customer           Customer[]
-  Invoice            Invoice[]
-  JournalEntries     JournalEntry[]
-  Reconciliations    Reconciliation[]
-  ThirdParty         ThirdParty[]
-  Transactions       Transaction[]
+
+  // Relations
+  Owner              User         @relation("BusinessOwner", fields: [ownerId], references: [id])
   Users              UserBusiness[]
-  Vendor             Vendor[]
-  AccountingPeriods  AccountingPeriod[]
-  TaxRates           TaxRate[]
-  BankReconciliation BankReconciliation[]
   InventoryItems     InventoryItem[]
   Locations          Location[]
   PurchaseOrders     PurchaseOrder[]
   SalesOrders        SalesOrder[]
-  inventoryMovements InventoryMovement[] @relation("BusinessToInventoryMovement")
+  InventoryMovements InventoryMovement[] @relation("BusinessToInventoryMovement")
 
   @@index([ownerId])
   @@index([type])
@@ -186,536 +74,7 @@ model UserBusiness {
   @@index([role])
 }
 
-model AccountHead {
-  id                String             @id
-  code              String             @unique
-  name              String
-  description       String?
-  categoryId        String
-  isCustom          Boolean            @default(false)
-  parentId          String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime
-  businessId        String?
-  type              String
-  Business          Business?          @relation(fields: [businessId], references: [id])
-  AccountCategory   AccountCategory    @relation(fields: [categoryId], references: [id])
-  AccountHead       AccountHead?       @relation("AccountHeadToAccountHead", fields: [parentId], references: [id])
-  other_AccountHead AccountHead[]      @relation("AccountHeadToAccountHead")
-  JournalEntryLines JournalEntryLine[]
-
-  @@index([categoryId])
-  @@index([businessId])
-  @@index([code])
-  @@index([type])
-}
-
-model User {
-  id                    String                  @id
-  name                  String
-  email                 String                  @unique
-  password              String
-  role                  String                  @default("VIEWER")
-  resetToken            String?
-  resetTokenExpiry      DateTime?
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime
-  Account               Account[]
-  BankStatements        BankStatement[]
-  Bill                  Bill[]
-  BillPayment           BillPayment[]
-  OwnedBusinesses       Business[]              @relation("BusinessOwner")
-  CreditCard            CreditCard[]
-  CreditCardTransaction CreditCardTransaction[]
-  Customer              Customer[]
-  Invoice               Invoice[]
-  InvoicePayment        InvoicePayment[]
-  JournalEntry          JournalEntry[]
-  MappingRule           MappingRule[]
-  Reconciliations       Reconciliation[]
-  ThirdParty            ThirdParty[]
-  Transaction           Transaction[]
-  UserBusinesses        UserBusiness[]
-  Vendor                Vendor[]
-  PeriodClosedBy        AccountingPeriod[]      @relation("PeriodClosedBy")
-  BankReconciliation    BankReconciliation[]
-  InventoryMovements    InventoryMovement[]
-  PurchaseOrders        PurchaseOrder[]
-  SalesOrders           SalesOrder[]
-}
-
-model Reconciliation {
-  id                          String                        @id @default(uuid())
-  accountId                   String
-  statementDate               DateTime
-  closingBalance              Float
-  isLocked                    Boolean                       @default(false)
-  userId                      String
-  businessId                  String?
-  createdAt                   DateTime                      @default(now())
-  updatedAt                   DateTime                      @updatedAt
-  Account                     Account                       @relation(fields: [accountId], references: [id])
-  Business                    Business?                     @relation(fields: [businessId], references: [id])
-  User                        User                          @relation(fields: [userId], references: [id])
-  ReconciliationStatementLine ReconciliationStatementLine[]
-
-  @@index([accountId])
-  @@index([userId])
-  @@index([businessId])
-  @@index([statementDate])
-}
-
-model Bill {
-  id             String        @id
-  billNumber     String
-  vendorId       String
-  billDate       DateTime
-  dueDate        DateTime
-  status         String        @default("RECEIVED")
-  subtotal       Float
-  taxAmount      Float         @default(0)
-  discountAmount Float         @default(0)
-  totalAmount    Float
-  paidAmount     Float         @default(0)
-  balanceAmount  Float
-  notes          String?
-  userId         String
-  businessId     String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime
-  Business       Business?     @relation(fields: [businessId], references: [id])
-  User           User          @relation(fields: [userId], references: [id])
-  Vendor         Vendor        @relation(fields: [vendorId], references: [id])
-  BillItem       BillItem[]
-  BillPayment    BillPayment[]
-
-  @@index([billNumber])
-  @@index([businessId])
-  @@index([dueDate])
-  @@index([status])
-  @@index([userId])
-  @@index([vendorId])
-}
-
-model BillItem {
-  id                String   @id @default(uuid())
-  billId            String
-  description       String
-  quantity          Float
-  unitPrice         Float
-  amount            Float
-  taxRate           Float    @default(0)
-  taxAmount         Float    @default(0)
-  inventoryItemId   String?
-  quantityReceived  Float?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime
-  Bill              Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
-  InventoryItem     InventoryItem? @relation("InventoryItemToBillItem", fields: [inventoryItemId], references: [id])
-
-  @@index([billId])
-}
-
-model BillPayment {
-  id            String   @id
-  billId        String
-  paymentDate   DateTime
-  amount        Float
-  paymentMethod String
-  reference     String?
-  notes         String?
-  userId        String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime
-  Bill          Bill     @relation(fields: [billId], references: [id])
-  User          User     @relation(fields: [userId], references: [id])
-
-  @@index([billId])
-  @@index([paymentDate])
-  @@index([userId])
-}
-
-model CreditCard {
-  id                    String                  @id
-  cardNumber            String?
-  cardType              String
-  bankName              String
-  creditLimit           Float                   @default(0)
-  userId                String
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime
-  dueDate               Int?
-  businessId            String?
-  cardName              String
-  outstandingAmount     Float                   @default(0)
-  statementDate         DateTime?
-  Business              Business?               @relation(fields: [businessId], references: [id])
-  User                  User                    @relation(fields: [userId], references: [id])
-  CreditCardTransaction CreditCardTransaction[]
-
-  @@index([bankName])
-  @@index([businessId])
-  @@index([cardType])
-  @@index([userId])
-}
-
-model CreditCardTransaction {
-  id           String     @id
-  date         DateTime
-  description  String
-  amount       Float
-  type         String
-  category     String?
-  creditCardId String
-  userId       String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime
-  merchant     String?
-  reference    String?
-  CreditCard   CreditCard @relation(fields: [creditCardId], references: [id])
-  User         User       @relation(fields: [userId], references: [id])
-
-  @@index([category])
-  @@index([creditCardId])
-  @@index([date])
-  @@index([type])
-  @@index([userId])
-}
-
-model Customer {
-  id           String    @id
-  name         String
-  email        String?
-  phone        String?
-  address      String?
-  city         String?
-  state        String?
-  postalCode   String?
-  country      String?
-  taxId        String?
-  creditLimit  Float?
-  paymentTerms Int       @default(30)
-  userId       String
-  businessId   String?
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime
-  Business     Business? @relation(fields: [businessId], references: [id])
-  User         User      @relation(fields: [userId], references: [id])
-  Invoice      Invoice[]
-
-  @@index([businessId])
-  @@index([isActive])
-  @@index([userId])
-}
-
-model Invoice {
-  id             String           @id
-  invoiceNumber  String           @unique
-  customerId     String
-  issueDate      DateTime
-  dueDate        DateTime
-  status         String           @default("DRAFT")
-  subtotal       Float
-  taxAmount      Float            @default(0)
-  discountAmount Float            @default(0)
-  totalAmount    Float
-  paidAmount     Float            @default(0)
-  balanceAmount  Float
-  notes          String?
-  terms          String?
-  userId         String
-  businessId     String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime
-  Business       Business?        @relation(fields: [businessId], references: [id])
-  Customer       Customer         @relation(fields: [customerId], references: [id])
-  User           User             @relation(fields: [userId], references: [id])
-  InvoiceItem    InvoiceItem[]
-  InvoicePayment InvoicePayment[]
-
-  @@index([businessId])
-  @@index([customerId])
-  @@index([dueDate])
-  @@index([invoiceNumber])
-  @@index([status])
-  @@index([userId])
-}
-
-model InvoiceItem {
-  id                String   @id @default(uuid())
-  invoiceId         String
-  description       String
-  quantity          Float
-  unitPrice         Float
-  amount            Float
-  taxRate           Float    @default(0)
-  taxAmount         Float    @default(0)
-  inventoryItemId   String?
-  quantityShipped   Float?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime
-  Invoice           Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  InventoryItem     InventoryItem? @relation("InventoryItemToInvoiceItem", fields: [inventoryItemId], references: [id])
-
-  @@index([invoiceId])
-}
-
-model InvoicePayment {
-  id            String   @id
-  invoiceId     String
-  paymentDate   DateTime
-  amount        Float
-  paymentMethod String
-  reference     String?
-  notes         String?
-  userId        String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime
-  Invoice       Invoice  @relation(fields: [invoiceId], references: [id])
-  User          User     @relation(fields: [userId], references: [id])
-
-  @@index([invoiceId])
-  @@index([paymentDate])
-  @@index([userId])
-}
-
-model MappingRule {
-  id        String   @id
-  userId    String
-  keyword   String
-  accountId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  Account   Account  @relation(fields: [accountId], references: [id])
-  User      User     @relation(fields: [userId], references: [id])
-
-  @@index([accountId])
-  @@index([userId])
-}
-
-model ReconciliationStatementLine {
-  id               String         @id
-  reconciliationId String
-  description      String
-  amount           Float
-  type             String
-  transactionId    String?
-  isMatched        Boolean        @default(false)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime
-  Reconciliation   Reconciliation @relation(fields: [reconciliationId], references: [id])
-
-  @@index([reconciliationId])
-  @@index([transactionId])
-}
-
-model ThirdParty {
-  id          String        @id
-  name        String
-  type        String
-  email       String?
-  phone       String?
-  address     String?
-  notes       String?
-  userId      String
-  businessId  String?
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime
-  Business    Business?     @relation(fields: [businessId], references: [id])
-  User        User          @relation(fields: [userId], references: [id])
-  Transaction Transaction[]
-
-  @@index([businessId])
-  @@index([isActive])
-  @@index([type])
-  @@index([userId])
-}
-
-model Vendor {
-  id           String    @id
-  name         String
-  email        String?
-  phone        String?
-  address      String?
-  city         String?
-  state        String?
-  postalCode   String?
-  country      String?
-  taxId        String?
-  paymentTerms Int       @default(30)
-  userId       String
-  businessId   String?
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime
-  Bill         Bill[]
-  Business     Business? @relation(fields: [businessId], references: [id])
-  User         User      @relation(fields: [userId], references: [id])
-
-  @@index([businessId])
-  @@index([isActive])
-  @@index([userId])
-}
-
-model BankStatement {
-  id          String    @id @default(uuid())
-  fileName    String
-  filePath    String
-  bankType    String // hdfc, icici, sbi, axis, kotak, yes, other
-  uploadDate  DateTime  @default(now())
-  processDate DateTime?
-  status      String    @default("uploaded") // uploaded, processing, completed, failed
-  userId      String
-  businessId  String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  // Relations
-  User                User                 @relation(fields: [userId], references: [id])
-  Business            Business?            @relation(fields: [businessId], references: [id])
-  BankStatementLines  BankStatementLine[]
-  BankReconciliations BankReconciliation[]
-
-  @@index([userId])
-  @@index([businessId])
-  @@index([bankType])
-  @@index([status])
-}
-
-// Enhanced Bank Reconciliation Models
-model BankReconciliation {
-  id                 String   @id @default(uuid())
-  accountId          String
-  bankStatementId    String?
-  reconciliationDate DateTime
-  statementBalance   Float
-  bookBalance        Float
-  adjustedBalance    Float
-  isReconciled       Boolean  @default(false)
-  userId             String
-  businessId         String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  Account             Account                  @relation(fields: [accountId], references: [id])
-  BankStatement       BankStatement?           @relation(fields: [bankStatementId], references: [id])
-  Business            Business?                @relation(fields: [businessId], references: [id])
-  User                User                     @relation(fields: [userId], references: [id])
-  ReconciliationItems BankReconciliationItem[]
-
-  @@index([accountId])
-  @@index([reconciliationDate])
-  @@index([userId])
-  @@index([businessId])
-}
-
-model BankReconciliationItem {
-  id               String    @id @default(uuid())
-  reconciliationId String
-  transactionId    String?
-  statementLineId  String?
-  type             String // 'OUTSTANDING_DEPOSIT', 'OUTSTANDING_CHECK', 'BANK_CHARGE', 'ADJUSTMENT'
-  description      String
-  amount           Float
-  isCleared        Boolean   @default(false)
-  clearingDate     DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  BankReconciliation BankReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
-  Transaction        Transaction?       @relation(fields: [transactionId], references: [id])
-
-  @@index([reconciliationId])
-  @@index([transactionId])
-  @@index([type])
-}
-
-// Enhanced BankStatement model with lines
-model BankStatementLine {
-  id                   String   @id @default(uuid())
-  bankStatementId      String
-  transactionDate      DateTime
-  description          String
-  amount               Float
-  balance              Float
-  transactionType      String // 'DEBIT', 'CREDIT'
-  reference            String?
-  isMatched            Boolean  @default(false)
-  matchedTransactionId String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-
-  BankStatement      BankStatement @relation(fields: [bankStatementId], references: [id], onDelete: Cascade)
-  MatchedTransaction Transaction?  @relation(fields: [matchedTransactionId], references: [id])
-
-  @@index([bankStatementId])
-  @@index([transactionDate])
-  @@index([isMatched])
-}
-
-// Phase 2: Period Closing Models
-model AccountingPeriod {
-  id         String    @id @default(uuid())
-  businessId String
-  periodName String // "January 2024", "Q1 2024", etc.
-  startDate  DateTime
-  endDate    DateTime
-  status     String    @default("OPEN") // OPEN, CLOSED, LOCKED
-  closedBy   String?
-  closedAt   DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  Business         Business       @relation(fields: [businessId], references: [id])
-  ClosedBy         User?          @relation("PeriodClosedBy", fields: [closedBy], references: [id])
-  AdjustingEntries JournalEntry[] @relation("PeriodAdjustments")
-
-  @@unique([businessId, startDate, endDate])
-  @@index([businessId])
-  @@index([status])
-}
-
-// Phase 2: Tax Management Models
-model TaxRate {
-  id            String    @id @default(uuid())
-  name          String // "GST", "VAT", "Sales Tax"
-  rate          Float // 18.0 for 18%
-  type          String // "SALES", "PURCHASE", "PAYROLL"
-  isActive      Boolean   @default(true)
-  effectiveFrom DateTime
-  effectiveTo   DateTime?
-  businessId    String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  Business        Business?        @relation(fields: [businessId], references: [id])
-  TaxTransactions TaxTransaction[]
-
-  @@index([businessId])
-  @@index([type])
-  @@index([isActive])
-}
-
-model TaxTransaction {
-  id            String   @id @default(uuid())
-  transactionId String
-  taxRateId     String
-  taxableAmount Float
-  taxAmount     Float
-  taxType       String // "GST", "TDS", "VAT"
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  Transaction Transaction @relation(fields: [transactionId], references: [id])
-  TaxRate     TaxRate     @relation(fields: [taxRateId], references: [id])
-
-  @@index([transactionId])
-  @@index([taxRateId])
-  @@index([taxType])
-}
-
+// Phase 3: Inventory Management Models
 model InventoryItem {
   id                String              @id @default(uuid())
   sku               String              @unique
@@ -736,8 +95,6 @@ model InventoryItem {
   InventoryMovements InventoryMovement[]
   PurchaseOrderItems PurchaseOrderItem[]
   SalesOrderItems   SalesOrderItem[]
-  billItems         BillItem[]          @relation("InventoryItemToBillItem")
-  invoiceItems      InvoiceItem[]       @relation("InventoryItemToInvoiceItem")
 
   @@index([businessId])
   @@index([sku])
@@ -745,128 +102,146 @@ model InventoryItem {
 }
 
 model InventoryLevel {
-  id              String        @id @default(uuid())
-  itemId          String
-  locationId      String?
-  quantityOnHand  Float         @default(0)
-  quantityReserved Float        @default(0)
-  quantityAvailable Float       @default(0)
-  averageCost     Float         @default(0)
-  totalValue      Float         @default(0)
-  lastUpdated     DateTime      @default(now())
+  id            String   @id @default(uuid())
+  inventoryItemId String
+  locationId    String
+  quantity      Float    @default(0)
+  unitCost      Float    @default(0)
+  totalValue    Float    @default(0)
+  lastUpdated   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  Item            InventoryItem @relation(fields: [itemId], references: [id])
-  Location        Location?     @relation(fields: [locationId], references: [id])
+  InventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  Location      Location      @relation(fields: [locationId], references: [id])
 
-  @@unique([itemId, locationId])
-  @@index([itemId])
+  @@unique([inventoryItemId, locationId])
+  @@index([inventoryItemId])
   @@index([locationId])
 }
 
 model InventoryMovement {
-  id              String        @id @default(uuid())
-  itemId          String
-  locationId      String?
-  movementType    String        // IN, OUT, TRANSFER, ADJUSTMENT
-  quantity        Float
-  unitCost        Float?
-  totalCost       Float?
-  referenceType   String?
-  referenceId     String?
-  description     String?
-  movementDate    DateTime      @default(now())
-  userId          String
-  businessId      String
-  createdAt       DateTime      @default(now())
+  id            String   @id @default(uuid())
+  inventoryItemId String
+  locationId    String
+  movementType  String // 'IN', 'OUT', 'TRANSFER', 'ADJUSTMENT'
+  quantity      Float
+  unitCost      Float?
+  totalValue    Float?
+  referenceId   String? // PO, SO, or other reference
+  description   String?
+  movementDate  DateTime @default(now())
+  businessId    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  Item            InventoryItem @relation(fields: [itemId], references: [id])
-  Location        Location?     @relation(fields: [locationId], references: [id])
-  User            User          @relation(fields: [userId], references: [id])
-  Business        Business      @relation("BusinessToInventoryMovement", fields: [businessId], references: [id])
+  InventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  Location      Location      @relation(fields: [locationId], references: [id])
+  Business      Business      @relation("BusinessToInventoryMovement", fields: [businessId], references: [id])
 
-  @@index([itemId])
-  @@index([movementDate])
+  @@index([inventoryItemId])
+  @@index([locationId])
   @@index([movementType])
+  @@index([movementDate])
   @@index([businessId])
 }
 
 model Location {
-  id              String            @id @default(uuid())
-  name            String
-  code            String            @unique
-  type            String            @default("WAREHOUSE") // WAREHOUSE, STORE, OUTLET
-  address         String?
-  isActive        Boolean           @default(true)
-  businessId      String
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  type        String   @default("WAREHOUSE") // WAREHOUSE, STORE, OFFICE
+  address     String?
+  isActive    Boolean  @default(true)
+  businessId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  Business        Business          @relation(fields: [businessId], references: [id])
-  InventoryLevels InventoryLevel[]
+  Business          Business          @relation(fields: [businessId], references: [id])
+  InventoryLevels   InventoryLevel[]
   InventoryMovements InventoryMovement[]
 
   @@index([businessId])
   @@index([code])
+  @@index([type])
 }
 
 model PurchaseOrder {
-  id            String              @id @default(uuid())
-  orderNumber   String              @unique
+  id            String   @id @default(uuid())
+  poNumber      String   @unique
+  vendorId      String?
+  vendorName    String
+  orderDate     DateTime @default(now())
+  expectedDate  DateTime?
+  status        String   @default("DRAFT") // DRAFT, ORDERED, RECEIVED, CANCELLED
+  totalAmount   Float    @default(0)
   businessId    String
-  userId        String
-  supplierId    String?
-  orderDate     DateTime            @default(now())
-  status        String              @default("DRAFT") // DRAFT, SENT, RECEIVED, CANCELLED
-  totalAmount   Float               @default(0)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  Business      Business            @relation(fields: [businessId], references: [id])
-  User          User                @relation(fields: [userId], references: [id])
+  Business          Business          @relation(fields: [businessId], references: [id])
   PurchaseOrderItems PurchaseOrderItem[]
+
+  @@index([businessId])
+  @@index([poNumber])
+  @@index([status])
+  @@index([orderDate])
 }
 
 model PurchaseOrderItem {
-  id              String         @id @default(uuid())
+  id             String   @id @default(uuid())
   purchaseOrderId String
-  inventoryItemId String?
-  description     String?
-  quantityOrdered Float
-  quantityReceived Float?
-  unitPrice       Float
-  totalAmount     Float
+  inventoryItemId String
+  quantity       Float
+  unitCost       Float
+  totalCost      Float
+  receivedQuantity Float  @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  PurchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id])
-  InventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+  PurchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  InventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@index([purchaseOrderId])
+  @@index([inventoryItemId])
 }
 
 model SalesOrder {
-  id            String              @id @default(uuid())
-  orderNumber   String              @unique
-  businessId    String
-  userId        String
+  id            String   @id @default(uuid())
+  soNumber      String   @unique
   customerId    String?
-  orderDate     DateTime            @default(now())
-  status        String              @default("DRAFT") // DRAFT, CONFIRMED, SHIPPED, CANCELLED
-  totalAmount   Float               @default(0)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  customerName  String
+  orderDate     DateTime @default(now())
+  expectedDate  DateTime?
+  status        String   @default("DRAFT") // DRAFT, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
+  totalAmount   Float    @default(0)
+  businessId    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  Business      Business            @relation(fields: [businessId], references: [id])
-  User          User                @relation(fields: [userId], references: [id])
+  Business      Business        @relation(fields: [businessId], references: [id])
   SalesOrderItems SalesOrderItem[]
+
+  @@index([businessId])
+  @@index([soNumber])
+  @@index([status])
+  @@index([orderDate])
 }
 
 model SalesOrderItem {
-  id              String         @id @default(uuid())
-  salesOrderId    String
-  inventoryItemId String?
-  description     String?
-  quantityOrdered Float
-  quantityShipped Float?
-  unitPrice       Float
-  totalAmount     Float
+  id            String   @id @default(uuid())
+  salesOrderId  String
+  inventoryItemId String
+  quantity      Float
+  unitPrice     Float
+  totalPrice    Float
+  shippedQuantity Float  @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  SalesOrder      SalesOrder     @relation(fields: [salesOrderId], references: [id])
-  InventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
-}
+  SalesOrder   SalesOrder   @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  InventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@index([salesOrderId])
+  @@index([inventoryItemId])
+} 

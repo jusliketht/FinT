@@ -1,115 +1,193 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient, InventoryItem, InventoryMovement } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 @Injectable()
 export class InventoryService {
-  async createInventoryItem(data: any): Promise<InventoryItem> {
-    const item = await prisma.inventoryItem.create({
+  async createInventoryItem(data: any): Promise<any> {
+    return prisma.inventoryItem.create({
       data: {
-        ...data,
-        sku: data.sku || await this.generateSKU(data.businessId)
+        sku: data.sku,
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        unitOfMeasure: data.unitOfMeasure || 'EACH',
+        costMethod: data.costMethod || 'FIFO',
+        reorderLevel: data.reorderLevel || 0,
+        reorderQuantity: data.reorderQuantity || 0,
+        isActive: data.isActive !== false,
+        businessId: data.businessId
       }
     });
-    await prisma.inventoryLevel.create({
-      data: {
-        itemId: item.id,
-        quantityOnHand: 0,
-        quantityAvailable: 0,
-        averageCost: 0,
-        totalValue: 0
-      }
-    });
-    return item;
   }
 
-  async recordInventoryMovement(data: any): Promise<InventoryMovement> {
-    const movement = await prisma.inventoryMovement.create({ data });
-    await this.updateInventoryLevels(movement);
-    // Journal entries would be created here (requires JournalEntryService)
+  async getInventoryItems(businessId: string): Promise<any[]> {
+    return prisma.inventoryItem.findMany({
+      where: { businessId, isActive: true },
+      include: {
+        InventoryLevels: {
+          include: {
+            Location: true
+          }
+        }
+      }
+    });
+  }
+
+  async getInventoryItem(id: string): Promise<any> {
+    return prisma.inventoryItem.findUnique({
+      where: { id },
+      include: {
+        InventoryLevels: {
+          include: {
+            Location: true
+          }
+        },
+        InventoryMovements: {
+          orderBy: { movementDate: 'desc' },
+          take: 10
+        }
+      }
+    });
+  }
+
+  async updateInventoryItem(id: string, data: any): Promise<any> {
+    return prisma.inventoryItem.update({
+      where: { id },
+      data: {
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        unitOfMeasure: data.unitOfMeasure,
+        costMethod: data.costMethod,
+        reorderLevel: data.reorderLevel,
+        reorderQuantity: data.reorderQuantity,
+        isActive: data.isActive
+      }
+    });
+  }
+
+  async deleteInventoryItem(id: string): Promise<any> {
+    return prisma.inventoryItem.update({
+      where: { id },
+      data: { isActive: false }
+    });
+  }
+
+  async recordInventoryMovement(data: any): Promise<any> {
+    const movement = await prisma.inventoryMovement.create({
+      data: {
+        inventoryItemId: data.inventoryItemId,
+        locationId: data.locationId,
+        movementType: data.movementType,
+        quantity: data.quantity,
+        unitCost: data.unitCost,
+        totalValue: data.totalValue,
+        referenceId: data.referenceId,
+        description: data.description,
+        businessId: data.businessId
+      }
+    });
+
+    // Update inventory level
+    await this.updateInventoryLevel(data.inventoryItemId, data.locationId, data.quantity, data.movementType);
+
     return movement;
   }
 
-  private async updateInventoryLevels(movement: InventoryMovement): Promise<void> {
-    const currentLevel = await prisma.inventoryLevel.findUnique({
+  private async updateInventoryLevel(inventoryItemId: string, locationId: string, quantity: number, movementType: string): Promise<void> {
+    const existingLevel = await prisma.inventoryLevel.findUnique({
       where: {
-        itemId_locationId: {
-          itemId: movement.itemId,
-          locationId: movement.locationId
+        inventoryItemId_locationId: {
+          inventoryItemId,
+          locationId
         }
       }
     });
-    if (!currentLevel) throw new Error('Inventory level not found');
-    let newQuantity = currentLevel.quantityOnHand;
-    let newValue = currentLevel.totalValue;
-    let newAverageCost = currentLevel.averageCost;
-    if (movement.movementType === 'IN') {
-      newQuantity += movement.quantity;
-      if (movement.unitCost) {
-        const totalCost = newValue + (movement.quantity * movement.unitCost);
-        newAverageCost = newQuantity > 0 ? totalCost / newQuantity : 0;
-        newValue = totalCost;
-      }
-    } else if (movement.movementType === 'OUT') {
-      if (newQuantity < movement.quantity) throw new Error('Insufficient inventory quantity');
-      newQuantity -= movement.quantity;
-      newValue = newQuantity * newAverageCost;
+
+    if (existingLevel) {
+      const newQuantity = movementType === 'IN' || movementType === 'ADJUSTMENT' 
+        ? existingLevel.quantity + quantity
+        : existingLevel.quantity - quantity;
+
+      await prisma.inventoryLevel.update({
+        where: { id: existingLevel.id },
+        data: {
+          quantity: Math.max(0, newQuantity),
+          lastUpdated: new Date()
+        }
+      });
+    } else if (movementType === 'IN' || movementType === 'ADJUSTMENT') {
+      await prisma.inventoryLevel.create({
+        data: {
+          inventoryItemId,
+          locationId,
+          quantity: Math.max(0, quantity),
+          unitCost: 0,
+          totalValue: 0
+        }
+      });
     }
-    await prisma.inventoryLevel.update({
+  }
+
+  async getLowStockItems(businessId: string): Promise<any[]> {
+    return prisma.inventoryLevel.findMany({
       where: {
-        itemId_locationId: {
-          itemId: movement.itemId,
-          locationId: movement.locationId
+        InventoryItem: {
+          businessId,
+          isActive: true
+        },
+        quantity: {
+          lte: prisma.inventoryItem.fields.reorderLevel
         }
       },
-      data: {
-        quantityOnHand: newQuantity,
-        quantityAvailable: newQuantity - currentLevel.quantityReserved,
-        averageCost: newAverageCost,
-        totalValue: newValue,
-        lastUpdated: new Date()
+      include: {
+        InventoryItem: true,
+        Location: true
       }
     });
   }
 
-  async getInventoryValuation(businessId: string, asOfDate?: Date): Promise<any[]> {
-    const whereClause = asOfDate ?
-      { businessId, createdAt: { lte: asOfDate } } :
-      { businessId };
-    const items = await prisma.inventoryItem.findMany({
-      where: whereClause,
-      include: { InventoryLevels: true }
-    });
-    return items.map(item => ({
-      itemId: item.id,
-      sku: item.sku,
-      name: item.name,
-      quantityOnHand: item.InventoryLevels.reduce((sum, level) => sum + level.quantityOnHand, 0),
-      averageCost: item.InventoryLevels[0]?.averageCost || 0,
-      totalValue: item.InventoryLevels.reduce((sum, level) => sum + level.totalValue, 0)
-    }));
-  }
-
-  async generateLowStockReport(businessId: string): Promise<any[]> {
-    return prisma.inventoryItem.findMany({
+  async getInventoryValuation(businessId: string): Promise<any> {
+    const levels = await prisma.inventoryLevel.findMany({
       where: {
-        businessId,
-        isActive: true,
-        InventoryLevels: {
-          some: {
-            quantityAvailable: {
-              lte: prisma.inventoryItem.fields.reorderLevel
-            }
-          }
+        InventoryItem: {
+          businessId,
+          isActive: true
         }
       },
-      include: { InventoryLevels: true }
+      include: {
+        InventoryItem: true
+      }
+    });
+
+    const totalValue = levels.reduce((sum, level) => sum + level.totalValue, 0);
+    const itemCount = levels.length;
+
+    return {
+      totalValue,
+      itemCount,
+      levels
+    };
+  }
+
+  async createLocation(data: any): Promise<any> {
+    return prisma.location.create({
+      data: {
+        code: data.code,
+        name: data.name,
+        type: data.type || 'WAREHOUSE',
+        address: data.address,
+        isActive: data.isActive !== false,
+        businessId: data.businessId
+      }
     });
   }
 
-  private async generateSKU(businessId: string): Promise<string> {
-    const count = await prisma.inventoryItem.count({ where: { businessId } });
-    return `SKU${(count + 1).toString().padStart(6, '0')}`;
+  async getLocations(businessId: string): Promise<any[]> {
+    return prisma.location.findMany({
+      where: { businessId, isActive: true }
+    });
   }
 } 
