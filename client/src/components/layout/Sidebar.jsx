@@ -31,12 +31,22 @@ import {
   EmailIcon,
   ChatIcon,
   CalendarIcon,
+  CheckCircleIcon,
+  TimeIcon,
+  CalculatorIcon,
 } from '@chakra-ui/icons';
+import { FiPackage, FiBarChart3, FiLink } from 'react-icons/fi';
 
 const navLinks = [
   { label: 'Dashboard', to: '/', icon: ViewIcon },
   { label: 'Journal Entries', to: '/journal', icon: EditIcon },
   { label: 'Transactions', to: '/transactions', icon: RepeatIcon },
+  { label: 'Bank Reconciliation', to: '/bank-reconciliation', icon: CheckCircleIcon },
+  { label: 'Period Closing', to: '/period-closing', icon: TimeIcon },
+  { label: 'Tax Management', to: '/tax-management', icon: CalculatorIcon },
+  { label: 'Inventory', to: '/inventory', icon: FiPackage },
+  { label: 'Analytics', to: '/analytics', icon: FiBarChart3 },
+  { label: 'Integrations', to: '/integrations', icon: FiLink },
   { label: 'Reports', to: '/reports', icon: ViewIcon },
   { label: 'Invoices', to: '/invoices', icon: EmailIcon },
   { label: 'Business', to: '/businesses', icon: InfoIcon },

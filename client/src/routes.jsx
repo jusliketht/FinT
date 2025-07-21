@@ -24,6 +24,14 @@ const BusinessDetails = lazy(() => import('./pages/business/BusinessDetails'));
 const Ledgers = lazy(() => import('./pages/ledgers'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Transactions = lazy(() => import('./pages/TransactionsPage'));
+const InventoryDashboard = lazy(() => import('./components/inventory/InventoryDashboard'));
+const AnalyticsDashboard = lazy(() => import('./components/analytics/AnalyticsDashboard'));
+const IntegrationManager = lazy(() => import('./components/integrations/IntegrationManager'));
+
+// Phase 2 Components
+const EnhancedBankReconciliation = lazy(() => import('./components/bankStatements/EnhancedBankReconciliation'));
+const PeriodClosing = lazy(() => import('./components/accounting/PeriodClosing'));
+const TaxConfiguration = lazy(() => import('./components/accounting/TaxConfiguration'));
 
 // Financial Reports
 const TrialBalance = lazy(() => import('./components/reports/TrialBalance'));
@@ -219,6 +227,30 @@ const AppRoutes = () => {
             }
           />
           <Route
+            path="/bank-reconciliation"
+            element={
+              <ProtectedRoute>
+                <EnhancedBankReconciliation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/period-closing"
+            element={
+              <ProtectedRoute>
+                <PeriodClosing />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tax-management"
+            element={
+              <ProtectedRoute>
+                <TaxConfiguration />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/ledgers"
             element={
               <ProtectedRoute>
@@ -231,6 +263,30 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <Transactions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              <ProtectedRoute>
+                <InventoryDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <AnalyticsDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/integrations"
+            element={
+              <ProtectedRoute>
+                <IntegrationManager />
               </ProtectedRoute>
             }
           />

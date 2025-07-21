@@ -9,6 +9,12 @@ import { FinancialStatementsController } from './controllers/financial-statement
 import { CustomerController } from './controllers/customer.controller';
 import { InvoiceController } from './controllers/invoice.controller';
 import { AccountHeadsController } from './controllers/account-heads.controller';
+import { BankReconciliationController } from './controllers/bank-reconciliation.controller';
+import { PeriodClosingController } from './controllers/period-closing.controller';
+import { TaxCalculationController } from './controllers/tax-calculation.controller';
+import { InventoryController } from './controllers/inventory.controller';
+import { AnalyticsController } from './controllers/analytics.controller';
+import { IntegrationController } from './controllers/integration.controller';
 import { AccountsService } from './services/accounts.service';
 import { JournalEntriesService } from './services/journal-entries.service';
 import { ReportsService } from './services/reports.service';
@@ -21,6 +27,12 @@ import { LedgerService } from './services/ledger.service';
 import { FinancialStatementsService } from './services/financial-statements.service';
 import { CustomerService } from './services/customer.service';
 import { InvoiceService } from './services/invoice.service';
+import { BankReconciliationService } from './services/bank-reconciliation.service';
+import { PeriodClosingService } from './services/period-closing.service';
+import { TaxCalculationService } from './services/tax-calculation.service';
+import { InventoryService } from './services/inventory.service';
+import { AnalyticsService } from './services/analytics.service';
+import { IntegrationService } from './services/integration.service';
 
 @Module({
   controllers: [
@@ -34,6 +46,12 @@ import { InvoiceService } from './services/invoice.service';
     CustomerController,
     InvoiceController,
     AccountHeadsController,
+    BankReconciliationController,
+    PeriodClosingController,
+    TaxCalculationController,
+    InventoryController,
+    AnalyticsController,
+    IntegrationController,
   ],
   providers: [
     AccountsService,
@@ -48,6 +66,12 @@ import { InvoiceService } from './services/invoice.service';
     FinancialStatementsService,
     CustomerService,
     InvoiceService,
+    BankReconciliationService,
+    PeriodClosingService,
+    TaxCalculationService,
+    InventoryService,
+    AnalyticsService,
+    IntegrationService,
   ],
   exports: [
     AccountsService,
@@ -62,6 +86,12 @@ import { InvoiceService } from './services/invoice.service';
     FinancialStatementsService,
     CustomerService,
     InvoiceService,
+    BankReconciliationService,
+    PeriodClosingService,
+    TaxCalculationService,
+    InventoryService,
+    AnalyticsService,
+    IntegrationService,
   ],
 })
 export class AccountingModule {} 

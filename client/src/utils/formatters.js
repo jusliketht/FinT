@@ -7,8 +7,9 @@ export const formatCurrency = (amount, currency = 'USD', locale = 'en-US') => {
   }).format(amount);
 };
 
-export const formatPercentage = (value, decimals = 1) => {
-  return `${value.toFixed(decimals)}%`;
+export const formatPercentage = (value) => {
+  if (value === null || value === undefined) return '0%';
+  return `${(value).toFixed(2)}%`;
 };
 
 export const formatDate = (date) => {
