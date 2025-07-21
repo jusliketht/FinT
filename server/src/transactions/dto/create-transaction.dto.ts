@@ -1,8 +1,17 @@
 import { IsDateString, IsString, IsNotEmpty, IsNumber, IsPositive, IsEnum, IsOptional } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+export enum TransactionType {
+  INCOME = 'income',
+  EXPENSE = 'expense',
+  TRANSFER = 'transfer',
+  ADJUSTMENT = 'adjustment'
+}
 
 export class CreateTransactionDto {
   @IsDateString()
-  date: string;
+  @Transform(({ value }) => new Date(value))
+  date: Date;
 
   @IsString()
   @IsNotEmpty()
@@ -10,14 +19,15 @@ export class CreateTransactionDto {
 
   @IsNumber()
   @IsPositive()
+  @Transform(({ value }) => Number(value))
   amount: number;
 
   @IsString()
   @IsNotEmpty()
   category: string;
 
-  @IsEnum(['income', 'expense', 'transfer', 'adjustment'])
-  transactionType: string;
+  @IsEnum(TransactionType)
+  transactionType: TransactionType;
 
   @IsOptional()
   @IsString()
@@ -38,4 +48,8 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsString()
   accountId?: string;
+
+  @IsOptional()
+  @IsString()
+  thirdPartyId?: string;
 } 

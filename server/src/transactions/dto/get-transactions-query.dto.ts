@@ -1,5 +1,6 @@
-import { IsOptional, IsString, IsNumber, IsDateString } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsString, IsNumber, IsDateString, IsEnum } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+import { TransactionType } from './create-transaction.dto';
 
 export class GetTransactionsQueryDto {
   @IsOptional()
@@ -7,8 +8,8 @@ export class GetTransactionsQueryDto {
   category?: string;
 
   @IsOptional()
-  @IsString()
-  transactionType?: string;
+  @IsEnum(TransactionType)
+  transactionType?: TransactionType;
 
   @IsOptional()
   @IsString()
@@ -24,11 +25,13 @@ export class GetTransactionsQueryDto {
 
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  @Transform(({ value }) => value ? new Date(value) : undefined)
+  startDate?: Date;
 
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  @Transform(({ value }) => value ? new Date(value) : undefined)
+  endDate?: Date;
 
   @IsOptional()
   @IsString()

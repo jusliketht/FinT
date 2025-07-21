@@ -1,57 +1,29 @@
-import { ValidationPipe, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-
 import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
+  const app = await NestFactory.create(AppModule);
+  
+  // Enable CORS
+  app.enableCors({
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    credentials: true,
+  });
 
-  try {
-    const app = await NestFactory.create(AppModule, {
-      logger: ['error', 'warn', 'log', 'debug', 'verbose'],
-    });
+  // Global validation pipe
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
 
-    const configService = app.get(ConfigService);
+  // Global prefix
+  app.setGlobalPrefix('api');
 
-    // Enable CORS with proper configuration
-    app.enableCors({
-      origin: configService.get('CLIENT_URL', 'http://localhost:3000'),
-      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-      credentials: true,
-      maxAge: 86400, // 24 hours
-    });
-
-    // Global validation pipe
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: false,
-        transform: true,
-        transformOptions: {
-          enableImplicitConversion: true,
-        },
-      })
-    );
-
-    // Global prefix
-    app.setGlobalPrefix('api');
-
-    const port = configService.get('PORT', 5000);
-    const nodeEnv = configService.get('NODE_ENV', 'development');
-
-    await app.listen(port);
-
-    logger.log(`🚀 Server is running on http://localhost:${port}/api`);
-    logger.log(`📊 Environment: ${nodeEnv}`);
-    logger.log(
-      `🔗 Database: ${configService.get('DATABASE_URL')?.split('@')[1] || 'Not configured'}`
-    );
-  } catch (error) {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
-  }
+  const port = process.env.PORT || 5000;
+  await app.listen(port);
+  console.log(`🚀 Application is running on: http://localhost:${port}`);
 }
 
 bootstrap();

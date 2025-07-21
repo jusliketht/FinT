@@ -33,9 +33,8 @@ import {
   CalendarIcon,
   CheckCircleIcon,
   TimeIcon,
-  CalculatorIcon,
 } from '@chakra-ui/icons';
-import { FiPackage, FiBarChart3, FiLink } from 'react-icons/fi';
+import { FiPackage, FiBarChart2, FiLink, FiPercent } from 'react-icons/fi';
 
 const navLinks = [
   { label: 'Dashboard', to: '/', icon: ViewIcon },
@@ -43,9 +42,9 @@ const navLinks = [
   { label: 'Transactions', to: '/transactions', icon: RepeatIcon },
   { label: 'Bank Reconciliation', to: '/bank-reconciliation', icon: CheckCircleIcon },
   { label: 'Period Closing', to: '/period-closing', icon: TimeIcon },
-  { label: 'Tax Management', to: '/tax-management', icon: CalculatorIcon },
+  { label: 'Tax Management', to: '/tax-management', icon: FiPercent },
   { label: 'Inventory', to: '/inventory', icon: FiPackage },
-  { label: 'Analytics', to: '/analytics', icon: FiBarChart3 },
+  { label: 'Analytics', to: '/analytics', icon: FiBarChart2 },
   { label: 'Integrations', to: '/integrations', icon: FiLink },
   { label: 'Reports', to: '/reports', icon: ViewIcon },
   { label: 'Invoices', to: '/invoices', icon: EmailIcon },

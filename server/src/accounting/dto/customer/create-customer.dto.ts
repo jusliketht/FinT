@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, IsOptional, IsEmail, IsNumber, IsBoolean } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateCustomerDto {
   @IsString()
@@ -39,10 +40,12 @@ export class CreateCustomerDto {
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   creditLimit?: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   paymentTerms?: number;
 
   @IsOptional()

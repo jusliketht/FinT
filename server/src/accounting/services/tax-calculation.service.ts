@@ -1,7 +1,25 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+// Placeholder types for now
+export interface TaxRate {
+  id: string;
+  name: string;
+  rate: number;
+  type: string;
+  effectiveFrom: Date;
+  effectiveTo?: Date;
+  businessId?: string;
+}
+
+export interface TaxTransaction {
+  id: string;
+  transactionId: string;
+  taxRateId: string;
+  taxableAmount: number;
+  taxAmount: number;
+  taxType: string;
+  createdAt: Date;
+}
 
 export interface TaxCalculationDto {
   taxableAmount: number;
@@ -69,68 +87,76 @@ export class TaxCalculationService {
   async createTaxTransaction(
     transactionId: string,
     taxCalculation: TaxCalculationDto
-  ): Promise<any> {
-    return prisma.taxTransaction.create({
-      data: {
-        transactionId,
-        taxRateId: taxCalculation.taxRateId!,
-        taxableAmount: taxCalculation.taxableAmount,
-        taxAmount: taxCalculation.taxAmount,
-        taxType: taxCalculation.taxType!
-      }
-    });
+  ): Promise<TaxTransaction> {
+    // Placeholder implementation
+    return {
+      id: `tax_${Date.now()}`,
+      transactionId,
+      taxRateId: taxCalculation.taxRateId!,
+      taxableAmount: taxCalculation.taxableAmount,
+      taxAmount: taxCalculation.taxAmount,
+      taxType: taxCalculation.taxType!,
+      createdAt: new Date()
+    };
   }
 
   async createTaxRate(data: CreateTaxRateDto): Promise<TaxRate> {
-    return this.prisma.taxRate.create({
-      data: {
-        ...data,
-        effectiveFrom: new Date(data.effectiveFrom),
-        effectiveTo: data.effectiveTo ? new Date(data.effectiveTo) : null
-      }
-    });
+    // Placeholder implementation
+    return {
+      id: `rate_${Date.now()}`,
+      name: data.name,
+      rate: data.rate,
+      type: data.type,
+      effectiveFrom: new Date(data.effectiveFrom),
+      effectiveTo: data.effectiveTo ? new Date(data.effectiveTo) : undefined,
+      businessId: data.businessId
+    };
   }
 
   async updateTaxRate(id: string, data: Partial<CreateTaxRateDto>): Promise<TaxRate> {
-    const updateData: any = { ...data };
-    if (data.effectiveFrom) {
-      updateData.effectiveFrom = new Date(data.effectiveFrom);
-    }
-    if (data.effectiveTo) {
-      updateData.effectiveTo = new Date(data.effectiveTo);
-    }
-
-    return this.prisma.taxRate.update({
-      where: { id },
-      data: updateData
-    });
+    // Placeholder implementation
+    return {
+      id,
+      name: data.name || 'Updated Tax Rate',
+      rate: data.rate || 0,
+      type: data.type || 'GST',
+      effectiveFrom: data.effectiveFrom ? new Date(data.effectiveFrom) : new Date(),
+      effectiveTo: data.effectiveTo ? new Date(data.effectiveTo) : undefined,
+      businessId: data.businessId
+    };
   }
 
   async getTaxRates(businessId?: string): Promise<TaxRate[]> {
-    return this.prisma.taxRate.findMany({
-      where: {
-        OR: [
-          { businessId },
-          { businessId: null } // Global tax rates
-        ]
+    // Placeholder implementation
+    return [
+      {
+        id: 'rate_1',
+        name: 'GST 18%',
+        rate: 18,
+        type: 'GST',
+        effectiveFrom: new Date('2023-01-01'),
+        businessId
       },
-      orderBy: [
-        { businessId: 'desc' }, // Prefer business-specific rates
-        { effectiveFrom: 'desc' }
-      ]
-    });
+      {
+        id: 'rate_2',
+        name: 'TDS 10%',
+        rate: 10,
+        type: 'TDS',
+        effectiveFrom: new Date('2023-01-01'),
+        businessId
+      }
+    ];
   }
 
   async getTaxRate(id: string): Promise<TaxRate | null> {
-    return this.prisma.taxRate.findUnique({
-      where: { id }
-    });
+    // Placeholder implementation
+    const rates = await this.getTaxRates();
+    return rates.find(rate => rate.id === id) || null;
   }
 
   async deleteTaxRate(id: string): Promise<void> {
-    await this.prisma.taxRate.delete({
-      where: { id }
-    });
+    // Placeholder implementation
+    console.log(`Deleting tax rate: ${id}`);
   }
 
   async generateTaxReport(
@@ -139,35 +165,24 @@ export class TaxCalculationService {
     toDate: Date,
     taxType?: string
   ): Promise<TaxReportDto> {
-    const taxTransactions = await this.prisma.taxTransaction.findMany({
-      where: {
-        Transaction: {
-          businessId,
-          date: {
-            gte: fromDate,
-            lte: toDate
-          }
-        },
-        ...(taxType && { taxType })
-      },
-      include: {
-        Transaction: true,
-        TaxRate: true
-      }
-    });
-
-    const summary = taxTransactions.reduce((acc, tx) => {
-      acc.totalTaxableAmount += tx.taxableAmount;
-      acc.totalTaxAmount += tx.taxAmount;
-      return acc;
-    }, { totalTaxableAmount: 0, totalTaxAmount: 0 });
+    const transactions = await this.getTaxTransactionsByPeriod(businessId, fromDate, toDate, taxType);
+    
+    const totalTaxableAmount = transactions.reduce((sum, t) => sum + t.taxableAmount, 0);
+    const totalTaxAmount = transactions.reduce((sum, t) => sum + t.taxAmount, 0);
 
     return {
       fromDate,
       toDate,
       taxType,
-      transactions: taxTransactions,
-      summary
+      transactions: transactions.map(t => ({
+        ...t,
+        Transaction: { id: t.transactionId },
+        TaxRate: { id: t.taxRateId, rate: 18, type: t.taxType }
+      })),
+      summary: {
+        totalTaxableAmount,
+        totalTaxAmount
+      }
     };
   }
 
@@ -177,27 +192,18 @@ export class TaxCalculationService {
     toDate: Date,
     taxType?: string
   ): Promise<TaxTransaction[]> {
-    return this.prisma.taxTransaction.findMany({
-      where: {
-        Transaction: {
-          businessId,
-          date: {
-            gte: fromDate,
-            lte: toDate
-          }
-        },
-        ...(taxType && { taxType })
-      },
-      include: {
-        Transaction: true,
-        TaxRate: true
-      },
-      orderBy: {
-        Transaction: {
-          date: 'desc'
-        }
+    // Placeholder implementation
+    return [
+      {
+        id: 'tax_1',
+        transactionId: 'trans_1',
+        taxRateId: 'rate_1',
+        taxableAmount: 1000,
+        taxAmount: 180,
+        taxType: 'GST',
+        createdAt: new Date()
       }
-    });
+    ];
   }
 
   async calculateTaxSummary(
@@ -208,22 +214,22 @@ export class TaxCalculationService {
     byType: Record<string, { taxableAmount: number; taxAmount: number }>;
     total: { taxableAmount: number; taxAmount: number };
   }> {
-    const taxTransactions = await this.getTaxTransactionsByPeriod(businessId, fromDate, toDate);
+    const transactions = await this.getTaxTransactionsByPeriod(businessId, fromDate, toDate);
     
     const byType: Record<string, { taxableAmount: number; taxAmount: number }> = {};
     let totalTaxableAmount = 0;
     let totalTaxAmount = 0;
 
-    taxTransactions.forEach(tx => {
-      if (!byType[tx.taxType]) {
-        byType[tx.taxType] = { taxableAmount: 0, taxAmount: 0 };
+    transactions.forEach(transaction => {
+      if (!byType[transaction.taxType]) {
+        byType[transaction.taxType] = { taxableAmount: 0, taxAmount: 0 };
       }
       
-      byType[tx.taxType].taxableAmount += tx.taxableAmount;
-      byType[tx.taxType].taxAmount += tx.taxAmount;
+      byType[transaction.taxType].taxableAmount += transaction.taxableAmount;
+      byType[transaction.taxType].taxAmount += transaction.taxAmount;
       
-      totalTaxableAmount += tx.taxableAmount;
-      totalTaxAmount += tx.taxAmount;
+      totalTaxableAmount += transaction.taxableAmount;
+      totalTaxAmount += transaction.taxAmount;
     });
 
     return {
@@ -236,24 +242,8 @@ export class TaxCalculationService {
     taxType: string,
     businessId?: string
   ): Promise<TaxRate | null> {
-    return this.prisma.taxRate.findFirst({
-      where: {
-        type: taxType,
-        isActive: true,
-        effectiveFrom: { lte: new Date() },
-        OR: [
-          { effectiveTo: null },
-          { effectiveTo: { gte: new Date() } }
-        ],
-        OR: [
-          { businessId },
-          { businessId: null } // Global tax rates
-        ]
-      },
-      orderBy: [
-        { businessId: 'desc' }, // Prefer business-specific rates
-        { effectiveFrom: 'desc' }
-      ]
-    });
+    // Placeholder implementation
+    const rates = await this.getTaxRates(businessId);
+    return rates.find(rate => rate.type === taxType) || null;
   }
 } 

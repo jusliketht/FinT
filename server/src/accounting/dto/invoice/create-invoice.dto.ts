@@ -1,5 +1,5 @@
 import { IsString, IsNotEmpty, IsOptional, IsNumber, IsDateString, IsArray, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class CreateInvoiceItemDto {
   @IsString()
@@ -7,17 +7,21 @@ export class CreateInvoiceItemDto {
   description: string;
 
   @IsNumber()
+  @Type(() => Number)
   quantity: number;
 
   @IsNumber()
+  @Type(() => Number)
   unitPrice: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   taxRate?: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   taxAmount?: number;
 }
 
@@ -27,9 +31,11 @@ export class CreateInvoiceDto {
   customerId: string;
 
   @IsDateString()
+  @Transform(({ value }) => new Date(value))
   issueDate: Date;
 
   @IsDateString()
+  @Transform(({ value }) => new Date(value))
   dueDate: Date;
 
   @IsOptional()
@@ -38,6 +44,7 @@ export class CreateInvoiceDto {
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   discountAmount?: number;
 
   @IsOptional()

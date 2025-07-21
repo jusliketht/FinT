@@ -14,20 +14,7 @@ export class IntegrationController {
 
   @Post('bank/sync')
   async syncBankTransactions(@Body() data: { businessId: string; connectionId: string }) {
-    return this.integrationService.syncBankTransactions(data.businessId, data.connectionId);
-  }
-
-  @Get('bank/accounts/:connectionId')
-  async getBankAccounts(@Param('connectionId') connectionId: string) {
-    return this.integrationService.getBankAccounts(connectionId);
-  }
-
-  @Get('bank/balance/:connectionId/:accountId')
-  async getBankAccountBalance(
-    @Param('connectionId') connectionId: string,
-    @Param('accountId') accountId: string
-  ) {
-    return this.integrationService.getBankAccountBalance(connectionId, accountId);
+    return this.integrationService.syncBankTransactions(data.businessId);
   }
 
   @Delete('bank/disconnect/:connectionId')
@@ -45,18 +32,8 @@ export class IntegrationController {
     return this.integrationService.sendEmailNotification(notificationData);
   }
 
-  @Post('email/low-stock-alert')
-  async sendLowStockAlert(@Body() data: { businessId: string; itemData: any }) {
-    return this.integrationService.sendLowStockAlert(data.businessId, data.itemData);
-  }
-
-  @Post('email/invoice-reminder')
-  async sendInvoiceReminder(@Body() invoiceData: any) {
-    return this.integrationService.sendInvoiceReminder(invoiceData);
-  }
-
-  @Post('email/payment-confirmation')
-  async sendPaymentConfirmation(@Body() paymentData: any) {
-    return this.integrationService.sendPaymentConfirmation(paymentData);
+  @Get('status')
+  async getIntegrationStatus(@Body() data: { businessId: string }) {
+    return this.integrationService.getIntegrationStatus(data.businessId);
   }
 } 

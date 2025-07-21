@@ -18,12 +18,22 @@ export class InventoryController {
   }
 
   @Get('valuation')
-  async getInventoryValuation(@Query('businessId') businessId: string, @Query('asOfDate') asOfDate?: string) {
-    return this.inventoryService.getInventoryValuation(businessId, asOfDate ? new Date(asOfDate) : undefined);
+  async getInventoryValuation(@Query('businessId') businessId: string) {
+    return this.inventoryService.getInventoryValuation(businessId);
   }
 
   @Get('low-stock')
-  async generateLowStockReport(@Query('businessId') businessId: string) {
-    return this.inventoryService.generateLowStockReport(businessId);
+  async getLowStockItems(@Query('businessId') businessId: string) {
+    return this.inventoryService.getLowStockItems(businessId);
+  }
+
+  @Get('items')
+  async getInventoryItems(@Query('businessId') businessId: string) {
+    return this.inventoryService.getInventoryItems(businessId);
+  }
+
+  @Get('locations')
+  async getLocations(@Query('businessId') businessId: string) {
+    return this.inventoryService.getLocations(businessId);
   }
 } 
