@@ -13,19 +13,36 @@ import {
   MenuList,
   MenuItem,
   useColorModeValue,
+  HStack,
+  VStack,
+  Divider,
 } from '@chakra-ui/react';
 import { 
   SearchIcon,
-  ChevronDownIcon 
+  ChevronDownIcon,
+  SettingsIcon,
+  InfoIcon,
 } from '@chakra-ui/icons';
+import { FiUser, FiLogOut } from 'react-icons/fi';
 import ContextSwitcher from '../common/ContextSwitcher';
+import NotificationBell from '../common/NotificationBell';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Topbar = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  
   const bgColor = useColorModeValue('primary.900', 'gray.800');
   const textColor = useColorModeValue('white', 'gray.100');
   const hoverBg = useColorModeValue('primary.800', 'gray.700');
   const inputBg = useColorModeValue('white', 'gray.700');
   const inputColor = useColorModeValue('gray.900', 'white');
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <Box
@@ -81,8 +98,10 @@ const Topbar = () => {
           <ContextSwitcher />
         </Flex>
 
-        {/* Right Side - User Menu */}
-        <Flex align="center">
+        {/* Right Side - Notifications and User Menu */}
+        <HStack spacing={3} align="center">
+          <NotificationBell />
+          
           <Menu>
             <MenuButton
               as={IconButton}
@@ -90,16 +109,35 @@ const Topbar = () => {
               color={textColor}
               _hover={{ bg: hoverBg }}
               _active={{ bg: hoverBg }}
-              icon={<ChevronDownIcon />}
               size="md"
-            />
+            >
+              <HStack spacing={2}>
+                <Avatar size="sm" name={user?.name} bg="primary.600" />
+                <VStack spacing={0} align="start" display={{ base: 'none', md: 'flex' }}>
+                  <Text fontSize="sm" fontWeight="medium">
+                    {user?.name || 'User'}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.8}>
+                    {user?.email}
+                  </Text>
+                </VStack>
+                <ChevronDownIcon />
+              </HStack>
+            </MenuButton>
             <MenuList>
-              <MenuItem>Profile</MenuItem>
-              <MenuItem>Settings</MenuItem>
-              <MenuItem>Sign Out</MenuItem>
+              <MenuItem icon={<FiUser />} onClick={() => navigate('/profile')}>
+                Profile
+              </MenuItem>
+              <MenuItem icon={<SettingsIcon />} onClick={() => navigate('/settings')}>
+                Settings
+              </MenuItem>
+              <Divider />
+              <MenuItem icon={<FiLogOut />} onClick={handleLogout}>
+                Sign Out
+              </MenuItem>
             </MenuList>
           </Menu>
-        </Flex>
+        </HStack>
       </Flex>
     </Box>
   );

@@ -9,12 +9,15 @@ import { AuthProvider } from './contexts/AuthContext';
 import { BusinessProvider } from './contexts/BusinessContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { TransactionProvider } from './contexts/TransactionContext';
 
 // Components
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { PageLoadingSpinner } from './components/common/LoadingStates';
 import Layout from './components/layout/Layout';
+import FloatingActionButton from './components/common/FloatingActionButton';
+import GlobalTransactionModal from './components/transactions/GlobalTransactionModal';
 
 // Pages - Lazy loaded for better performance
 const Login = React.lazy(() => import('./pages/Login'));
@@ -25,6 +28,7 @@ const TransactionsPage = React.lazy(() => import('./pages/TransactionsPage'));
 const Reports = React.lazy(() => import('./pages/Reports'));
 const BusinessManagement = React.lazy(() => import('./pages/business/BusinessManagement'));
 const Settings = React.lazy(() => import('./pages/Settings'));
+const UserProfile = React.lazy(() => import('./pages/UserProfile'));
 const ChartOfAccountsPage = React.lazy(() => import('./pages/accounts/ChartOfAccountsPage'));
 const InvoiceList = React.lazy(() => import('./components/invoices/InvoiceList'));
 const BankReconciliation = React.lazy(() => import('./pages/bankStatements/BankReconciliation'));
@@ -59,7 +63,8 @@ function App() {
             <ToastProvider>
               <AuthProvider>
                 <BusinessProvider>
-                  <Suspense fallback={<RouteLoading />}>
+                  <TransactionProvider>
+                    <Suspense fallback={<RouteLoading />}>
                     <Routes>
                       {/* Public Routes */}
                       <Route path="/login" element={<Login />} />
@@ -131,6 +136,14 @@ function App() {
                         </ProtectedRoute>
                       } />
                       
+                      <Route path="/profile" element={
+                        <ProtectedRoute requireAuth={true} requireBusiness={false}>
+                          <Layout>
+                            <UserProfile />
+                          </Layout>
+                        </ProtectedRoute>
+                      } />
+                      
                       {/* Journal Routes */}
                       <Route path="/journal" element={
                         <ProtectedRoute requireAuth={true} requireBusiness={false}>
@@ -152,8 +165,13 @@ function App() {
                       <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                   </Suspense>
-                </BusinessProvider>
-              </AuthProvider>
+                  
+                  {/* Global Components */}
+                  <FloatingActionButton />
+                  <GlobalTransactionModal />
+                </TransactionProvider>
+              </BusinessProvider>
+            </AuthProvider>
             </ToastProvider>
           </ThemeProvider>
         </QueryClientProvider>

@@ -4,6 +4,9 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { AccountingModule } from './accounting/accounting.module';
+import { ReconciliationModule } from './reconciliation/reconciliation.module';
+import { PdfStatementModule } from './pdf-statement/pdf-statement.module';
+// import { InvoicesModule } from './invoices/invoices.module'; // Temporarily disabled due to Prisma client issues
 
 @Module({
   imports: [
@@ -14,6 +17,9 @@ import { AccountingModule } from './accounting/accounting.module';
     UsersModule,
     TransactionsModule,
     AccountingModule,
+    ReconciliationModule,
+    PdfStatementModule,
+    // InvoicesModule, // Temporarily disabled due to Prisma client issues
   ],
 })
 export class AppModule {} 

@@ -35,9 +35,11 @@ import {
 import TransactionList from '../components/transactions/TransactionList';
 import transactionService from '../services/transactionService';
 import { useBusiness } from '../contexts/BusinessContext';
+import { useTransaction } from '../contexts/TransactionContext';
 
 const TransactionsPage = () => {
   const { selectedBusiness } = useBusiness();
+  const { openAddTransaction } = useTransaction();
   const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [bulkActions, setBulkActions] = useState('');
@@ -71,6 +73,7 @@ const TransactionsPage = () => {
               leftIcon={<AddIcon />}
               colorScheme="blue"
               size="md"
+              onClick={openAddTransaction}
             >
               Add Transaction
             </Button>

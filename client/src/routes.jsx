@@ -32,6 +32,7 @@ const IntegrationManager = lazy(() => import('./components/integrations/Integrat
 const EnhancedBankReconciliation = lazy(() => import('./components/bankStatements/EnhancedBankReconciliation'));
 const PeriodClosing = lazy(() => import('./components/accounting/PeriodClosing'));
 const TaxConfiguration = lazy(() => import('./components/accounting/TaxConfiguration'));
+const UserProfile = lazy(() => import('./pages/UserProfile'));
 
 // Financial Reports
 const TrialBalance = lazy(() => import('./components/reports/TrialBalance'));
@@ -42,6 +43,8 @@ const CashFlow = lazy(() => import('./components/reports/CashFlow'));
 // Invoice and Bill Management
 const CustomerList = lazy(() => import('./components/customers/CustomerList'));
 const InvoiceList = lazy(() => import('./components/invoices/InvoiceList'));
+const InvoicesPage = lazy(() => import('./pages/invoices'));
+const BillsPage = lazy(() => import('./pages/bills'));
 
 // Protected route component
 const ProtectedRoute = ({ children, requireBusiness = true }) => {
@@ -206,7 +209,15 @@ const AppRoutes = () => {
             path="/invoices"
             element={
               <ProtectedRoute>
-                <InvoiceList />
+                <InvoicesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bills"
+            element={
+              <ProtectedRoute>
+                <BillsPage />
               </ProtectedRoute>
             }
           />
@@ -295,6 +306,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute requireBusiness={false}>
+                <UserProfile />
               </ProtectedRoute>
             }
           />

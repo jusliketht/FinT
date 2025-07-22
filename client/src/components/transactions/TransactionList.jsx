@@ -21,29 +21,49 @@ import {
   useToast,
   Pagination,
   Select,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Card,
+  CardBody,
+  SimpleGrid,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import {
   EditIcon,
   DeleteIcon,
   ViewIcon,
   ChevronDownIcon,
+  SearchIcon,
+  FilterIcon,
 } from '@chakra-ui/icons';
-import TransactionForm from './TransactionForm';
-import transactionService from '../../services/transactionService';
+import { useTransaction } from '../../contexts/TransactionContext';
 import { useBusiness } from '../../contexts/BusinessContext';
 
 const TransactionList = () => {
   const { selectedBusiness } = useBusiness();
+  const { openEditTransaction } = useTransaction();
   const toast = useToast();
-  const { isOpen, onOpen, onClose } = useDisclosure();
   
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20
   });
+  
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateRange, setDateRange] = useState('');
+  const [transactionType, setTransactionType] = useState('');
+  const [category, setCategory] = useState('');
+  const [personEntity, setPersonEntity] = useState('');
+  const [reconciliationStatus, setReconciliationStatus] = useState('');
+  const [sortBy, setSortBy] = useState('date');
+  const [sortOrder, setSortOrder] = useState('desc');
+  
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   // Sample data to match reference design
   const sampleTransactions = [
@@ -113,8 +133,7 @@ const TransactionList = () => {
   };
 
   const handleEdit = (transaction) => {
-    setSelectedTransaction(transaction);
-    onOpen();
+    openEditTransaction(transaction);
   };
 
   const handleDelete = async (transaction) => {
@@ -144,16 +163,31 @@ const TransactionList = () => {
     }
   };
 
-  const handleFormSuccess = () => {
-    onClose();
-    setSelectedTransaction(null);
-    loadTransactions();
-  };
+  // Filter and sort transactions
+  const filteredTransactions = transactions.filter(transaction => {
+    const matchesSearch = !searchQuery || 
+      transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      transaction.referenceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      transaction.personEntity?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesType = !transactionType || transaction.type === transactionType;
+    const matchesCategory = !category || transaction.category === category;
+    const matchesPerson = !personEntity || transaction.personEntity === personEntity;
+    const matchesStatus = !reconciliationStatus || transaction.reconciliationStatus === reconciliationStatus;
+    
+    return matchesSearch && matchesType && matchesCategory && matchesPerson && matchesStatus;
+  });
 
-  const handleFormCancel = () => {
-    onClose();
-    setSelectedTransaction(null);
-  };
+  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+    const aValue = a[sortBy];
+    const bValue = b[sortBy];
+    
+    if (sortOrder === 'asc') {
+      return aValue > bValue ? 1 : -1;
+    } else {
+      return aValue < bValue ? 1 : -1;
+    }
+  });
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -205,58 +239,163 @@ const TransactionList = () => {
   }
 
   return (
-    <Box>
+    <VStack spacing={6} align="stretch">
+      {/* Filter Bar */}
+      <Card bg={cardBg} border="1px" borderColor={borderColor}>
+        <CardBody>
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+            <InputGroup>
+              <InputLeftElement pointerEvents="none">
+                <SearchIcon color="gray.400" />
+              </InputLeftElement>
+              <Input
+                placeholder="Search transactions..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </InputGroup>
+            
+            <Select
+              placeholder="Date Range"
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+            >
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="quarter">This Quarter</option>
+              <option value="year">This Year</option>
+            </Select>
+            
+            <Select
+              placeholder="Transaction Type"
+              value={transactionType}
+              onChange={(e) => setTransactionType(e.target.value)}
+            >
+              <option value="Income">Income</option>
+              <option value="Expense">Expense</option>
+              <option value="Transfer">Transfer</option>
+              <option value="Adjustment">Adjustment</option>
+            </Select>
+            
+            <Select
+              placeholder="Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="Supplies">Supplies</option>
+              <option value="Services">Services</option>
+              <option value="Technology">Technology</option>
+              <option value="Utilities">Utilities</option>
+              <option value="Marketing">Marketing</option>
+            </Select>
+            
+            <Select
+              placeholder="Reconciliation Status"
+              value={reconciliationStatus}
+              onChange={(e) => setReconciliationStatus(e.target.value)}
+            >
+              <option value="verified">Verified</option>
+              <option value="unverified">Unverified</option>
+            </Select>
+            
+            <Select
+              placeholder="Sort By"
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const [field, order] = e.target.value.split('-');
+                setSortBy(field);
+                setSortOrder(order);
+              }}
+            >
+              <option value="date-desc">Date (Newest)</option>
+              <option value="date-asc">Date (Oldest)</option>
+              <option value="amount-desc">Amount (High to Low)</option>
+              <option value="amount-asc">Amount (Low to High)</option>
+              <option value="description-asc">Description (A-Z)</option>
+              <option value="description-desc">Description (Z-A)</option>
+            </Select>
+          </SimpleGrid>
+        </CardBody>
+      </Card>
+
       {/* Transaction Table */}
-      <Table variant="simple">
-        <Thead>
-          <Tr>
-            <Th>Date</Th>
-            <Th>Description</Th>
-            <Th>Category</Th>
-            <Th>Amount</Th>
-            <Th>Status</Th>
-            <Th>Action</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {transactions.map((transaction) => (
-            <Tr key={transaction.id}>
-              <Td fontSize="sm">
-                {formatDate(transaction.date)}
-              </Td>
-              <Td fontSize="sm">
-                {transaction.description}
-              </Td>
-              <Td fontSize="sm">
-                {transaction.category}
-              </Td>
-              <Td fontSize="sm" fontFamily="mono">
-                {formatAmount(transaction.amount)}
-              </Td>
-              <Td>
-                <Badge
-                  colorScheme={getStatusColor(transaction.status)}
-                  size="sm"
-                >
-                  {getStatusLabel(transaction.status)}
-                </Badge>
-              </Td>
-              <Td>
-                <HStack spacing={2}>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    colorScheme="blue"
-                    onClick={() => handleEdit(transaction)}
-                  >
-                    View
-                  </Button>
-                </HStack>
-              </Td>
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
+      <Card bg={cardBg} border="1px" borderColor={borderColor}>
+        <CardBody p={0}>
+          <Table variant="simple">
+            <Thead>
+              <Tr>
+                <Th>Date</Th>
+                <Th>Description</Th>
+                <Th>Category</Th>
+                <Th>Amount</Th>
+                <Th>Status</Th>
+                <Th>Reconciliation</Th>
+                <Th>Action</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {sortedTransactions.map((transaction) => (
+                <Tr key={transaction.id}>
+                  <Td fontSize="sm">
+                    {formatDate(transaction.date)}
+                  </Td>
+                  <Td fontSize="sm">
+                    <VStack align="start" spacing={1}>
+                      <Text fontWeight="medium">{transaction.description}</Text>
+                      {transaction.referenceNumber && (
+                        <Text fontSize="xs" color="gray.500">
+                          Ref: {transaction.referenceNumber}
+                        </Text>
+                      )}
+                      {transaction.personEntity && (
+                        <Text fontSize="xs" color="blue.500">
+                          {transaction.personEntity}
+                        </Text>
+                      )}
+                    </VStack>
+                  </Td>
+                  <Td fontSize="sm">
+                    {transaction.category}
+                  </Td>
+                  <Td fontSize="sm" fontFamily="mono">
+                    {formatAmount(transaction.amount)}
+                  </Td>
+                  <Td>
+                    <Badge
+                      colorScheme={getStatusColor(transaction.status)}
+                      size="sm"
+                    >
+                      {getStatusLabel(transaction.status)}
+                    </Badge>
+                  </Td>
+                  <Td>
+                    <Badge
+                      colorScheme={transaction.reconciliationStatus === 'verified' ? 'green' : 'orange'}
+                      size="sm"
+                      variant="subtle"
+                    >
+                      {transaction.reconciliationStatus === 'verified' ? 'Verified' : 'Unverified'}
+                    </Badge>
+                  </Td>
+                  <Td>
+                    <HStack spacing={2}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        colorScheme="blue"
+                        onClick={() => handleEdit(transaction)}
+                      >
+                        Edit
+                      </Button>
+                    </HStack>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </CardBody>
+      </Card>
 
       {/* Pagination */}
       <Flex justify="center" py={4}>
@@ -268,15 +407,7 @@ const TransactionList = () => {
           <Button size="sm" variant="outline">›</Button>
         </HStack>
       </Flex>
-
-      {/* Transaction Form Modal */}
-      <TransactionForm
-        isOpen={isOpen}
-        onClose={handleFormCancel}
-        transaction={selectedTransaction}
-        onSuccess={handleFormSuccess}
-      />
-    </Box>
+    </VStack>
   );
 };
 

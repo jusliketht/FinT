@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -15,6 +15,8 @@ import {
   DrawerOverlay,
   DrawerContent,
   DrawerCloseButton,
+  Tooltip,
+  Divider,
 } from '@chakra-ui/react';
 import {
   HamburgerIcon,
@@ -23,37 +25,75 @@ import {
   InfoIcon,
   RepeatIcon,
   EditIcon,
-  CopyIcon,
-  StarIcon,
-  DownloadIcon,
-  ExternalLinkIcon,
-  PhoneIcon,
-  EmailIcon,
-  ChatIcon,
-  CalendarIcon,
   CheckCircleIcon,
   TimeIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '@chakra-ui/icons';
-import { FiPackage, FiBarChart2, FiLink, FiPercent } from 'react-icons/fi';
+import { 
+  FiPackage, 
+  FiBarChart2, 
+  FiLink, 
+  FiPercent, 
+  FiDollarSign,
+  FiFileText,
+  FiUsers,
+  FiHome,
+  FiTrendingUp,
+  FiShield,
+} from 'react-icons/fi';
 
 const navLinks = [
-  { label: 'Dashboard', to: '/', icon: ViewIcon },
-  { label: 'Journal Entries', to: '/journal', icon: EditIcon },
-  { label: 'Transactions', to: '/transactions', icon: RepeatIcon },
-  { label: 'Bank Reconciliation', to: '/bank-reconciliation', icon: CheckCircleIcon },
-  { label: 'Period Closing', to: '/period-closing', icon: TimeIcon },
-  { label: 'Tax Management', to: '/tax-management', icon: FiPercent },
-  { label: 'Inventory', to: '/inventory', icon: FiPackage },
-  { label: 'Analytics', to: '/analytics', icon: FiBarChart2 },
-  { label: 'Integrations', to: '/integrations', icon: FiLink },
-  { label: 'Reports', to: '/reports', icon: ViewIcon },
-  { label: 'Invoices', to: '/invoices', icon: EmailIcon },
-  { label: 'Business', to: '/businesses', icon: InfoIcon },
+  // Main Navigation
+  { 
+    section: 'Main', 
+    items: [
+      { label: 'Dashboard', to: '/', icon: FiHome },
+    ]
+  },
+  // Financial Management
+  { 
+    section: 'Financial Management', 
+    items: [
+      { label: 'Journal Entries', to: '/journal', icon: EditIcon },
+      { label: 'Transactions', to: '/transactions', icon: RepeatIcon },
+      { label: 'Bank Reconciliation', to: '/bank-reconciliation', icon: CheckCircleIcon },
+      { label: 'Period Closing', to: '/period-closing', icon: TimeIcon },
+    ]
+  },
+  // Business Operations
+  { 
+    section: 'Business Operations', 
+    items: [
+      { label: 'Tax Management', to: '/tax-management', icon: FiPercent },
+      { label: 'Inventory', to: '/inventory', icon: FiPackage },
+      { label: 'Invoices', to: '/invoices', icon: FiFileText },
+      { label: 'Bills', to: '/bills', icon: FiDollarSign },
+      { label: 'Business', to: '/businesses', icon: FiUsers },
+    ]
+  },
+  // Analytics & Reports
+  { 
+    section: 'Analytics & Reports', 
+    items: [
+      { label: 'Analytics', to: '/analytics', icon: FiBarChart2 },
+      { label: 'Reports', to: '/reports', icon: FiTrendingUp },
+    ]
+  },
+  // System
+  { 
+    section: 'System', 
+    items: [
+      { label: 'Integrations', to: '/integrations', icon: FiLink },
+      { label: 'Settings', to: '/settings', icon: SettingsIcon },
+    ]
+  },
 ];
 
 const Sidebar = () => {
   const location = useLocation();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isCollapsed, setIsCollapsed] = useState(false);
   
   const bgColor = 'primary.900'; // Dark navy blue
   const textColor = 'white';
@@ -81,10 +121,12 @@ const Sidebar = () => {
             bg: isLinkActive ? activeBg : hoverBg,
           }}
         >
-          <Icon as={link.icon} boxSize={5} mr={3} />
-          <Text fontSize="sm" fontWeight="medium">
-            {link.label}
-          </Text>
+          <Icon as={link.icon} boxSize={5} mr={isCollapsed ? 0 : 3} />
+          {!isCollapsed && (
+            <Text fontSize="sm" fontWeight="medium">
+              {link.label}
+            </Text>
+          )}
         </Flex>
       </Link>
     );
@@ -92,8 +134,39 @@ const Sidebar = () => {
 
   const SidebarContent = () => (
     <VStack spacing={2} align="stretch" w="full">
-      {navLinks.map((link) => (
-        <NavItem key={link.to} link={link} />
+      {navLinks.map((section, sectionIndex) => (
+        <Box key={sectionIndex}>
+          {!isCollapsed && section.section !== 'Main' && (
+            <Text
+              fontSize="xs"
+              fontWeight="bold"
+              color="gray.400"
+              px={4}
+              py={2}
+              textTransform="uppercase"
+              letterSpacing="wider"
+            >
+              {section.section}
+            </Text>
+          )}
+          <VStack spacing={1} align="stretch">
+            {section.items.map((link) => (
+              <Tooltip
+                key={link.to}
+                label={isCollapsed ? link.label : ''}
+                placement="right"
+                isDisabled={!isCollapsed}
+              >
+                <Box>
+                  <NavItem link={link} />
+                </Box>
+              </Tooltip>
+            ))}
+          </VStack>
+          {!isCollapsed && sectionIndex < navLinks.length - 1 && (
+            <Divider borderColor="gray.700" my={2} />
+          )}
+        </Box>
       ))}
     </VStack>
   );
@@ -103,22 +176,36 @@ const Sidebar = () => {
       {/* Desktop Sidebar */}
       <Box
         as="aside"
-        w={{ base: 0, lg: '240px' }}
+        w={{ base: 0, lg: isCollapsed ? '60px' : '240px' }}
         h="full"
         bg={bgColor}
         boxShadow="lg"
         display={{ base: 'none', lg: 'block' }}
+        transition="width 0.3s ease"
+        position="relative"
       >
-        <Box p={6}>
-          <Text
-            fontSize="xl"
-            fontWeight="bold"
-            color={textColor}
-            mb={8}
-            fontFamily="heading"
-          >
-            FinT
-          </Text>
+        <Box p={isCollapsed ? 3 : 6}>
+          <Flex align="center" justify="space-between" mb={8}>
+            {!isCollapsed && (
+              <Text
+                fontSize="xl"
+                fontWeight="bold"
+                color={textColor}
+                fontFamily="heading"
+              >
+                FinT
+              </Text>
+            )}
+            <IconButton
+              aria-label="Toggle sidebar"
+              icon={isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+              size="sm"
+              variant="ghost"
+              color={textColor}
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              _hover={{ bg: hoverBg }}
+            />
+          </Flex>
           <SidebarContent />
         </Box>
       </Box>

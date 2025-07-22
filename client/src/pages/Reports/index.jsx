@@ -32,9 +32,9 @@ import {
   CalendarIcon,
 } from '@chakra-ui/icons';
 import IncomeStatement from '../../components/reports/IncomeStatement';
-import BalanceSheet from '../../components/reports/BalanceSheet';
-import TrialBalance from '../../components/reports/TrialBalance';
-import CashFlow from '../../components/reports/CashFlow';
+import BalanceSheet from './BalanceSheet';
+import TrialBalance from './TrialBalance';
+import CashFlow from './CashFlow';
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState(0);
