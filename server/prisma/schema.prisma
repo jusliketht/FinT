@@ -13,6 +13,10 @@ model User {
   email     String   @unique
   password  String
   name      String
+  contactNumber String?
+  pan       String?  // Permanent Account Number
+  gstRegistrationNumber String?  // GST Registration Number
+  address   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -22,8 +26,12 @@ model User {
   Accounts   Account[]
   Transactions Transaction[]
   JournalEntries JournalEntry[]
+  Invoices   Invoice[]
+  Bills      Bill[]
 
   @@index([email])
+  @@index([pan])
+  @@index([gstRegistrationNumber])
 }
 
 model Business {
@@ -59,6 +67,8 @@ model Business {
   PurchaseOrders     PurchaseOrder[]
   SalesOrders        SalesOrder[]
   InventoryMovements InventoryMovement[] @relation("BusinessToInventoryMovement")
+  Invoices           Invoice[]
+  Bills              Bill[]
 
   @@index([ownerId])
   @@index([type])
@@ -142,18 +152,24 @@ model JournalEntry {
   status          String   @default("DRAFT") // DRAFT, POSTED, VOID
   userId          String
   businessId      String?  // null for personal journal entries
+  invoiceId       String?  // Optional relation to Invoice
+  billId          String?  // Optional relation to Bill
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   // Relations
   User            User     @relation(fields: [userId], references: [id])
   Business        Business? @relation(fields: [businessId], references: [id])
+  Invoice         Invoice? @relation(fields: [invoiceId], references: [id])
+  Bill            Bill?    @relation(fields: [billId], references: [id])
   Lines           JournalEntryLine[]
 
   @@index([userId])
   @@index([businessId])
   @@index([date])
   @@index([status])
+  @@index([invoiceId])
+  @@index([billId])
 }
 
 model JournalEntryLine {
@@ -344,4 +360,107 @@ model SalesOrderItem {
 
   @@index([salesOrderId])
   @@index([inventoryItemId])
+}
+
+// Invoice and Bill Management Models
+model Invoice {
+  id              String   @id @default(uuid())
+  invoiceNumber   String   @unique
+  customerId      String?
+  customerName    String
+  customerEmail   String?
+  customerPhone   String?
+  customerAddress String?
+  issueDate       DateTime @default(now())
+  dueDate         DateTime
+  status          String   @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE, VOID
+  subtotal        Float    @default(0)
+  taxAmount       Float    @default(0)
+  totalAmount     Float    @default(0)
+  notes           String?
+  businessId      String
+  userId          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  Business        Business        @relation(fields: [businessId], references: [id])
+  User            User            @relation(fields: [userId], references: [id])
+  InvoiceItems    InvoiceItem[]
+  JournalEntries  JournalEntry[]
+
+  @@index([businessId])
+  @@index([userId])
+  @@index([invoiceNumber])
+  @@index([status])
+  @@index([issueDate])
+  @@index([dueDate])
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  description String
+  quantity    Float    @default(1)
+  unitPrice   Float
+  totalPrice  Float
+  taxRate     Float    @default(0)
+  taxAmount   Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  Invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model Bill {
+  id              String   @id @default(uuid())
+  billNumber      String   @unique
+  vendorId        String?
+  vendorName      String
+  vendorEmail     String?
+  vendorPhone     String?
+  vendorAddress   String?
+  issueDate       DateTime @default(now())
+  dueDate         DateTime
+  status          String   @default("DRAFT") // DRAFT, RECEIVED, PAID, OVERDUE, VOID
+  subtotal        Float    @default(0)
+  taxAmount       Float    @default(0)
+  totalAmount     Float    @default(0)
+  notes           String?
+  businessId      String
+  userId          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  Business        Business        @relation(fields: [businessId], references: [id])
+  User            User            @relation(fields: [userId], references: [id])
+  BillItems       BillItem[]
+  JournalEntries  JournalEntry[]
+
+  @@index([businessId])
+  @@index([userId])
+  @@index([billNumber])
+  @@index([status])
+  @@index([issueDate])
+  @@index([dueDate])
+}
+
+model BillItem {
+  id          String   @id @default(uuid())
+  billId      String
+  description String
+  quantity    Float    @default(1)
+  unitPrice   Float
+  totalPrice  Float
+  taxRate     Float    @default(0)
+  taxAmount   Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  Bill        Bill    @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@index([billId])
 } 

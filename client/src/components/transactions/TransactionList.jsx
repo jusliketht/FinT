@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Table,
@@ -28,6 +28,8 @@ import {
   CardBody,
   SimpleGrid,
   useColorModeValue,
+  Skeleton,
+  SkeletonText,
 } from '@chakra-ui/react';
 import {
   EditIcon,
@@ -39,6 +41,8 @@ import {
 } from '@chakra-ui/icons';
 import { useTransaction } from '../../contexts/TransactionContext';
 import { useBusiness } from '../../contexts/BusinessContext';
+import transactionService from '../../services/transactionService';
+import journalEntryService from '../../services/journalEntryService';
 
 const TransactionList = () => {
   const { selectedBusiness } = useBusiness();
@@ -47,9 +51,12 @@ const TransactionList = () => {
   
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20
+    limit: 20,
+    total: 0,
+    totalPages: 0
   });
   
   // Filter states
@@ -65,61 +72,57 @@ const TransactionList = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  // Sample data to match reference design
-  const sampleTransactions = [
-    {
-      id: 1,
-      date: '2024-04-24',
-      description: 'Office Supplies',
-      amount: 150,
-      category: 'Supplies',
-      status: 'paid'
-    },
-    {
-      id: 2,
-      date: '2024-02-28',
-      description: 'Web Design Services',
-      amount: 2000,
-      category: 'Services',
-      status: 'paid'
-    },
-    {
-      id: 3,
-      date: '2024-01-15',
-      description: 'Software Subscription',
-      amount: 99,
-      category: 'Technology',
-      status: 'pending'
-    },
-    {
-      id: 4,
-      date: '2024-01-10',
-      description: 'Utilities',
-      amount: 250,
-      category: 'Utilities',
-      status: 'paid'
-    },
-    {
-      id: 5,
-      date: '2024-01-05',
-      description: 'Advertising',
-      amount: 500,
-      category: 'Marketing',
-      status: 'overdue'
-    }
-  ];
-
   useEffect(() => {
     loadTransactions();
-  }, [selectedBusiness]);
+  }, [loadTransactions]);
 
-  const loadTransactions = async () => {
+  useEffect(() => {
+    // Reset to first page when filters change
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, [searchQuery, dateRange, transactionType, category, personEntity, reconciliationStatus, sortBy, sortOrder]);
+
+  const loadTransactions = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      // For now, use sample data to match reference design
-      setTransactions(sampleTransactions);
+      const businessId = selectedBusiness?.id;
+      
+      if (!businessId) {
+        setTransactions([]);
+        setPagination(prev => ({ ...prev, total: 0, totalPages: 0 }));
+        return;
+      }
+
+      // Build filters object
+      const filters = {
+        businessId,
+        search: searchQuery || undefined,
+        dateRange: dateRange || undefined,
+        type: transactionType || undefined,
+        category: category || undefined,
+        personEntity: personEntity || undefined,
+        reconciliationStatus: reconciliationStatus || undefined,
+        sortBy,
+        sortOrder,
+      };
+
+      // Remove undefined values
+      Object.keys(filters).forEach(key => filters[key] === undefined && delete filters[key]);
+
+      const response = await transactionService.getAll(filters, {
+        page: pagination.page,
+        limit: pagination.limit
+      });
+
+      setTransactions(response.transactions || response.data || []);
+      setPagination(prev => ({
+        ...prev,
+        total: response.total || 0,
+        totalPages: response.totalPages || Math.ceil((response.total || 0) / pagination.limit)
+      }));
     } catch (error) {
       console.error('Error loading transactions:', error);
+      setError('Failed to load transactions');
       toast({
         title: 'Error',
         description: 'Failed to load transactions',
@@ -130,7 +133,7 @@ const TransactionList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedBusiness, searchQuery, dateRange, transactionType, category, personEntity, reconciliationStatus, sortBy, sortOrder, pagination.page, pagination.limit, toast]);
 
   const handleEdit = (transaction) => {
     openEditTransaction(transaction);
@@ -142,8 +145,11 @@ const TransactionList = () => {
     }
 
     try {
-      // Remove from local state for now
-      setTransactions(prev => prev.filter(t => t.id !== transaction.id));
+      await transactionService.delete(transaction.id);
+      
+      // Refresh the list
+      loadTransactions();
+      
       toast({
         title: 'Success',
         description: 'Transaction deleted successfully',
@@ -163,34 +169,13 @@ const TransactionList = () => {
     }
   };
 
-  // Filter and sort transactions
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = !searchQuery || 
-      transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.referenceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.personEntity?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesType = !transactionType || transaction.type === transactionType;
-    const matchesCategory = !category || transaction.category === category;
-    const matchesPerson = !personEntity || transaction.personEntity === personEntity;
-    const matchesStatus = !reconciliationStatus || transaction.reconciliationStatus === reconciliationStatus;
-    
-    return matchesSearch && matchesType && matchesCategory && matchesPerson && matchesStatus;
-  });
-
-  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
-    const aValue = a[sortBy];
-    const bValue = b[sortBy];
-    
-    if (sortOrder === 'asc') {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
-    }
-  });
+  const handlePageChange = (page) => {
+    setPagination(prev => ({ ...prev, page }));
+  };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('en-IN', {
       month: 'short',
       day: '2-digit',
       year: 'numeric'
@@ -198,19 +183,23 @@ const TransactionList = () => {
   };
 
   const formatAmount = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    if (typeof amount !== 'number') return '₹0';
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(amount);
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
+      case 'posted':
       case 'paid':
         return 'green';
       case 'pending':
+      case 'draft':
         return 'yellow';
       case 'overdue':
+      case 'cancelled':
         return 'red';
       default:
         return 'gray';
@@ -218,23 +207,33 @@ const TransactionList = () => {
   };
 
   const getStatusLabel = (status) => {
-    switch (status) {
-      case 'paid':
-        return 'Paid';
-      case 'pending':
-        return 'Pending';
-      case 'overdue':
-        return 'Overdue';
-      default:
-        return status;
-    }
+    if (!status) return 'Unknown';
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   };
 
-  if (loading) {
+  const LoadingSkeleton = () => (
+    <VStack spacing={4} align="stretch">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Flex key={index} align="center" p={4}>
+          <Skeleton borderRadius="full" boxSize={8} mr={4} />
+          <Box flex="1">
+            <SkeletonText noOfLines={2} spacing={2} />
+          </Box>
+          <VStack align="end" spacing={1}>
+            <Skeleton height="16px" width="80px" />
+            <Skeleton height="16px" width="60px" />
+          </VStack>
+        </Flex>
+      ))}
+    </VStack>
+  );
+
+  if (error) {
     return (
-      <Flex justify="center" align="center" py={10}>
-        <Spinner size="lg" />
-      </Flex>
+      <Alert status="error" borderRadius="md">
+        <AlertIcon />
+        {error}
+      </Alert>
     );
   }
 
@@ -272,10 +271,10 @@ const TransactionList = () => {
               value={transactionType}
               onChange={(e) => setTransactionType(e.target.value)}
             >
-              <option value="Income">Income</option>
-              <option value="Expense">Expense</option>
-              <option value="Transfer">Transfer</option>
-              <option value="Adjustment">Adjustment</option>
+              <option value="INCOME">Income</option>
+              <option value="EXPENSE">Expense</option>
+              <option value="TRANSFER">Transfer</option>
+              <option value="ADJUSTMENT">Adjustment</option>
             </Select>
             
             <Select
@@ -322,91 +321,138 @@ const TransactionList = () => {
       {/* Transaction Table */}
       <Card bg={cardBg} border="1px" borderColor={borderColor}>
         <CardBody p={0}>
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th>Date</Th>
-                <Th>Description</Th>
-                <Th>Category</Th>
-                <Th>Amount</Th>
-                <Th>Status</Th>
-                <Th>Reconciliation</Th>
-                <Th>Action</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {sortedTransactions.map((transaction) => (
-                <Tr key={transaction.id}>
-                  <Td fontSize="sm">
-                    {formatDate(transaction.date)}
-                  </Td>
-                  <Td fontSize="sm">
-                    <VStack align="start" spacing={1}>
-                      <Text fontWeight="medium">{transaction.description}</Text>
-                      {transaction.referenceNumber && (
-                        <Text fontSize="xs" color="gray.500">
-                          Ref: {transaction.referenceNumber}
-                        </Text>
-                      )}
-                      {transaction.personEntity && (
-                        <Text fontSize="xs" color="blue.500">
-                          {transaction.personEntity}
-                        </Text>
-                      )}
-                    </VStack>
-                  </Td>
-                  <Td fontSize="sm">
-                    {transaction.category}
-                  </Td>
-                  <Td fontSize="sm" fontFamily="mono">
-                    {formatAmount(transaction.amount)}
-                  </Td>
-                  <Td>
-                    <Badge
-                      colorScheme={getStatusColor(transaction.status)}
-                      size="sm"
-                    >
-                      {getStatusLabel(transaction.status)}
-                    </Badge>
-                  </Td>
-                  <Td>
-                    <Badge
-                      colorScheme={transaction.reconciliationStatus === 'verified' ? 'green' : 'orange'}
-                      size="sm"
-                      variant="subtle"
-                    >
-                      {transaction.reconciliationStatus === 'verified' ? 'Verified' : 'Unverified'}
-                    </Badge>
-                  </Td>
-                  <Td>
-                    <HStack spacing={2}>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        colorScheme="blue"
-                        onClick={() => handleEdit(transaction)}
-                      >
-                        Edit
-                      </Button>
-                    </HStack>
-                  </Td>
+          {loading ? (
+            <LoadingSkeleton />
+          ) : transactions.length > 0 ? (
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Date</Th>
+                  <Th>Description</Th>
+                  <Th>Category</Th>
+                  <Th>Amount</Th>
+                  <Th>Status</Th>
+                  <Th>Reconciliation</Th>
+                  <Th>Action</Th>
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
+              </Thead>
+              <Tbody>
+                {transactions.map((transaction) => (
+                  <Tr key={transaction.id}>
+                    <Td fontSize="sm">
+                      {formatDate(transaction.date)}
+                    </Td>
+                    <Td fontSize="sm">
+                      <VStack align="start" spacing={1}>
+                        <Text fontWeight="medium">{transaction.description}</Text>
+                        {transaction.referenceNumber && (
+                          <Text fontSize="xs" color="gray.500">
+                            Ref: {transaction.referenceNumber}
+                          </Text>
+                        )}
+                        {transaction.personEntity && (
+                          <Text fontSize="xs" color="blue.500">
+                            {transaction.personEntity}
+                          </Text>
+                        )}
+                      </VStack>
+                    </Td>
+                    <Td fontSize="sm">
+                      {transaction.category || transaction.accountName}
+                    </Td>
+                    <Td fontSize="sm" fontFamily="mono">
+                      {formatAmount(transaction.amount)}
+                    </Td>
+                    <Td>
+                      <Badge
+                        colorScheme={getStatusColor(transaction.status)}
+                        size="sm"
+                      >
+                        {getStatusLabel(transaction.status)}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      <Badge
+                        colorScheme={transaction.reconciliationStatus === 'verified' ? 'green' : 'orange'}
+                        size="sm"
+                        variant="subtle"
+                      >
+                        {transaction.reconciliationStatus === 'verified' ? 'Verified' : 'Unverified'}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      <HStack spacing={2}>
+                        <IconButton
+                          size="sm"
+                          variant="ghost"
+                          colorScheme="blue"
+                          icon={<EditIcon />}
+                          onClick={() => handleEdit(transaction)}
+                          aria-label="Edit transaction"
+                        />
+                        <IconButton
+                          size="sm"
+                          variant="ghost"
+                          colorScheme="red"
+                          icon={<DeleteIcon />}
+                          onClick={() => handleDelete(transaction)}
+                          aria-label="Delete transaction"
+                        />
+                      </HStack>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          ) : (
+            <Box p={8} textAlign="center">
+              <Text color="gray.500" fontSize="lg" mb={2}>
+                No transactions found
+              </Text>
+              <Text color="gray.400" fontSize="sm">
+                {selectedBusiness ? 'Start by adding your first transaction' : 'Please select a business to view transactions'}
+              </Text>
+            </Box>
+          )}
         </CardBody>
       </Card>
 
       {/* Pagination */}
-      <Flex justify="center" py={4}>
-        <HStack spacing={2}>
-          <Button size="sm" variant="outline">‹</Button>
-          <Button size="sm" variant="outline">1</Button>
-          <Button size="sm" variant="outline">2</Button>
-          <Button size="sm" variant="outline">3</Button>
-          <Button size="sm" variant="outline">›</Button>
-        </HStack>
-      </Flex>
+      {pagination.totalPages > 1 && (
+        <Flex justify="center" py={4}>
+          <HStack spacing={2}>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => handlePageChange(pagination.page - 1)}
+              isDisabled={pagination.page <= 1}
+            >
+              ‹
+            </Button>
+            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+              const page = i + 1;
+              return (
+                <Button
+                  key={page}
+                  size="sm"
+                  variant={pagination.page === page ? "solid" : "outline"}
+                  onClick={() => handlePageChange(page)}
+                >
+                  {page}
+                </Button>
+              );
+            })}
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => handlePageChange(pagination.page + 1)}
+              isDisabled={pagination.page >= pagination.totalPages}
+            >
+              ›
+            </Button>
+          </HStack>
+        </Flex>
+      )}
     </VStack>
   );
 };

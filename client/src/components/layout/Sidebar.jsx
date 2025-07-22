@@ -57,26 +57,22 @@ const navLinks = [
     items: [
       { label: 'Journal Entries', to: '/journal', icon: EditIcon },
       { label: 'Transactions', to: '/transactions', icon: RepeatIcon },
-      { label: 'Bank Reconciliation', to: '/bank-reconciliation', icon: CheckCircleIcon },
-      { label: 'Period Closing', to: '/period-closing', icon: TimeIcon },
+      { label: 'Bank Reconciliation', to: '/bank-statements', icon: CheckCircleIcon },
+      { label: 'Chart of Accounts', to: '/accounts', icon: ViewIcon },
     ]
   },
   // Business Operations
   { 
     section: 'Business Operations', 
     items: [
-      { label: 'Tax Management', to: '/tax-management', icon: FiPercent },
-      { label: 'Inventory', to: '/inventory', icon: FiPackage },
       { label: 'Invoices', to: '/invoices', icon: FiFileText },
-      { label: 'Bills', to: '/bills', icon: FiDollarSign },
-      { label: 'Business', to: '/businesses', icon: FiUsers },
+      { label: 'Business', to: '/business', icon: FiUsers },
     ]
   },
   // Analytics & Reports
   { 
     section: 'Analytics & Reports', 
     items: [
-      { label: 'Analytics', to: '/analytics', icon: FiBarChart2 },
       { label: 'Reports', to: '/reports', icon: FiTrendingUp },
     ]
   },
@@ -84,8 +80,8 @@ const navLinks = [
   { 
     section: 'System', 
     items: [
-      { label: 'Integrations', to: '/integrations', icon: FiLink },
       { label: 'Settings', to: '/settings', icon: SettingsIcon },
+      { label: 'Profile', to: '/profile', icon: InfoIcon },
     ]
   },
 ];

@@ -31,6 +31,7 @@ const Settings = React.lazy(() => import('./pages/Settings'));
 const UserProfile = React.lazy(() => import('./pages/UserProfile'));
 const ChartOfAccountsPage = React.lazy(() => import('./pages/accounts/ChartOfAccountsPage'));
 const InvoiceList = React.lazy(() => import('./components/invoices/InvoiceList'));
+const BillsPage = React.lazy(() => import('./pages/bills'));
 const BankReconciliation = React.lazy(() => import('./pages/bankStatements/BankReconciliation'));
 
 // Create React Query client
@@ -116,6 +117,14 @@ function App() {
                         <ProtectedRoute requireAuth={true} requireBusiness={true}>
                           <Layout>
                             <InvoiceList />
+                          </Layout>
+                        </ProtectedRoute>
+                      } />
+                      
+                      <Route path="/bills" element={
+                        <ProtectedRoute requireAuth={true} requireBusiness={true}>
+                          <Layout>
+                            <BillsPage />
                           </Layout>
                         </ProtectedRoute>
                       } />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -37,11 +37,9 @@ import BillDetailsModal from '../../components/bills/BillDetailsModal';
 import { apiService } from '../../services/apiService';
 
 const BillsPage = () => {
-  const { user } = useAuth();
   const { showToast } = useToast();
   const [bills, setBills] = useState([]);
   const [stats, setStats] = useState({});
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,14 +59,8 @@ const BillsPage = () => {
 
   const [selectedBill, setSelectedBill] = useState(null);
 
-  useEffect(() => {
-    fetchBills();
-    fetchStats();
-  }, [currentPage, statusFilter]);
-
-  const fetchBills = async () => {
+  const fetchBills = useCallback(async () => {
     try {
-      setLoading(true);
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '10',
@@ -83,19 +75,22 @@ const BillsPage = () => {
       setTotalPages(response.pagination.pages);
     } catch (error) {
       showToast('Error fetching bills', 'error');
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [currentPage, statusFilter, showToast]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await apiService.get('/bills/stats');
       setStats(response);
     } catch (error) {
       showToast('Error fetching bill statistics', 'error');
     }
-  };
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchBills();
+    fetchStats();
+  }, [fetchBills, fetchStats]);
 
   const handleCreateBill = async (billData) => {
     try {

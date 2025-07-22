@@ -33,6 +33,8 @@ import {
   Divider,
   Flex,
   Badge,
+  IconButton,
+  Tooltip,
 } from '@chakra-ui/react';
 import { AddIcon, CalendarIcon, InfoIcon } from '@chakra-ui/icons';
 import { useFormik } from 'formik';
@@ -42,6 +44,152 @@ import { useApi } from '../../services/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { LoadingSpinner } from '../common/LoadingStates';
 
+// Account Creation Modal Component
+const AccountCreationModal = ({ isOpen, onClose, onAccountCreated }) => {
+  const { selectedBusiness } = useBusiness();
+  const toast = useToast();
+  const api = useApi();
+  const [submitting, setSubmitting] = useState(false);
+
+  const accountFormik = useFormik({
+    initialValues: {
+      code: '',
+      name: '',
+      type: 'asset',
+      description: '',
+    },
+    validationSchema: Yup.object().shape({
+      code: Yup.string()
+        .required('Account code is required')
+        .min(2, 'Code must be at least 2 characters')
+        .max(10, 'Code must be less than 10 characters'),
+      name: Yup.string()
+        .required('Account name is required')
+        .min(3, 'Name must be at least 3 characters')
+        .max(100, 'Name must be less than 100 characters'),
+      type: Yup.string()
+        .required('Account type is required')
+        .oneOf(['asset', 'liability', 'equity', 'revenue', 'expense'], 'Invalid account type'),
+      description: Yup.string()
+        .max(200, 'Description must be less than 200 characters'),
+    }),
+    onSubmit: async (values) => {
+      setSubmitting(true);
+      try {
+        const response = await api.post('/api/accounting/accounts', {
+          ...values,
+          businessId: selectedBusiness?.id || null,
+        });
+        
+        toast({
+          title: 'Account created successfully',
+          status: 'success',
+          duration: 3000,
+        });
+        
+        onAccountCreated(response.data);
+        onClose();
+      } catch (error) {
+        toast({
+          title: 'Failed to create account',
+          description: error.response?.data?.message || 'An error occurred',
+          status: 'error',
+          duration: 5000,
+        });
+      } finally {
+        setSubmitting(false);
+      }
+    },
+  });
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <ModalOverlay />
+      <ModalContent>
+        <form onSubmit={accountFormik.handleSubmit}>
+          <ModalHeader>Add New Account</ModalHeader>
+          <ModalCloseButton />
+          
+          <ModalBody>
+            <VStack spacing={4} align="stretch">
+              <FormControl isInvalid={accountFormik.touched.code && accountFormik.errors.code} isRequired>
+                <FormLabel>Account Code</FormLabel>
+                <Input
+                  name="code"
+                  value={accountFormik.values.code}
+                  onChange={accountFormik.handleChange}
+                  onBlur={accountFormik.handleBlur}
+                  placeholder="e.g., 1000"
+                />
+                <FormErrorMessage>{accountFormik.errors.code}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={accountFormik.touched.name && accountFormik.errors.name} isRequired>
+                <FormLabel>Account Name</FormLabel>
+                <Input
+                  name="name"
+                  value={accountFormik.values.name}
+                  onChange={accountFormik.handleChange}
+                  onBlur={accountFormik.handleBlur}
+                  placeholder="e.g., Cash"
+                />
+                <FormErrorMessage>{accountFormik.errors.name}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={accountFormik.touched.type && accountFormik.errors.type} isRequired>
+                <FormLabel>Account Type</FormLabel>
+                <Select
+                  name="type"
+                  value={accountFormik.values.type}
+                  onChange={accountFormik.handleChange}
+                  onBlur={accountFormik.handleBlur}
+                >
+                  <option value="asset">Asset</option>
+                  <option value="liability">Liability</option>
+                  <option value="equity">Equity</option>
+                  <option value="revenue">Revenue</option>
+                  <option value="expense">Expense</option>
+                </Select>
+                <FormErrorMessage>{accountFormik.errors.type}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={accountFormik.touched.description && accountFormik.errors.description}>
+                <FormLabel>Description</FormLabel>
+                <Textarea
+                  name="description"
+                  value={accountFormik.values.description}
+                  onChange={accountFormik.handleChange}
+                  onBlur={accountFormik.handleBlur}
+                  placeholder="Optional description"
+                  rows={3}
+                />
+                <FormErrorMessage>{accountFormik.errors.description}</FormErrorMessage>
+              </FormControl>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter>
+            <HStack spacing={3}>
+              <Button variant="outline" onClick={onClose} isDisabled={submitting}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                colorScheme="blue"
+                isLoading={submitting}
+                loadingText="Creating..."
+                isDisabled={!accountFormik.isValid || submitting}
+              >
+                Create Account
+              </Button>
+            </HStack>
+          </ModalFooter>
+        </form>
+      </ModalContent>
+    </Modal>
+  );
+};
+
 const TransactionForm = ({ isOpen, onClose, transaction, onSuccess }) => {
   const { selectedBusiness } = useBusiness();
   const toast = useToast();
@@ -50,6 +198,21 @@ const TransactionForm = ({ isOpen, onClose, transaction, onSuccess }) => {
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Account creation modal state
+  const { isOpen: isAccountModalOpen, onOpen: onAccountModalOpen, onClose: onAccountModalClose } = useDisclosure();
+
+  // Handle account creation
+  const handleAccountCreated = (newAccount) => {
+    setAccounts(prev => [...prev, newAccount]);
+    formik.setFieldValue('accountId', newAccount.id);
+    toast({
+      title: 'Account added successfully',
+      description: `${newAccount.name} has been added and selected`,
+      status: 'success',
+      duration: 3000,
+    });
+  };
 
   // Form validation schema
   const validationSchema = Yup.object().shape({
@@ -151,11 +314,6 @@ const TransactionForm = ({ isOpen, onClose, transaction, onSuccess }) => {
     }
   };
 
-  // Filter categories by transaction type
-  const filteredCategories = categories.filter(cat => 
-    cat.type === formik.values.type || cat.type === 'general'
-  );
-
   // Filter accounts by transaction type
   const filteredAccounts = accounts.filter(acc => {
     if (formik.values.type === 'income') {
@@ -164,6 +322,16 @@ const TransactionForm = ({ isOpen, onClose, transaction, onSuccess }) => {
       return acc.type === 'EXPENSE' || acc.type === 'ASSET';
     } else if (formik.values.type === 'transfer') {
       return acc.type === 'ASSET';
+    }
+    return true;
+  });
+
+  // Filter categories by transaction type
+  const filteredCategories = categories.filter(cat => {
+    if (formik.values.type === 'income') {
+      return cat.type === 'REVENUE';
+    } else if (formik.values.type === 'expense') {
+      return cat.type === 'EXPENSE';
     }
     return true;
   });
@@ -298,19 +466,32 @@ const TransactionForm = ({ isOpen, onClose, transaction, onSuccess }) => {
 
                 <FormControl isInvalid={isFieldInvalid('accountId')} isRequired>
                   <FormLabel>Account</FormLabel>
-                  <Select
-                    name="accountId"
-                    value={formik.values.accountId}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="Select account"
-                  >
-                    {filteredAccounts.map(account => (
-                      <option key={account.id} value={account.id}>
-                        {account.name} ({account.code})
-                      </option>
-                    ))}
-                  </Select>
+                  <HStack spacing={2}>
+                    <Select
+                      name="accountId"
+                      value={formik.values.accountId}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      placeholder="Select account"
+                      flex={1}
+                    >
+                      {filteredAccounts.map(account => (
+                        <option key={account.id} value={account.id}>
+                          {account.name} ({account.code})
+                        </option>
+                      ))}
+                    </Select>
+                    <Tooltip label="Add new account">
+                      <IconButton
+                        icon={<AddIcon />}
+                        onClick={onAccountModalOpen}
+                        colorScheme="blue"
+                        variant="outline"
+                        size="md"
+                        aria-label="Add new account"
+                      />
+                    </Tooltip>
+                  </HStack>
                   <FormErrorMessage>{getFieldError('accountId')}</FormErrorMessage>
                 </FormControl>
               </HStack>
@@ -391,6 +572,13 @@ const TransactionForm = ({ isOpen, onClose, transaction, onSuccess }) => {
           </ModalFooter>
         </form>
       </ModalContent>
+      
+      {/* Account Creation Modal */}
+      <AccountCreationModal
+        isOpen={isAccountModalOpen}
+        onClose={onAccountModalClose}
+        onAccountCreated={handleAccountCreated}
+      />
     </Modal>
   );
 };

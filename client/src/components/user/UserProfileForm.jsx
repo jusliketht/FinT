@@ -36,10 +36,16 @@ const UserProfileForm = ({ user, onSubmit, loading }) => {
     email: Yup.string()
       .email('Invalid email address')
       .required('Email is required'),
-    phone: Yup.string()
+    contactNumber: Yup.string()
       .matches(/^[0-9+\-\s()]*$/, 'Invalid phone number')
       .min(10, 'Phone number must be at least 10 digits')
       .max(15, 'Phone number must be less than 15 digits'),
+    pan: Yup.string()
+      .matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'PAN must be in format: ABCDE1234F')
+      .max(10, 'PAN must be exactly 10 characters'),
+    gstRegistrationNumber: Yup.string()
+      .matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, 'GST must be in format: 22AAAAA0000A1Z5')
+      .max(15, 'GST must be exactly 15 characters'),
     address: Yup.string()
       .max(200, 'Address must be less than 200 characters'),
   });
@@ -48,7 +54,9 @@ const UserProfileForm = ({ user, onSubmit, loading }) => {
     initialValues: {
       name: user?.name || '',
       email: user?.email || '',
-      phone: user?.phone || '',
+      contactNumber: user?.contactNumber || '',
+      pan: user?.pan || '',
+      gstRegistrationNumber: user?.gstRegistrationNumber || '',
       address: user?.address || '',
     },
     validationSchema,
@@ -126,19 +134,51 @@ const UserProfileForm = ({ user, onSubmit, loading }) => {
             <FormErrorMessage>{formik.errors.email}</FormErrorMessage>
           </FormControl>
 
-          <FormControl isInvalid={formik.touched.phone && formik.errors.phone}>
-            <FormLabel>Phone Number</FormLabel>
+          <FormControl isInvalid={formik.touched.contactNumber && formik.errors.contactNumber}>
+            <FormLabel>Contact Number</FormLabel>
             <Input
-              id="phone"
-              name="phone"
+              id="contactNumber"
+              name="contactNumber"
               type="tel"
-              placeholder="Enter your phone number"
+              placeholder="Enter your contact number"
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              value={formik.values.phone}
+              value={formik.values.contactNumber}
             />
             <FormHelperText>Optional - for account recovery and notifications</FormHelperText>
-            <FormErrorMessage>{formik.errors.phone}</FormErrorMessage>
+            <FormErrorMessage>{formik.errors.contactNumber}</FormErrorMessage>
+          </FormControl>
+
+          <FormControl isInvalid={formik.touched.pan && formik.errors.pan}>
+            <FormLabel>PAN (Permanent Account Number)</FormLabel>
+            <Input
+              id="pan"
+              name="pan"
+              type="text"
+              placeholder="ABCDE1234F"
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              value={formik.values.pan}
+              textTransform="uppercase"
+            />
+            <FormHelperText>Optional - 10 character PAN in format ABCDE1234F</FormHelperText>
+            <FormErrorMessage>{formik.errors.pan}</FormErrorMessage>
+          </FormControl>
+
+          <FormControl isInvalid={formik.touched.gstRegistrationNumber && formik.errors.gstRegistrationNumber}>
+            <FormLabel>GST Registration Number</FormLabel>
+            <Input
+              id="gstRegistrationNumber"
+              name="gstRegistrationNumber"
+              type="text"
+              placeholder="22AAAAA0000A1Z5"
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              value={formik.values.gstRegistrationNumber}
+              textTransform="uppercase"
+            />
+            <FormHelperText>Optional - 15 character GST in format 22AAAAA0000A1Z5</FormHelperText>
+            <FormErrorMessage>{formik.errors.gstRegistrationNumber}</FormErrorMessage>
           </FormControl>
 
           <FormControl isInvalid={formik.touched.address && formik.errors.address}>

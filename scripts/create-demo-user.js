@@ -30,8 +30,8 @@ async function createDemoUser() {
         name: 'Demo User',
         email: 'demo@fint.com',
         password: hashedPassword,
-        role: 'ADMIN',
-        updatedAt: new Date()
+        contactNumber: '+1234567890',
+        address: '123 Demo Street, Demo City, DC 12345'
       }
     });
 

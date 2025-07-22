@@ -6,7 +6,7 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { AccountingModule } from './accounting/accounting.module';
 import { ReconciliationModule } from './reconciliation/reconciliation.module';
 import { PdfStatementModule } from './pdf-statement/pdf-statement.module';
-// import { InvoicesModule } from './invoices/invoices.module'; // Temporarily disabled due to Prisma client issues
+import { InvoicesModule } from './invoices/invoices.module';
 
 @Module({
   imports: [
@@ -19,7 +19,7 @@ import { PdfStatementModule } from './pdf-statement/pdf-statement.module';
     AccountingModule,
     ReconciliationModule,
     PdfStatementModule,
-    // InvoicesModule, // Temporarily disabled due to Prisma client issues
+    InvoicesModule,
   ],
 })
 export class AppModule {} 

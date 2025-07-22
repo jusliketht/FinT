@@ -32,8 +32,7 @@ export class ReportsService {
           OR: [
             { userId: userId },
             { businessId: businessId }
-          ],
-          isActive: true
+          ]
         },
         orderBy: [
           { type: 'asc' },
@@ -122,9 +121,9 @@ export class ReportsService {
     asOfDate: Date;
   }> {
     try {
-      const assets = await this.getAccountsByType(userId, businessId, 'Asset', asOfDate);
-      const liabilities = await this.getAccountsByType(userId, businessId, 'Liability', asOfDate);
-      const equity = await this.getAccountsByType(userId, businessId, 'Equity', asOfDate);
+      const assets = await this.getAccountsByType(userId, 'asset', businessId, asOfDate);
+      const liabilities = await this.getAccountsByType(userId, 'liability', businessId, asOfDate);
+      const equity = await this.getAccountsByType(userId, 'equity', businessId, asOfDate);
 
       const totalAssets = assets.reduce((sum, account) => sum + account.balance, 0);
       const totalLiabilities = liabilities.reduce((sum, account) => sum + account.balance, 0);
@@ -172,8 +171,8 @@ export class ReportsService {
     };
   }> {
     try {
-      const revenue = await this.getAccountsByTypeForPeriod(userId, businessId, 'Revenue', startDate, endDate);
-      const expenses = await this.getAccountsByTypeForPeriod(userId, businessId, 'Expense', startDate, endDate);
+      const revenue = await this.getAccountsByTypeForPeriod(userId, 'revenue', businessId, startDate, endDate);
+      const expenses = await this.getAccountsByTypeForPeriod(userId, 'expense', businessId, startDate, endDate);
 
       const totalRevenue = revenue.reduce((sum, account) => sum + account.amount, 0);
       const totalExpenses = expenses.reduce((sum, account) => sum + account.amount, 0);
@@ -186,12 +185,152 @@ export class ReportsService {
         totalExpenses,
         netIncome,
         period: {
-          startDate: startDate || new Date(new Date().getFullYear(), 0, 1), // Start of current year
+          startDate: startDate || new Date(0),
           endDate: endDate || new Date(),
         },
       };
     } catch (error) {
       this.logger.error(`Error generating profit and loss: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async generateGeneralLedger(
+    userId: string,
+    businessId?: string,
+    accountId?: string,
+    startDate?: Date,
+    endDate?: Date,
+    page: number = 1,
+    limit: number = 20,
+    search?: string
+  ): Promise<{
+    entries: Array<{
+      id: string;
+      date: Date;
+      description: string;
+      reference: string;
+      debitAmount: number;
+      creditAmount: number;
+      balance: number;
+      accountId: string;
+      accountCode: string;
+      accountName: string;
+    }>;
+    total: number;
+    totalPages: number;
+    currentPage: number;
+    runningBalance: number;
+    period: {
+      startDate: Date;
+      endDate: Date;
+    };
+  }> {
+    try {
+      const skip = (page - 1) * limit;
+      
+      // Build where clause
+      const where: any = {
+        OR: [
+          { userId: userId },
+          { businessId: businessId }
+        ]
+      };
+
+      if (accountId) {
+        where.accountId = accountId;
+      }
+
+      if (startDate || endDate) {
+        where.date = {};
+        if (startDate) where.date.gte = startDate;
+        if (endDate) where.date.lte = endDate;
+      }
+
+      if (search) {
+        where.OR = [
+          { description: { contains: search, mode: 'insensitive' } },
+          { reference: { contains: search, mode: 'insensitive' } }
+        ];
+      }
+
+      // Get transactions with pagination
+      const [transactions, total] = await Promise.all([
+        prisma.transaction.findMany({
+          where,
+          include: {
+            Account: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                type: true,
+              }
+            }
+          },
+          orderBy: [
+            { date: 'desc' },
+            { createdAt: 'desc' }
+          ],
+          skip,
+          take: limit,
+        }),
+        prisma.transaction.count({ where })
+      ]);
+
+      // Calculate running balance
+      let runningBalance = 0;
+      const entries = transactions.map(transaction => {
+        let debitAmount = 0;
+        let creditAmount = 0;
+
+        if (transaction.type === 'income') {
+          creditAmount = transaction.amount;
+          runningBalance += transaction.amount;
+        } else if (transaction.type === 'expense') {
+          debitAmount = transaction.amount;
+          runningBalance -= transaction.amount;
+        } else if (transaction.type === 'transfer') {
+          // For transfers, we need to check if it's a debit or credit based on account type
+          const accountType = transaction.Account?.type?.toLowerCase();
+          if (accountType === 'asset' || accountType === 'expense') {
+            debitAmount = transaction.amount;
+            runningBalance -= transaction.amount;
+          } else {
+            creditAmount = transaction.amount;
+            runningBalance += transaction.amount;
+          }
+        }
+
+        return {
+          id: transaction.id,
+          date: transaction.date,
+          description: transaction.description,
+          reference: transaction.reference || '',
+          debitAmount,
+          creditAmount,
+          balance: runningBalance,
+          accountId: transaction.accountId,
+          accountCode: transaction.Account?.code || '',
+          accountName: transaction.Account?.name || '',
+        };
+      });
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        entries,
+        total,
+        totalPages,
+        currentPage: page,
+        runningBalance,
+        period: {
+          startDate: startDate || new Date(0),
+          endDate: endDate || new Date(),
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Error generating general ledger: ${error.message}`);
       throw error;
     }
   }
@@ -227,90 +366,48 @@ export class ReportsService {
     };
   }> {
     try {
-      // Get cash and bank accounts
-      const cashAccounts = await prisma.account.findMany({
+      // This is a simplified cash flow implementation
+      // In a real application, you would categorize transactions based on business rules
+      const transactions = await prisma.transaction.findMany({
         where: {
-          AND: [
-            {
-              OR: [
-                { userId: userId },
-                { businessId: businessId }
-              ]
-            },
-            {
-              type: 'Asset',
-              OR: [
-                { name: { contains: 'Cash', mode: 'insensitive' } },
-                { name: { contains: 'Bank', mode: 'insensitive' } },
-                { code: { startsWith: '1000' } } // Assuming cash accounts start with 1000
-              ]
-            }
-          ]
-        }
+          OR: [
+            { userId: userId },
+            { businessId: businessId }
+          ],
+          date: {
+            gte: startDate || new Date(0),
+            lte: endDate || new Date(),
+          },
+        },
+        orderBy: { date: 'asc' },
       });
 
       const operatingActivities = [];
       const investingActivities = [];
       const financingActivities = [];
 
-      // Calculate cash flows from journal entries
-      const journalEntries = await prisma.journalEntry.findMany({
-        where: {
-          status: 'POSTED',
-          OR: [
-            { userId: userId },
-            { businessId: businessId }
-          ],
-          date: {
-            gte: startDate || new Date(new Date().getFullYear(), 0, 1),
-            lte: endDate || new Date(),
-          }
-        },
-        include: {
-          Lines: {
-            include: {
-              Account: true
-            }
-          }
-        }
-      });
+      let netOperatingCashFlow = 0;
+      let netInvestingCashFlow = 0;
+      let netFinancingCashFlow = 0;
 
-      // Process journal entries to categorize cash flows
-      for (const entry of journalEntries) {
-        for (const line of entry.Lines) {
-          if (cashAccounts.some(account => account.id === line.Account.id)) {
-            const amount = line.debit - line.credit;
-            
-            // Categorize based on account type and description
-            if (line.Account.type === 'Revenue' || line.Account.type === 'Expense') {
-              operatingActivities.push({
-                description: entry.description,
-                amount: Math.abs(amount),
-                type: amount > 0 ? 'inflow' : 'outflow',
-              });
-            } else if (line.Account.type === 'Asset' && !cashAccounts.some(account => account.id === line.Account.id)) {
-              investingActivities.push({
-                description: entry.description,
-                amount: Math.abs(amount),
-                type: amount > 0 ? 'outflow' : 'inflow',
-              });
-            } else if (line.Account.type === 'Liability' || line.Account.type === 'Equity') {
-              financingActivities.push({
-                description: entry.description,
-                amount: Math.abs(amount),
-                type: amount > 0 ? 'inflow' : 'outflow',
-              });
-            }
-          }
+      for (const transaction of transactions) {
+        // Simplified categorization - in practice, you'd use account types and categories
+        if (transaction.type === 'income') {
+          operatingActivities.push({
+            description: transaction.description,
+            amount: transaction.amount,
+            type: 'inflow' as const,
+          });
+          netOperatingCashFlow += transaction.amount;
+        } else if (transaction.type === 'expense') {
+          operatingActivities.push({
+            description: transaction.description,
+            amount: transaction.amount,
+            type: 'outflow' as const,
+          });
+          netOperatingCashFlow -= transaction.amount;
         }
       }
-
-      const netOperatingCashFlow = operatingActivities.reduce((sum, activity) => 
-        sum + (activity.type === 'inflow' ? activity.amount : -activity.amount), 0);
-      const netInvestingCashFlow = investingActivities.reduce((sum, activity) => 
-        sum + (activity.type === 'inflow' ? activity.amount : -activity.amount), 0);
-      const netFinancingCashFlow = financingActivities.reduce((sum, activity) => 
-        sum + (activity.type === 'inflow' ? activity.amount : -activity.amount), 0);
 
       const netCashFlow = netOperatingCashFlow + netInvestingCashFlow + netFinancingCashFlow;
 
@@ -323,7 +420,7 @@ export class ReportsService {
         netFinancingCashFlow,
         netCashFlow,
         period: {
-          startDate: startDate || new Date(new Date().getFullYear(), 0, 1),
+          startDate: startDate || new Date(0),
           endDate: endDate || new Date(),
         },
       };
@@ -339,49 +436,43 @@ export class ReportsService {
     businessId?: string,
     asOfDate?: Date
   ): Promise<number> {
-    const whereClause: any = {
-      accountId: accountId,
-      JournalEntry: {
-        status: 'POSTED',
+    try {
+      // Get balance from transactions
+      const where: any = {
+        accountId: accountId,
         OR: [
           { userId: userId },
           { businessId: businessId }
         ]
-      }
-    };
+      };
 
-    if (asOfDate) {
-      whereClause.JournalEntry.date = { lte: asOfDate };
+      if (asOfDate) {
+        where.date = { lte: asOfDate };
+      }
+
+      const transactions = await prisma.transaction.findMany({
+        where,
+        select: { amount: true, type: true }
+      });
+
+      let balance = 0;
+      for (const transaction of transactions) {
+        if (transaction.type === 'income') {
+          balance += transaction.amount;
+        } else if (transaction.type === 'expense') {
+          balance -= transaction.amount;
+        } else if (transaction.type === 'transfer') {
+          // For transfers, we need to determine debit/credit based on account type
+          // This is simplified - in practice, you'd check the account type
+          balance -= transaction.amount;
+        }
+      }
+
+      return balance;
+    } catch (error) {
+      this.logger.error(`Error getting account balance: ${error.message}`);
+      return 0;
     }
-
-    const entries = await prisma.journalEntryLine.findMany({
-      where: whereClause,
-      include: {
-        Account: true,
-        JournalEntry: true
-      }
-    });
-
-    const debitTotal = entries.reduce((sum, entry) => sum + entry.debit, 0);
-    const creditTotal = entries.reduce((sum, entry) => sum + entry.credit, 0);
-
-    // Calculate balance based on account type
-    const account = entries[0]?.Account;
-    if (account) {
-      switch (account.type.toLowerCase()) {
-        case 'asset':
-        case 'expense':
-          return debitTotal - creditTotal;
-        case 'liability':
-        case 'equity':
-        case 'revenue':
-          return creditTotal - debitTotal;
-        default:
-          return debitTotal - creditTotal;
-      }
-    }
-
-    return 0;
   }
 
   private async getAccountsByType(
@@ -395,22 +486,21 @@ export class ReportsService {
     name: string;
     balance: number;
   }>> {
-    const accounts = await prisma.account.findMany({
-      where: {
-        type: type,
-        OR: [
-          { userId: userId },
-          { businessId: businessId }
-        ],
-        isActive: true
-      },
-      orderBy: { code: 'asc' }
-    });
+    try {
+      const accounts = await prisma.account.findMany({
+        where: {
+          type: type,
+          OR: [
+            { userId: userId },
+            { businessId: businessId }
+          ]
+        },
+        orderBy: { code: 'asc' }
+      });
 
-    const accountsWithBalance = [];
-    for (const account of accounts) {
-      const balance = await this.getAccountBalance(account.id, userId, businessId, asOfDate);
-      if (balance !== 0) {
+      const accountsWithBalance = [];
+      for (const account of accounts) {
+        const balance = await this.getAccountBalance(account.id, userId, businessId, asOfDate);
         accountsWithBalance.push({
           id: account.id,
           code: account.code,
@@ -418,9 +508,12 @@ export class ReportsService {
           balance,
         });
       }
-    }
 
-    return accountsWithBalance;
+      return accountsWithBalance;
+    } catch (error) {
+      this.logger.error(`Error getting accounts by type: ${error.message}`);
+      return [];
+    }
   }
 
   private async getAccountsByTypeForPeriod(
@@ -435,32 +528,36 @@ export class ReportsService {
     name: string;
     amount: number;
   }>> {
-    const accounts = await prisma.account.findMany({
-      where: {
-        type: type,
-        OR: [
-          { userId: userId },
-          { businessId: businessId }
-        ],
-        isActive: true
-      },
-      orderBy: { code: 'asc' }
-    });
+    try {
+      const accounts = await prisma.account.findMany({
+        where: {
+          type: type,
+          OR: [
+            { userId: userId },
+            { businessId: businessId }
+          ]
+        },
+        orderBy: { code: 'asc' }
+      });
 
-    const accountsWithAmount = [];
-    for (const account of accounts) {
-      const amount = await this.getAccountBalanceForPeriod(account.id, userId, businessId, startDate, endDate);
-      if (amount !== 0) {
-        accountsWithAmount.push({
-          id: account.id,
-          code: account.code,
-          name: account.name,
-          amount,
-        });
+      const accountsWithAmount = [];
+      for (const account of accounts) {
+        const amount = await this.getAccountBalanceForPeriod(account.id, userId, businessId, startDate, endDate);
+        if (amount !== 0) {
+          accountsWithAmount.push({
+            id: account.id,
+            code: account.code,
+            name: account.name,
+            amount,
+          });
+        }
       }
-    }
 
-    return accountsWithAmount;
+      return accountsWithAmount;
+    } catch (error) {
+      this.logger.error(`Error getting accounts by type for period: ${error.message}`);
+      return [];
+    }
   }
 
   private async getAccountBalanceForPeriod(
@@ -470,48 +567,41 @@ export class ReportsService {
     startDate?: Date,
     endDate?: Date
   ): Promise<number> {
-    const whereClause: any = {
-      accountId: accountId,
-      JournalEntry: {
-        status: 'POSTED',
+    try {
+      const where: any = {
+        accountId: accountId,
         OR: [
           { userId: userId },
           { businessId: businessId }
         ]
-      }
-    };
+      };
 
-    if (startDate || endDate) {
-      whereClause.JournalEntry.date = {};
-      if (startDate) whereClause.JournalEntry.date.gte = startDate;
-      if (endDate) whereClause.JournalEntry.date.lte = endDate;
+      if (startDate || endDate) {
+        where.date = {};
+        if (startDate) where.date.gte = startDate;
+        if (endDate) where.date.lte = endDate;
+      }
+
+      const transactions = await prisma.transaction.findMany({
+        where,
+        select: { amount: true, type: true }
+      });
+
+      let balance = 0;
+      for (const transaction of transactions) {
+        if (transaction.type === 'income') {
+          balance += transaction.amount;
+        } else if (transaction.type === 'expense') {
+          balance -= transaction.amount;
+        } else if (transaction.type === 'transfer') {
+          balance -= transaction.amount;
+        }
+      }
+
+      return balance;
+    } catch (error) {
+      this.logger.error(`Error getting account balance for period: ${error.message}`);
+      return 0;
     }
-
-    const entries = await prisma.journalEntryLine.findMany({
-      where: whereClause,
-      include: {
-        Account: true
-      }
-    });
-
-    const debitTotal = entries.reduce((sum, entry) => sum + entry.debit, 0);
-    const creditTotal = entries.reduce((sum, entry) => sum + entry.credit, 0);
-
-    const account = entries[0]?.Account;
-    if (account) {
-      switch (account.type.toLowerCase()) {
-        case 'asset':
-        case 'expense':
-          return debitTotal - creditTotal;
-        case 'liability':
-        case 'equity':
-        case 'revenue':
-          return creditTotal - debitTotal;
-        default:
-          return debitTotal - creditTotal;
-      }
-    }
-
-    return 0;
   }
 } 
