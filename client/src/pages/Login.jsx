@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -7,10 +7,32 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
   const { showToast } = useToast();
+
+  // Check if we're in development environment
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  useEffect(() => {
+    // Load saved credentials from localStorage
+    const savedEmail = localStorage.getItem('fint_remembered_email');
+    const savedPassword = localStorage.getItem('fint_remembered_password');
+    const savedRememberMe = localStorage.getItem('fint_remember_me') === 'true';
+
+    if (savedRememberMe && savedEmail && savedPassword) {
+      setEmail(savedEmail);
+      setPassword(savedPassword);
+      setRememberMe(true);
+    } else if (isDevelopment) {
+      // Auto-fill demo credentials in development
+      setEmail('demo@fint.com');
+      setPassword('demo123');
+      setRememberMe(true);
+    }
+  }, [isDevelopment]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,6 +48,18 @@ const Login = () => {
       const result = await login(email, password);
       
       if (result.success) {
+        // Save credentials if "Remember Me" is checked
+        if (rememberMe) {
+          localStorage.setItem('fint_remembered_email', email);
+          localStorage.setItem('fint_remembered_password', password);
+          localStorage.setItem('fint_remember_me', 'true');
+        } else {
+          // Clear saved credentials if "Remember Me" is unchecked
+          localStorage.removeItem('fint_remembered_email');
+          localStorage.removeItem('fint_remembered_password');
+          localStorage.removeItem('fint_remember_me');
+        }
+
         showToast('Login successful!', 'success');
         navigate('/');
       } else {
@@ -50,6 +84,13 @@ const Login = () => {
             <p className="text-gray-600">
               Sign in to your account to continue
             </p>
+            {isDevelopment && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-xs text-blue-700">
+                  🚀 Development Mode: Demo credentials auto-filled
+                </p>
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -98,6 +139,22 @@ const Login = () => {
                     </svg>
                   )}
                 </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                  Remember me
+                </label>
               </div>
             </div>
 

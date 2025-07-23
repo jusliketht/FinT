@@ -135,8 +135,7 @@ const MetricCard = ({
             opacity="0.15"
             backdropFilter="blur(10px)"
             border="1px solid"
-            borderColor="white"
-            borderOpacity="0.2"
+            borderColor="whiteAlpha.200"
           >
             <Icon as={icon} boxSize={6} opacity="0.9" />
           </Box>

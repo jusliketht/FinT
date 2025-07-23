@@ -11,7 +11,7 @@ import {
   Alert,
   AlertIcon,
 } from '@chakra-ui/react';
-import { FiDollarSign, FiTrendingUp, FiTrendingDown, FiCreditCard } from 'react-icons/fi';
+import { FiDollarSign, FiTrendingUp, FiTrendingDown, FiCreditCard, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
 import journalEntryService from '../../services/journalEntryService';
@@ -114,7 +114,7 @@ const Dashboard = () => {
   }, [fetchDashboardData]);
 
   return (
-    <Box maxW="7xl" mx="auto" p={6}>
+    <Box maxW="7xl" mx="auto" p={6} data-testid="dashboard">
       {/* Breadcrumb */}
       <Breadcrumb mb={6} />
 
@@ -199,7 +199,7 @@ const Dashboard = () => {
               title="Accounts Receivable"
               value={stats.accountsReceivable}
               gradient="linear-gradient(135deg, #f6ad55 0%, #ed8936 100%)"
-              icon={ArrowUpIcon}
+              icon={FiArrowUp}
               trend="up"
               change={stats.accountsReceivable > 0 ? 3.2 : 0}
             />
@@ -207,7 +207,7 @@ const Dashboard = () => {
               title="Accounts Payable"
               value={stats.accountsPayable}
               gradient="linear-gradient(135deg, #f687b3 0%, #e53e3e 100%)"
-              icon={ArrowDownIcon}
+              icon={FiArrowDown}
               trend="down"
               change={stats.accountsPayable > 0 ? -2.1 : 0}
             />

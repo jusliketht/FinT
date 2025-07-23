@@ -19,6 +19,8 @@ import {
   IconButton,
   Box,
   Divider,
+  VStack,
+  HStack,
   useToast,
 } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';

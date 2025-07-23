@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -24,26 +24,12 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Box,
-  Divider,
   IconButton,
-  InputGroup,
-  InputLeftElement,
-  useDisclosure,
-  Badge,
   Flex,
-  Spinner,
 } from '@chakra-ui/react';
 import {
   AddIcon,
-  CalendarIcon,
-  InfoIcon,
-  SearchIcon,
-  AttachmentIcon,
   CloseIcon,
 } from '@chakra-ui/icons';
 import { useFormik } from 'formik';
@@ -159,14 +145,7 @@ const GlobalTransactionModal = () => {
     setNewAccount({ name: '', code: '', type: '', description: '' });
   };
 
-  // Load accounts and categories
-  useEffect(() => {
-    if (isModalOpen) {
-      loadFormData();
-    }
-  }, [isModalOpen, selectedBusiness]);
-
-  const loadFormData = async () => {
+  const loadFormData = useCallback(async () => {
     setLoading(true);
     try {
       const [accountsData, categoriesData] = await Promise.all([
@@ -193,7 +172,14 @@ const GlobalTransactionModal = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, selectedBusiness, toast]);
+
+  // Load accounts and categories
+  useEffect(() => {
+    if (isModalOpen) {
+      loadFormData();
+    }
+  }, [isModalOpen, loadFormData]);
 
   // Filter categories by transaction type
   const filteredCategories = categories.filter(cat => 
@@ -232,18 +218,36 @@ const GlobalTransactionModal = () => {
         businessId: selectedBusiness?.id || null,
       };
       
-      const newAccountResponse = await api.post('/accounts', accountData, {}, {
-        successMessage: 'Account created successfully',
-        errorMessage: 'Failed to create account',
-      });
+      const response = await api.post('/accounts', accountData);
       
-      setAccounts(prev => [...prev, newAccountResponse]);
-      formik.setFieldValue('accountId', newAccountResponse.id);
-      setShowAddAccount(false);
-      setNewAccount({ name: '', code: '', type: '', description: '' });
+      if (response && response.id) {
+        // Add the new account to the accounts list
+        setAccounts(prev => [...prev, response]);
+        // Set the new account as selected
+        formik.setFieldValue('accountId', response.id);
+        // Close the add account form
+        setShowAddAccount(false);
+        // Reset the new account form
+        setNewAccount({ name: '', code: '', type: '', description: '' });
+        
+        toast({
+          title: 'Account Created',
+          description: 'New account has been created successfully',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
       
     } catch (error) {
       console.error('Error creating account:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create account',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
     }
   };
 
@@ -255,12 +259,7 @@ const GlobalTransactionModal = () => {
     return formik.touched[fieldName] && formik.errors[fieldName];
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-    }).format(amount);
-  };
+
 
   if (loading) {
     return (
@@ -276,29 +275,59 @@ const GlobalTransactionModal = () => {
   }
 
   return (
-    <Modal isOpen={isModalOpen} onClose={closeModal} size="2xl" scrollBehavior="inside">
+    <Modal isOpen={isModalOpen} onClose={closeModal} size="xl">
       <ModalOverlay />
       <ModalContent>
-        <form onSubmit={formik.handleSubmit}>
-          <ModalHeader>
-            <HStack spacing={3}>
-              <AddIcon color="blue.500" />
-              <Text>{selectedTransaction ? 'Edit Transaction' : 'Add Transaction'}</Text>
-            </HStack>
-          </ModalHeader>
-          <ModalCloseButton />
-          
-          <ModalBody>
-            <VStack spacing={6} align="stretch">
-              {/* Transaction Type Selection */}
+        <ModalHeader>
+          {selectedTransaction ? 'Edit Transaction' : 'Add Transaction'}
+        </ModalHeader>
+        <ModalCloseButton />
+        
+        <ModalBody>
+          <form onSubmit={formik.handleSubmit}>
+            <VStack spacing={4} align="stretch">
+              {/* Date Field */}
+              <FormControl isInvalid={isFieldInvalid('date')}>
+                <FormLabel>Date</FormLabel>
+                <Input
+                  type="date"
+                  {...formik.getFieldProps('date')}
+                />
+                <FormErrorMessage>{getFieldError('date')}</FormErrorMessage>
+              </FormControl>
+
+              {/* Amount Field */}
+              <FormControl isInvalid={isFieldInvalid('amount')}>
+                <FormLabel>Amount</FormLabel>
+                <NumberInput
+                  value={formik.values.amount}
+                  onChange={handleAmountChange}
+                  precision={2}
+                  min={0}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+                <FormErrorMessage>{getFieldError('amount')}</FormErrorMessage>
+              </FormControl>
+
+              {/* Description Field */}
+              <FormControl isInvalid={isFieldInvalid('description')}>
+                <FormLabel>Description</FormLabel>
+                <Input
+                  {...formik.getFieldProps('description')}
+                  placeholder="Enter transaction description"
+                />
+                <FormErrorMessage>{getFieldError('description')}</FormErrorMessage>
+              </FormControl>
+
+              {/* Transaction Type Field */}
               <FormControl isInvalid={isFieldInvalid('transactionType')}>
                 <FormLabel>Transaction Type</FormLabel>
-                <Select
-                  name="transactionType"
-                  value={formik.values.transactionType}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                >
+                <Select {...formik.getFieldProps('transactionType')}>
                   <option value="Expense">Expense</option>
                   <option value="Income">Income</option>
                   <option value="Transfer">Transfer</option>
@@ -307,320 +336,182 @@ const GlobalTransactionModal = () => {
                 <FormErrorMessage>{getFieldError('transactionType')}</FormErrorMessage>
               </FormControl>
 
-              {/* Date and Amount */}
-              <HStack spacing={4}>
-                <FormControl isInvalid={isFieldInvalid('date')} isRequired>
-                  <FormLabel>Date</FormLabel>
-                  <Input
-                    type="date"
-                    name="date"
-                    value={formik.values.date}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                  />
-                  <FormErrorMessage>{getFieldError('date')}</FormErrorMessage>
-                </FormControl>
-
-                <FormControl isInvalid={isFieldInvalid('amount')} isRequired>
-                  <FormLabel>Amount</FormLabel>
-                  <NumberInput
-                    value={formik.values.amount}
-                    onChange={handleAmountChange}
-                    min={0}
-                    precision={2}
-                  >
-                    <NumberInputField
-                      name="amount"
-                      onBlur={formik.handleBlur}
-                      placeholder="0.00"
-                    />
-                    <NumberInputStepper>
-                      <NumberIncrementStepper />
-                      <NumberDecrementStepper />
-                    </NumberInputStepper>
-                  </NumberInput>
-                  <FormHelperText>
-                    {formik.values.amount && formatCurrency(formik.values.amount)}
-                  </FormHelperText>
-                  <FormErrorMessage>{getFieldError('amount')}</FormErrorMessage>
-                </FormControl>
-              </HStack>
-
-              {/* Description */}
-              <FormControl isInvalid={isFieldInvalid('description')} isRequired>
-                <FormLabel>Description/Narration</FormLabel>
-                <Textarea
-                  name="description"
-                  value={formik.values.description}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  placeholder="Enter detailed transaction description"
-                  rows={3}
-                />
-                <FormHelperText>
-                  {formik.values.description.length}/200 characters
-                </FormHelperText>
-                <FormErrorMessage>{getFieldError('description')}</FormErrorMessage>
+              {/* Category Field */}
+              <FormControl isInvalid={isFieldInvalid('category')}>
+                <FormLabel>Category</FormLabel>
+                <Select {...formik.getFieldProps('category')}>
+                  <option value="">Select a category</option>
+                  {filteredCategories.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </Select>
+                <FormErrorMessage>{getFieldError('category')}</FormErrorMessage>
               </FormControl>
 
-              {/* Category and Account */}
-              <HStack spacing={4}>
-                <FormControl isInvalid={isFieldInvalid('category')} isRequired>
-                  <FormLabel>Category/Account</FormLabel>
-                  <Select
-                    name="category"
-                    value={formik.values.category}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="Select category"
-                  >
-                    {filteredCategories.map(category => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
+              {/* Account Field */}
+              <FormControl isInvalid={isFieldInvalid('accountId')}>
+                <FormLabel>Account</FormLabel>
+                <HStack>
+                  <Select {...formik.getFieldProps('accountId')} flex={1}>
+                    <option value="">Select an account</option>
+                    {filteredAccounts.map(account => (
+                      <option key={account.id} value={account.id}>
+                        {account.name}
                       </option>
                     ))}
                   </Select>
-                  <FormErrorMessage>{getFieldError('category')}</FormErrorMessage>
-                </FormControl>
+                  <Button
+                    size="sm"
+                    leftIcon={<AddIcon />}
+                    onClick={() => setShowAddAccount(true)}
+                  >
+                    Add Account
+                  </Button>
+                </HStack>
+                <FormErrorMessage>{getFieldError('accountId')}</FormErrorMessage>
+              </FormControl>
 
-                <FormControl isInvalid={isFieldInvalid('accountId')} isRequired>
-                  <FormLabel>Account</FormLabel>
-                  <HStack spacing={2}>
-                    <Select
-                      name="accountId"
-                      value={formik.values.accountId}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      placeholder="Select account"
-                      flex="1"
-                    >
-                      {filteredAccounts.map(account => (
-                        <option key={account.id} value={account.id}>
-                          {account.name} ({account.code})
-                        </option>
-                      ))}
-                    </Select>
-                    <IconButton
-                      aria-label="Add new account"
-                      icon={<AddIcon />}
-                      size="md"
-                      variant="outline"
-                      onClick={() => setShowAddAccount(true)}
-                    />
-                  </HStack>
-                  <FormErrorMessage>{getFieldError('accountId')}</FormErrorMessage>
-                </FormControl>
-              </HStack>
+              {/* Add Account Form */}
+              {showAddAccount && (
+                <Box p={4} border="1px" borderColor="gray.200" borderRadius="md">
+                  <Text fontWeight="bold" mb={3}>Add New Account</Text>
+                  <VStack spacing={3}>
+                    <FormControl>
+                      <FormLabel>Account Name</FormLabel>
+                      <Input
+                        value={newAccount.name}
+                        onChange={(e) => setNewAccount(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Enter account name"
+                      />
+                    </FormControl>
+                    <FormControl>
+                      <FormLabel>Account Code</FormLabel>
+                      <Input
+                        value={newAccount.code}
+                        onChange={(e) => setNewAccount(prev => ({ ...prev, code: e.target.value }))}
+                        placeholder="Enter account code"
+                      />
+                    </FormControl>
+                    <FormControl>
+                      <FormLabel>Account Type</FormLabel>
+                      <Select
+                        value={newAccount.type}
+                        onChange={(e) => setNewAccount(prev => ({ ...prev, type: e.target.value }))}
+                      >
+                        <option value="">Select account type</option>
+                        <option value="ASSET">Asset</option>
+                        <option value="LIABILITY">Liability</option>
+                        <option value="EQUITY">Equity</option>
+                        <option value="REVENUE">Revenue</option>
+                        <option value="EXPENSE">Expense</option>
+                      </Select>
+                    </FormControl>
+                    <HStack>
+                      <Button size="sm" onClick={handleAddAccount} colorScheme="blue">
+                        Save Account
+                      </Button>
+                      <Button size="sm" onClick={() => setShowAddAccount(false)}>
+                        Cancel
+                      </Button>
+                    </HStack>
+                  </VStack>
+                </Box>
+              )}
 
-              {/* Person/Entity Tag */}
+              {/* Person/Entity Field */}
               <FormControl isInvalid={isFieldInvalid('personEntity')}>
-                <FormLabel>Person/Entity Tag</FormLabel>
+                <FormLabel>Person/Entity</FormLabel>
                 <Input
-                  name="personEntity"
-                  value={formik.values.personEntity}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  placeholder="Customer, vendor, employee, or other entity"
+                  {...formik.getFieldProps('personEntity')}
+                  placeholder="Enter person or entity name"
                 />
-                <FormHelperText>
-                  Tag this transaction with a specific person or entity
-                </FormHelperText>
                 <FormErrorMessage>{getFieldError('personEntity')}</FormErrorMessage>
               </FormControl>
 
-              {/* Payment Method and Reference */}
-              <HStack spacing={4}>
-                <FormControl isInvalid={isFieldInvalid('paymentMethod')} isRequired>
-                  <FormLabel>Payment Method</FormLabel>
-                  <Select
-                    name="paymentMethod"
-                    value={formik.values.paymentMethod}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                  >
-                    <option value="Cash">Cash</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                    <option value="Credit Card">Credit Card</option>
-                    <option value="Cheque">Cheque</option>
-                    <option value="UPI">UPI</option>
-                    <option value="Other">Other</option>
-                  </Select>
-                  <FormErrorMessage>{getFieldError('paymentMethod')}</FormErrorMessage>
-                </FormControl>
-
-                <FormControl isInvalid={isFieldInvalid('referenceNumber')}>
-                  <FormLabel>Reference Number</FormLabel>
-                  <Input
-                    name="referenceNumber"
-                    value={formik.values.referenceNumber}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="Invoice number, cheque number, etc."
-                  />
-                  <FormErrorMessage>{getFieldError('referenceNumber')}</FormErrorMessage>
-                </FormControl>
-              </HStack>
-
-              {/* Attachments */}
-              <FormControl>
-                <FormLabel>Attachments</FormLabel>
-                <VStack spacing={3} align="stretch">
-                  <Input
-                    type="file"
-                    multiple
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                    onChange={handleFileUpload}
-                    p={1}
-                  />
-                  <FormHelperText>
-                    Upload receipts, invoices, or other supporting documents
-                  </FormHelperText>
-                  
-                  {attachments.length > 0 && (
-                    <VStack spacing={2} align="stretch">
-                      <Text fontSize="sm" fontWeight="medium">Uploaded Files:</Text>
-                      {attachments.map((file, index) => (
-                        <Flex key={index} justify="space-between" align="center" p={2} bg="gray.50" borderRadius="md">
-                          <HStack spacing={2}>
-                            <AttachmentIcon />
-                            <Text fontSize="sm">{file.name}</Text>
-                            <Badge size="sm" variant="subtle">
-                              {(file.size / 1024).toFixed(1)} KB
-                            </Badge>
-                          </HStack>
-                          <IconButton
-                            aria-label="Remove file"
-                            icon={<CloseIcon />}
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeAttachment(index)}
-                          />
-                        </Flex>
-                      ))}
-                    </VStack>
-                  )}
-                </VStack>
+              {/* Payment Method Field */}
+              <FormControl isInvalid={isFieldInvalid('paymentMethod')}>
+                <FormLabel>Payment Method</FormLabel>
+                <Select {...formik.getFieldProps('paymentMethod')}>
+                  <option value="Cash">Cash</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Credit Card">Credit Card</option>
+                  <option value="Check">Check</option>
+                  <option value="Digital Payment">Digital Payment</option>
+                </Select>
+                <FormErrorMessage>{getFieldError('paymentMethod')}</FormErrorMessage>
               </FormControl>
 
-              {/* Notes */}
+              {/* Reference Number Field */}
+              <FormControl isInvalid={isFieldInvalid('referenceNumber')}>
+                <FormLabel>Reference Number</FormLabel>
+                <Input
+                  {...formik.getFieldProps('referenceNumber')}
+                  placeholder="Enter reference number"
+                />
+                <FormErrorMessage>{getFieldError('referenceNumber')}</FormErrorMessage>
+              </FormControl>
+
+              {/* Notes Field */}
               <FormControl isInvalid={isFieldInvalid('notes')}>
                 <FormLabel>Notes</FormLabel>
                 <Textarea
-                  name="notes"
-                  value={formik.values.notes}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  placeholder="Additional notes (optional)"
+                  {...formik.getFieldProps('notes')}
+                  placeholder="Enter additional notes"
                   rows={3}
                 />
-                <FormHelperText>
-                  {formik.values.notes.length}/500 characters
-                </FormHelperText>
                 <FormErrorMessage>{getFieldError('notes')}</FormErrorMessage>
               </FormControl>
 
-              {/* Add New Account Modal */}
-              {showAddAccount && (
-                <Alert status="info" borderRadius="md">
-                  <AlertIcon />
-                  <Box flex="1">
-                    <AlertTitle>Add New Account</AlertTitle>
-                    <AlertDescription>
-                      <VStack spacing={3} mt={3}>
-                        <HStack spacing={3}>
-                          <Input
-                            placeholder="Account Name"
-                            value={newAccount.name}
-                            onChange={(e) => setNewAccount(prev => ({ ...prev, name: e.target.value }))}
-                            size="sm"
-                          />
-                          <Input
-                            placeholder="Account Code"
-                            value={newAccount.code}
-                            onChange={(e) => setNewAccount(prev => ({ ...prev, code: e.target.value }))}
-                            size="sm"
-                          />
-                        </HStack>
-                        <Select
-                          placeholder="Account Type"
-                          value={newAccount.type}
-                          onChange={(e) => setNewAccount(prev => ({ ...prev, type: e.target.value }))}
-                          size="sm"
-                        >
-                          <option value="ASSET">Asset</option>
-                          <option value="LIABILITY">Liability</option>
-                          <option value="EQUITY">Equity</option>
-                          <option value="REVENUE">Revenue</option>
-                          <option value="EXPENSE">Expense</option>
-                        </Select>
-                        <HStack spacing={2}>
-                          <Button
-                            size="sm"
-                            colorScheme="blue"
-                            onClick={handleAddAccount}
-                            isDisabled={!newAccount.name || !newAccount.code || !newAccount.type}
-                          >
-                            Add Account
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setShowAddAccount(false)}
-                          >
-                            Cancel
-                          </Button>
-                        </HStack>
-                      </VStack>
-                    </AlertDescription>
-                  </Box>
-                </Alert>
-              )}
+              {/* File Attachments */}
+              <FormControl>
+                <FormLabel>Attachments</FormLabel>
+                <Input
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                />
+                <FormHelperText>Upload supporting documents (PDF, images, documents)</FormHelperText>
+              </FormControl>
 
-              {/* Validation Summary */}
-              {Object.keys(formik.errors).length > 0 && (
-                <Alert status="error" borderRadius="md">
-                  <AlertIcon />
-                  <Box>
-                    <AlertTitle>Please fix the following errors:</AlertTitle>
-                    <AlertDescription>
-                      <VStack align="start" spacing={1} mt={2}>
-                        {Object.entries(formik.errors).map(([field, error]) => (
-                          <Text key={field} fontSize="sm">
-                            • {error}
-                          </Text>
-                        ))}
-                      </VStack>
-                    </AlertDescription>
-                  </Box>
-                </Alert>
+              {/* Attachments List */}
+              {attachments.length > 0 && (
+                <Box>
+                  <Text fontWeight="bold" mb={2}>Uploaded Files:</Text>
+                  <VStack spacing={2} align="stretch">
+                    {attachments.map((file, index) => (
+                      <Flex key={index} justify="space-between" align="center" p={2} bg="gray.50" borderRadius="md">
+                        <Text fontSize="sm">{file.name}</Text>
+                        <IconButton
+                          size="sm"
+                          icon={<CloseIcon />}
+                          onClick={() => removeAttachment(index)}
+                          aria-label={`Remove ${file.name}`}
+                        />
+                      </Flex>
+                    ))}
+                  </VStack>
+                </Box>
               )}
             </VStack>
-          </ModalBody>
+          </form>
+        </ModalBody>
 
-          <ModalFooter>
-            <HStack spacing={3}>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  closeModal();
-                  resetForm();
-                }}
-                isDisabled={submitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                colorScheme="blue"
-                isLoading={submitting}
-                loadingText="Saving..."
-                isDisabled={!formik.isValid || submitting}
-              >
-                {selectedTransaction ? 'Update Transaction' : 'Create Transaction'}
-              </Button>
-            </HStack>
-          </ModalFooter>
-        </form>
+        <ModalFooter>
+          <Button variant="ghost" mr={3} onClick={closeModal}>
+            Cancel
+          </Button>
+          <Button
+            colorScheme="blue"
+            onClick={formik.handleSubmit}
+            isLoading={submitting}
+            loadingText="Saving..."
+          >
+            {selectedTransaction ? 'Update Transaction' : 'Save Transaction'}
+          </Button>
+        </ModalFooter>
       </ModalContent>
     </Modal>
   );
