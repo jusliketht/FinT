@@ -22,4 +22,4 @@ import { InvoicesModule } from './invoices/invoices.module';
     InvoicesModule,
   ],
 })
-export class AppModule {} 
+export class AppModule {}

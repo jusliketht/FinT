@@ -45,4 +45,4 @@ declare module 'tesseract.js' {
 
   export function createWorker(options?: WorkerOptions): Promise<Worker>;
   export function createScheduler(): Scheduler;
-} 
+}

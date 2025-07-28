@@ -31,4 +31,4 @@ export class CreateAccountDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
-} 
+}

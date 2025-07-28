@@ -1,4 +1,13 @@
-import { IsString, IsNumber, IsDateString, IsOptional, IsArray, ValidateNested, Min, IsEmail } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsDateString,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  Min,
+  IsEmail,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateBillItemDto {
@@ -46,4 +55,4 @@ export class CreateBillDto {
   @ValidateNested({ each: true })
   @Type(() => CreateBillItemDto)
   items: CreateBillItemDto[];
-} 
+}

@@ -16,11 +16,11 @@ export class GetInvoicesQueryDto {
 
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value ? new Date(value) : undefined)
+  @Transform(({ value }) => (value ? new Date(value) : undefined))
   startDate?: Date;
 
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value ? new Date(value) : undefined)
+  @Transform(({ value }) => (value ? new Date(value) : undefined))
   endDate?: Date;
-} 
+}

@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from '../services/users.service';
 import { UserRole } from '../../constants/enums';
@@ -21,7 +31,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Return whether initialization is needed' })
   async checkUsersExist() {
     const count = await prisma.user.count();
-    return { needsInit: (count === 0) };
+    return { needsInit: count === 0 };
   }
 
   @Post()
@@ -29,20 +39,23 @@ export class UsersController {
   @Roles(UserRole.Admin)
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
-  create(@Body() createUserDto: {
-    name: string;
-    email: string;
-    password: string;
-    role?: UserRole;
-    phone?: string;
-    address?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-    country?: string;
-    dateOfBirth?: Date;
-    taxId?: string;
-  }) {
+  create(
+    @Body()
+    createUserDto: {
+      name: string;
+      email: string;
+      password: string;
+      role?: UserRole;
+      phone?: string;
+      address?: string;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+      country?: string;
+      dateOfBirth?: Date;
+      taxId?: string;
+    }
+  ) {
     return this.usersService.create(createUserDto);
   }
 
@@ -123,4 +136,4 @@ export class UsersController {
   getUserBusinesses(@Param('id') id: string) {
     return this.usersService.getUserBusinesses(id);
   }
-} 
+}

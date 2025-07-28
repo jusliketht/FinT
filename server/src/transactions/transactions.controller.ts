@@ -1,16 +1,16 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Query, 
-  UseGuards, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
   Request,
   HttpStatus,
-  HttpCode
+  HttpCode,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { TransactionsService } from './transactions.service';
@@ -28,14 +28,8 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Create a new transaction' })
   @ApiResponse({ status: 201, description: 'Transaction created successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  async createTransaction(
-    @Body() createTransactionDto: CreateTransactionDto,
-    @Request() req: any,
-  ) {
-    return this.transactionsService.createTransaction(
-      createTransactionDto,
-      req.user.id
-    );
+  async createTransaction(@Body() createTransactionDto: CreateTransactionDto, @Request() req: any) {
+    return this.transactionsService.createTransaction(createTransactionDto, req.user.id);
   }
 
   @Get('categories')
@@ -48,20 +42,14 @@ export class TransactionsController {
   @Get()
   @ApiOperation({ summary: 'Get transactions with filters' })
   @ApiResponse({ status: 200, description: 'Transactions retrieved successfully' })
-  async getTransactions(
-    @Query() query: GetTransactionsQueryDto,
-    @Request() req: any,
-  ) {
+  async getTransactions(@Query() query: GetTransactionsQueryDto, @Request() req: any) {
     return this.transactionsService.getTransactions(query, req.user.id);
   }
 
   @Get('stats')
   @ApiOperation({ summary: 'Get transaction statistics' })
   @ApiResponse({ status: 200, description: 'Statistics retrieved successfully' })
-  async getTransactionStats(
-    @Query('businessId') businessId: string,
-    @Request() req: any,
-  ) {
+  async getTransactionStats(@Query('businessId') businessId: string, @Request() req: any) {
     return this.transactionsService.getTransactionStats(req.user.id, businessId);
   }
 
@@ -69,10 +57,7 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Get a single transaction' })
   @ApiResponse({ status: 200, description: 'Transaction retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Transaction not found' })
-  async getTransaction(
-    @Param('id') id: string,
-    @Request() req: any,
-  ) {
+  async getTransaction(@Param('id') id: string, @Request() req: any) {
     return this.transactionsService.getTransaction(id, req.user.id);
   }
 
@@ -83,13 +68,9 @@ export class TransactionsController {
   async updateTransaction(
     @Param('id') id: string,
     @Body() updateTransactionDto: UpdateTransactionDto,
-    @Request() req: any,
+    @Request() req: any
   ) {
-    return this.transactionsService.updateTransaction(
-      id,
-      updateTransactionDto,
-      req.user.id
-    );
+    return this.transactionsService.updateTransaction(id, updateTransactionDto, req.user.id);
   }
 
   @Delete(':id')
@@ -97,10 +78,7 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Delete a transaction' })
   @ApiResponse({ status: 204, description: 'Transaction deleted successfully' })
   @ApiResponse({ status: 404, description: 'Transaction not found' })
-  async deleteTransaction(
-    @Param('id') id: string,
-    @Request() req: any,
-  ) {
+  async deleteTransaction(@Param('id') id: string, @Request() req: any) {
     return this.transactionsService.deleteTransaction(id, req.user.id);
   }
-} 
+}

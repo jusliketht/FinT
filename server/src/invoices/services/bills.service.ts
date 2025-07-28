@@ -17,7 +17,7 @@ export class BillsService {
     items.forEach(item => {
       const itemTotal = item.quantity * item.unitPrice;
       subtotal += itemTotal;
-      taxAmount += itemTotal * (item.taxRate || 0) / 100;
+      taxAmount += (itemTotal * (item.taxRate || 0)) / 100;
     });
 
     const totalAmount = subtotal + taxAmount;
@@ -28,7 +28,7 @@ export class BillsService {
       orderBy: { billNumber: 'desc' },
     });
 
-    const billNumber = lastBill 
+    const billNumber = lastBill
       ? `BILL-${businessId.slice(0, 8)}-${String(parseInt(lastBill.billNumber.split('-')[2]) + 1).padStart(6, '0')}`
       : `BILL-${businessId.slice(0, 8)}-000001`;
 
@@ -53,7 +53,7 @@ export class BillsService {
       // Create bill items
       for (const item of items) {
         const itemTotal = item.quantity * item.unitPrice;
-        const itemTaxAmount = itemTotal * (item.taxRate || 0) / 100;
+        const itemTaxAmount = (itemTotal * (item.taxRate || 0)) / 100;
 
         await prisma.billItem.create({
           data: {
@@ -77,7 +77,7 @@ export class BillsService {
 
   async getAllBills(businessId: string, page = 1, limit = 10, status?: string): Promise<any> {
     const skip = (page - 1) * limit;
-    
+
     const where: any = { businessId };
     if (status) {
       where.status = status;
@@ -157,7 +157,7 @@ export class BillsService {
     // Update bill status
     const updatedBill = await prisma.bill.update({
       where: { id },
-      data: { 
+      data: {
         status: 'PAID',
         updatedAt: new Date(),
       },
@@ -220,8 +220,8 @@ export class BillsService {
       totalAmount: totalAmount._sum.totalAmount || 0,
       paidAmount: paidAmount._sum.totalAmount || 0,
       overdueAmount: overdueAmount._sum.totalAmount || 0,
-      paymentRate: totalAmount._sum.totalAmount 
-        ? (paidAmount._sum.totalAmount || 0) / totalAmount._sum.totalAmount * 100 
+      paymentRate: totalAmount._sum.totalAmount
+        ? ((paidAmount._sum.totalAmount || 0) / totalAmount._sum.totalAmount) * 100
         : 0,
     };
   }
@@ -232,12 +232,20 @@ export class BillsService {
       where: { businessId: bill.businessId },
     });
 
-    const accountsPayable = accounts.find(a => a.type === 'liability' && a.name.toLowerCase().includes('payable'));
-    const cashAccount = accounts.find(a => a.type === 'asset' && a.name.toLowerCase().includes('cash'));
-    const expenseAccount = accounts.find(a => a.type === 'expense' && a.name.toLowerCase().includes('expense'));
+    const accountsPayable = accounts.find(
+      a => a.type === 'liability' && a.name.toLowerCase().includes('payable')
+    );
+    const cashAccount = accounts.find(
+      a => a.type === 'asset' && a.name.toLowerCase().includes('cash')
+    );
+    const expenseAccount = accounts.find(
+      a => a.type === 'expense' && a.name.toLowerCase().includes('expense')
+    );
 
     if (!accountsPayable || !cashAccount || !expenseAccount) {
-      throw new BadRequestException('Required accounts not found. Please set up Chart of Accounts.');
+      throw new BadRequestException(
+        'Required accounts not found. Please set up Chart of Accounts.'
+      );
     }
 
     // Create journal entry
@@ -279,4 +287,4 @@ export class BillsService {
 
     return journalEntry;
   }
-} 
+}

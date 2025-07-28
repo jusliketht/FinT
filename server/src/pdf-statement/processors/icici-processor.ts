@@ -1,7 +1,8 @@
 import { Transaction } from '../pdf-statement.service';
 
 export class IciciProcessor {
-  private readonly transactionPattern = /\d{2}-\w{3}-\d{4}\s+([^\s]+(?:\s+[^\s]+)*?)\s+([\d,]+\.\d{2})/g;
+  private readonly transactionPattern =
+    /\d{2}-\w{3}-\d{4}\s+([^\s]+(?:\s+[^\s]+)*?)\s+([\d,]+\.\d{2})/g;
   private readonly datePattern = /(\d{2})-(\w{3})-(\d{4})/;
   private readonly amountPattern = /([\d,]+\.\d{2})/;
 
@@ -53,7 +54,8 @@ export class IciciProcessor {
       const date = this.parseDate(day, month, year);
 
       // Extract description (everything between date and amount)
-      const dateEndIndex = line.indexOf(`${day}-${month}-${year}`) + `${day}-${month}-${year}`.length;
+      const dateEndIndex =
+        line.indexOf(`${day}-${month}-${year}`) + `${day}-${month}-${year}`.length;
       const amountMatch = line.match(this.amountPattern);
       if (!amountMatch) {
         return null;
@@ -85,8 +87,18 @@ export class IciciProcessor {
    */
   private parseDate(day: string, month: string, year: string): Date {
     const monthMap: { [key: string]: number } = {
-      'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
-      'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+      jan: 0,
+      feb: 1,
+      mar: 2,
+      apr: 3,
+      may: 4,
+      jun: 5,
+      jul: 6,
+      aug: 7,
+      sep: 8,
+      oct: 9,
+      nov: 10,
+      dec: 11,
     };
 
     const monthIndex = monthMap[month.toLowerCase()];
@@ -123,14 +135,18 @@ export class IciciProcessor {
    */
   private determineTransactionType(line: string, amount: number): 'credit' | 'debit' {
     const lowerLine = line.toLowerCase();
-    
+
     // Look for credit indicators
     if (lowerLine.includes('cr') || lowerLine.includes('credit') || lowerLine.includes('deposit')) {
       return 'credit';
     }
-    
+
     // Look for debit indicators
-    if (lowerLine.includes('dr') || lowerLine.includes('debit') || lowerLine.includes('withdrawal')) {
+    if (
+      lowerLine.includes('dr') ||
+      lowerLine.includes('debit') ||
+      lowerLine.includes('withdrawal')
+    ) {
       return 'debit';
     }
 
@@ -147,4 +163,4 @@ export class IciciProcessor {
       .replace(/[^\w\s\-\.]/g, '') // Remove special characters except spaces, hyphens, and dots
       .trim();
   }
-} 
+}

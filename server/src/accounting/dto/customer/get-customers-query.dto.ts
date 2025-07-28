@@ -14,4 +14,4 @@ export class GetCustomersQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
-} 
+}

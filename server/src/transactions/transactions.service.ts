@@ -1,5 +1,10 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
-import { CreateTransactionDto, UpdateTransactionDto, GetTransactionsQueryDto, TransactionType } from './dto';
+import {
+  CreateTransactionDto,
+  UpdateTransactionDto,
+  GetTransactionsQueryDto,
+  TransactionType,
+} from './dto';
 
 @Injectable()
 export class TransactionsService {
@@ -21,7 +26,7 @@ export class TransactionsService {
       thirdPartyId: createTransactionDto.thirdPartyId,
       userId,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     // Generate journal entries only if businessId is provided
@@ -49,7 +54,7 @@ export class TransactionsService {
       'Insurance',
       'Education',
       'Travel',
-      'Other'
+      'Other',
     ];
 
     const businessCategories = [
@@ -66,7 +71,7 @@ export class TransactionsService {
       'Business Insurance',
       'Legal Fees',
       'Accounting Fees',
-      'Other'
+      'Other',
     ];
 
     return businessId ? businessCategories : personalCategories;
@@ -92,16 +97,18 @@ export class TransactionsService {
         debitAccount: {
           id: 'account_1',
           name: 'Cash Account',
-          code: '1001'
+          code: '1001',
         },
         creditAccount: {
           id: 'account_2',
           name: 'Income Account',
-          code: '4001'
-        }
+          code: '4001',
+        },
       };
 
-      this.logger.log(`Generated journal entry: ${journalEntry.id} for transaction: ${transaction.id}`);
+      this.logger.log(
+        `Generated journal entry: ${journalEntry.id} for transaction: ${transaction.id}`
+      );
       return [journalEntry];
     } catch (error) {
       this.logger.error(`Error generating journal entry for transaction: ${transaction.id}`, error);
@@ -124,7 +131,7 @@ export class TransactionsService {
         businessId: query.businessId || null, // Can be null for personal transactions
         userId,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       {
         id: 'trans_2',
@@ -138,12 +145,12 @@ export class TransactionsService {
         businessId: query.businessId || null, // Can be null for personal transactions
         userId,
         createdAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     ];
 
     // Filter by businessId if provided
-    const filteredTransactions = query.businessId 
+    const filteredTransactions = query.businessId
       ? transactions.filter(t => t.businessId === query.businessId)
       : transactions.filter(t => !t.businessId); // Personal transactions
 
@@ -157,8 +164,8 @@ export class TransactionsService {
         page,
         limit,
         total: filteredTransactions.length,
-        pages: Math.ceil(filteredTransactions.length / limit)
-      }
+        pages: Math.ceil(filteredTransactions.length / limit),
+      },
     };
   }
 
@@ -176,7 +183,7 @@ export class TransactionsService {
       businessId: null, // Can be null for personal transactions
       userId,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     if (!transaction) {
@@ -200,7 +207,7 @@ export class TransactionsService {
       businessId: null, // Can be null for personal transactions
       userId,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     if (!transaction) {
@@ -210,7 +217,7 @@ export class TransactionsService {
     return {
       ...transaction,
       ...updateTransactionDto,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -228,7 +235,7 @@ export class TransactionsService {
       businessId: null, // Can be null for personal transactions
       userId,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     if (!transaction) {
@@ -241,29 +248,31 @@ export class TransactionsService {
   async getTransactionStats(userId: string, businessId?: string) {
     // Placeholder implementation
     const isPersonal = !businessId;
-    
+
     return {
       total: 100,
       income: isPersonal ? 50000 : 100000,
       expense: isPersonal ? 30000 : 60000,
       net: isPersonal ? 20000 : 40000,
-      byCategory: isPersonal ? {
-        'Salary': 40000,
-        'Food & Dining': 8000,
-        'Transportation': 5000,
-        'Entertainment': 3000
-      } : {
-        'Service Revenue': 80000,
-        'Office Supplies': 15000,
-        'Employee Salaries': 25000,
-        'Marketing': 10000
-      },
+      byCategory: isPersonal
+        ? {
+            Salary: 40000,
+            'Food & Dining': 8000,
+            Transportation: 5000,
+            Entertainment: 3000,
+          }
+        : {
+            'Service Revenue': 80000,
+            'Office Supplies': 15000,
+            'Employee Salaries': 25000,
+            Marketing: 10000,
+          },
       byMonth: [
         { month: 'Jan', income: isPersonal ? 5000 : 10000, expense: isPersonal ? 3000 : 6000 },
         { month: 'Feb', income: isPersonal ? 5000 : 10000, expense: isPersonal ? 3500 : 7000 },
-        { month: 'Mar', income: isPersonal ? 5000 : 10000, expense: isPersonal ? 2800 : 5600 }
+        { month: 'Mar', income: isPersonal ? 5000 : 10000, expense: isPersonal ? 2800 : 5600 },
       ],
-      context: isPersonal ? 'Personal' : 'Business'
+      context: isPersonal ? 'Personal' : 'Business',
     };
   }
-} 
+}

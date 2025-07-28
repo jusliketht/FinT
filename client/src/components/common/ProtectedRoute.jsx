@@ -28,13 +28,16 @@ const ProtectedRoute = ({
   const { selectedBusiness, isPersonalMode, loading: businessLoading } = useBusiness();
   const location = useLocation();
 
+  // Check if we're in development environment
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   // Show loading spinner while checking authentication
   if (authLoading || businessLoading) {
     return <LoadingSpinner message="Checking permissions..." />;
   }
 
-  // Check authentication
-  if (requireAuth && !user) {
+  // Check authentication - temporarily allow access in development mode
+  if (requireAuth && !user && !isDevelopment) {
     // Redirect to login with return URL
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }

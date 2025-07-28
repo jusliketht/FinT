@@ -12,7 +12,14 @@ import {
   HttpStatus,
   HttpException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 // import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { JournalEntryService } from '../services/journal-entry.service';
 import { CreateJournalEntryDto } from '../dto/journal-entry/create-journal-entry.dto';
@@ -29,10 +36,7 @@ export class JournalEntryController {
   @ApiOperation({ summary: 'Create a new journal entry' })
   @ApiResponse({ status: 201, description: 'Journal entry created successfully' })
   @ApiResponse({ status: 400, description: 'Bad request - validation error' })
-  async createJournalEntry(
-    @Request() req,
-    @Body() createJournalEntryDto: CreateJournalEntryDto
-  ) {
+  async createJournalEntry(@Request() req, @Body() createJournalEntryDto: CreateJournalEntryDto) {
     try {
       return await this.journalEntryService.createJournalEntry({
         ...createJournalEntryDto,
@@ -251,4 +255,4 @@ export class JournalEntryController {
       );
     }
   }
-} 
+}

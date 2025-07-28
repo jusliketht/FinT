@@ -1,4 +1,4 @@
-  import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -18,8 +18,8 @@ import { RolesGuard } from './guards/roles.guard';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET', 'your-secret-key'),
-        signOptions: { 
-          expiresIn: configService.get('JWT_EXPIRES_IN', '1d') 
+        signOptions: {
+          expiresIn: configService.get('JWT_EXPIRES_IN', '1d'),
         },
       }),
       inject: [ConfigService],
@@ -29,4 +29,4 @@ import { RolesGuard } from './guards/roles.guard';
   controllers: [AuthController],
   exports: [AuthService, JwtAuthGuard, RolesGuard],
 })
-export class AuthModule {} 
+export class AuthModule {}

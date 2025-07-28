@@ -24,7 +24,7 @@ import {
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { useApi } from '../../services/api';
+import { useApi } from '../../hooks/useApi';
 
 const PasswordChangeForm = ({ onSubmit, loading }) => {
   const toast = useToast();

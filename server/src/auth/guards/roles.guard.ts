@@ -10,7 +10,7 @@ export class RolesGuard implements CanActivate {
     // Development mode bypass
     const isDev = process.env.NODE_ENV !== 'production';
     const bypassAuth = isDev && process.env.BYPASS_AUTH === 'true';
-    
+
     if (bypassAuth) {
       return true;
     }
@@ -25,6 +25,6 @@ export class RolesGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
-    return requiredRoles.some((role) => user.role === role);
+    return requiredRoles.some(role => user.role === role);
   }
-} 
+}

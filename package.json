@@ -52,6 +52,7 @@
     "analyze:client": "cd client && npm run analyze"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.0.3",
     "concurrently": "^8.2.2",
     "eslint": "^8.57.0",

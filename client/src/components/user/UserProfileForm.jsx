@@ -20,7 +20,7 @@ import {
 } from '@chakra-ui/react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { useApi } from '../../services/api';
+import { useApi } from '../../hooks/useApi';
 
 const UserProfileForm = ({ user, onSubmit, loading }) => {
   const toast = useToast();

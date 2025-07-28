@@ -5,11 +5,7 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class ReconciliationService {
-  async performAutoMatching(
-    statementTransactions: any[],
-    accountId: string,
-    businessId: string
-  ) {
+  async performAutoMatching(statementTransactions: any[], accountId: string, businessId: string) {
     // Get ledger entries for the account
     const ledgerEntries = await prisma.journalEntryLine.findMany({
       where: {
@@ -30,9 +26,13 @@ export class ReconciliationService {
     // Perform auto-matching logic
     statementTransactions.forEach(stmtItem => {
       // Find exact matches by amount and date
-      const exactMatch = ledgerEntries.find(ledgerItem => 
-        Math.abs(ledgerItem.debit - ledgerItem.credit - stmtItem.amount) < 1 && // ₹1 tolerance
-        Math.abs(new Date(ledgerItem.JournalEntry.date).getTime() - new Date(stmtItem.date).getTime()) < 3 * 24 * 60 * 60 * 1000 // 3 days
+      const exactMatch = ledgerEntries.find(
+        ledgerItem =>
+          Math.abs(ledgerItem.debit - ledgerItem.credit - stmtItem.amount) < 1 && // ₹1 tolerance
+          Math.abs(
+            new Date(ledgerItem.JournalEntry.date).getTime() - new Date(stmtItem.date).getTime()
+          ) <
+            3 * 24 * 60 * 60 * 1000 // 3 days
       );
 
       if (exactMatch) {
@@ -44,9 +44,13 @@ export class ReconciliationService {
         });
       } else {
         // Find fuzzy matches
-        const fuzzyMatch = ledgerEntries.find(ledgerItem => 
-          Math.abs(ledgerItem.debit - ledgerItem.credit - stmtItem.amount) < 10 && // ₹10 tolerance
-          Math.abs(new Date(ledgerItem.JournalEntry.date).getTime() - new Date(stmtItem.date).getTime()) < 7 * 24 * 60 * 60 * 1000 // 7 days
+        const fuzzyMatch = ledgerEntries.find(
+          ledgerItem =>
+            Math.abs(ledgerItem.debit - ledgerItem.credit - stmtItem.amount) < 10 && // ₹10 tolerance
+            Math.abs(
+              new Date(ledgerItem.JournalEntry.date).getTime() - new Date(stmtItem.date).getTime()
+            ) <
+              7 * 24 * 60 * 60 * 1000 // 7 days
         );
 
         if (fuzzyMatch) {
@@ -77,8 +81,9 @@ export class ReconciliationService {
       adjustedItems: adjustments.length,
       bankBalance: statementTransactions.reduce((sum, item) => sum + (item.amount || 0), 0),
       ledgerBalance: ledgerEntries.reduce((sum, item) => sum + (item.debit - item.credit), 0),
-      difference: statementTransactions.reduce((sum, item) => sum + (item.amount || 0), 0) - 
-                 ledgerEntries.reduce((sum, item) => sum + (item.debit - item.credit), 0),
+      difference:
+        statementTransactions.reduce((sum, item) => sum + (item.amount || 0), 0) -
+        ledgerEntries.reduce((sum, item) => sum + (item.debit - item.credit), 0),
     };
 
     return {
@@ -91,11 +96,7 @@ export class ReconciliationService {
     };
   }
 
-  async createJournalEntries(
-    transactions: any[],
-    userId: string,
-    businessId: string
-  ) {
+  async createJournalEntries(transactions: any[], userId: string, businessId: string) {
     const createdEntries = [];
 
     for (const transaction of transactions) {
@@ -176,11 +177,7 @@ export class ReconciliationService {
     return reconciliation;
   }
 
-  async lockReconciliation(
-    reconciliationId: string,
-    userId: string,
-    businessId: string
-  ) {
+  async lockReconciliation(reconciliationId: string, userId: string, businessId: string) {
     // Lock the reconciliation to prevent further changes
     return {
       id: reconciliationId,
@@ -191,12 +188,7 @@ export class ReconciliationService {
     };
   }
 
-  async getReconciliationHistory(
-    accountId: string,
-    businessId: string,
-    page = 1,
-    limit = 10
-  ) {
+  async getReconciliationHistory(accountId: string, businessId: string, page = 1, limit = 10) {
     // Return reconciliation history for the account
     return {
       reconciliations: [],
@@ -209,10 +201,7 @@ export class ReconciliationService {
     };
   }
 
-  async generateReconciliationReport(
-    reconciliationId: string,
-    businessId: string
-  ) {
+  async generateReconciliationReport(reconciliationId: string, businessId: string) {
     // Generate a reconciliation report
     return {
       id: reconciliationId,
@@ -227,11 +216,7 @@ export class ReconciliationService {
     };
   }
 
-  async exportReconciliationReport(
-    reconciliationId: string,
-    format: string,
-    businessId: string
-  ) {
+  async exportReconciliationReport(reconciliationId: string, format: string, businessId: string) {
     // Export reconciliation report in specified format
     return {
       id: reconciliationId,
@@ -283,4 +268,4 @@ export class ReconciliationService {
   private generateId(): string {
     return Math.random().toString(36).substr(2, 9);
   }
-} 
+}

@@ -1,325 +1,329 @@
 import axios from 'axios';
-import { useToast } from '../contexts/ToastContext';
+import { createStandaloneToast } from '@chakra-ui/toast';
+
+// Create standalone toast instance
+const { toast } = createStandaloneToast();
 
 // Create axios instance with default configuration
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
   timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor for adding auth token and logging
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    // Add auth token if available
+    const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Add request ID for tracking
+    config.metadata = { startTime: new Date() };
+
+    // Log request in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
+        data: config.data,
+        params: config.params,
+      });
+    }
+
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor for handling responses and errors
 api.interceptors.response.use(
   (response) => {
+    // Calculate response time
+    const endTime = new Date();
+    const duration = endTime - response.config.metadata.startTime;
+
+    // Log response in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
+        status: response.status,
+        duration: `${duration}ms`,
+        data: response.data,
+      });
+    }
+
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle 401 Unauthorized - token expired
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        // Try to refresh token
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-          const response = await axios.post('/auth/refresh', {
-            refreshToken,
+    // Calculate response time for errors
+    const endTime = new Date();
+    const duration = originalRequest?.metadata?.startTime 
+      ? `${endTime - originalRequest.metadata.startTime}ms`
+      : 'unknown';
+
+    // Log error in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`❌ API Error: ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url}`, {
+        status: error.response?.status,
+        duration,
+        error: error.message,
+        response: error.response?.data,
+      });
+    }
+
+    // Handle different types of errors
+    if (error.response) {
+      // Server responded with error status
+      const { status, data } = error.response;
+
+      switch (status) {
+        case 401:
+          // Unauthorized - clear token and redirect to login
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          
+          // Temporarily disable redirect for development/testing
+          if (process.env.NODE_ENV === 'production') {
+            window.location.href = '/login';
+          }
+          
+          toast({
+            title: 'Session Expired',
+            description: 'Please log in again to continue.',
+            status: 'warning',
+            duration: 5000,
+            isClosable: true,
           });
-          
-          const { token } = response.data;
-          localStorage.setItem('token', token);
-          
-          // Retry original request with new token
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        }
-      } catch (refreshError) {
-        // Refresh failed, redirect to login
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
+          break;
+
+        case 403:
+          // Forbidden
+          toast({
+            title: 'Access Denied',
+            description: 'You do not have permission to perform this action.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+          break;
+
+        case 404:
+          // Not Found
+          toast({
+            title: 'Resource Not Found',
+            description: 'The requested resource could not be found.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+          break;
+
+        case 422:
+          // Validation Error
+          const validationErrors = data?.errors || data?.message || 'Validation failed';
+          toast({
+            title: 'Validation Error',
+            description: Array.isArray(validationErrors) 
+              ? validationErrors.join(', ') 
+              : validationErrors,
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+          break;
+
+        case 429:
+          // Rate Limited
+          toast({
+            title: 'Too Many Requests',
+            description: 'Please wait a moment before trying again.',
+            status: 'warning',
+            duration: 5000,
+            isClosable: true,
+          });
+          break;
+
+        case 500:
+          // Server Error
+          toast({
+            title: 'Server Error',
+            description: 'An unexpected error occurred. Please try again later.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+          break;
+
+        default:
+          // Other server errors
+          toast({
+            title: 'Error',
+            description: data?.message || 'An error occurred while processing your request.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
       }
+    } else if (error.request) {
+      // Network error
+      toast({
+        title: 'Network Error',
+        description: 'Unable to connect to the server. Please check your internet connection.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } else {
+      // Other errors
+      toast({
+        title: 'Error',
+        description: error.message || 'An unexpected error occurred.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     }
 
     return Promise.reject(error);
   }
 );
 
-// Error response format
-export const createErrorResponse = (error) => {
-  const response = {
-    success: false,
-    message: 'An unexpected error occurred',
-    errors: [],
-    statusCode: 500,
-    timestamp: new Date().toISOString(),
-  };
+// Retry logic for failed requests
+const retryRequest = async (error, retryCount = 0, maxRetries = 3) => {
+  const originalRequest = error.config;
 
-  if (error.response) {
-    // Server responded with error status
-    response.statusCode = error.response.status;
-    response.message = error.response.data?.message || getErrorMessage(error.response.status);
-    response.errors = error.response.data?.errors || [];
-  } else if (error.request) {
-    // Network error
-    response.statusCode = 0;
-    response.message = 'Network error. Please check your internet connection.';
-  } else {
-    // Other error
-    response.message = error.message || 'An unexpected error occurred';
+  // Don't retry if we've exceeded max retries or if it's a client error (except 429)
+  if (retryCount >= maxRetries || (error.response?.status >= 400 && error.response?.status !== 429)) {
+    return Promise.reject(error);
   }
 
-  return response;
-};
-
-// Get user-friendly error messages
-const getErrorMessage = (statusCode) => {
-  switch (statusCode) {
-    case 400:
-      return 'Invalid request. Please check your input and try again.';
-    case 401:
-      return 'Authentication required. Please log in again.';
-    case 403:
-      return 'Access denied. You do not have permission to perform this action.';
-    case 404:
-      return 'The requested resource was not found.';
-    case 409:
-      return 'Conflict detected. The resource already exists or has been modified.';
-    case 422:
-      return 'Validation error. Please check your input and try again.';
-    case 429:
-      return 'Too many requests. Please wait a moment and try again.';
-    case 500:
-      return 'Server error. Please try again later.';
-    case 502:
-      return 'Bad gateway. Please try again later.';
-    case 503:
-      return 'Service unavailable. Please try again later.';
-    default:
-      return 'An unexpected error occurred.';
-  }
-};
-
-// Retry mechanism for failed requests
-const retryRequest = async (fn, retries = 3, delay = 1000) => {
-  try {
-    return await fn();
-  } catch (error) {
-    if (retries > 0 && shouldRetry(error)) {
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return retryRequest(fn, retries - 1, delay * 2);
-    }
-    throw error;
-  }
-};
-
-// Determine if request should be retried
-const shouldRetry = (error) => {
-  const retryableStatuses = [408, 429, 500, 502, 503, 504];
-  const retryableErrors = ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND'];
+  // Exponential backoff delay
+  const delay = Math.pow(2, retryCount) * 1000;
   
-  return (
-    retryableStatuses.includes(error.response?.status) ||
-    retryableErrors.includes(error.code) ||
-    error.message.includes('timeout')
-  );
+  // Wait before retrying
+  await new Promise(resolve => setTimeout(resolve, delay));
+
+  // Retry the request
+  return api(originalRequest);
 };
 
-// Enhanced API methods with error handling
-export const apiService = {
-  // GET request
-  async get(url, config = {}) {
+// Enhanced API service with retry logic
+const enhancedApi = {
+  request: async (config) => {
     try {
-      const response = await retryRequest(() => api.get(url, config));
-      return response.data;
+      return await api(config);
     } catch (error) {
-      const errorResponse = createErrorResponse(error);
-      throw errorResponse;
+      return retryRequest(error);
     }
   },
 
-  // POST request
-  async post(url, data = {}, config = {}) {
+  get: async (url, config = {}) => {
     try {
-      const response = await retryRequest(() => api.post(url, data, config));
-      return response.data;
+      return await api.get(url, config);
     } catch (error) {
-      const errorResponse = createErrorResponse(error);
-      throw errorResponse;
+      return retryRequest(error);
     }
   },
 
-  // PUT request
-  async put(url, data = {}, config = {}) {
+  post: async (url, data = {}, config = {}) => {
     try {
-      const response = await retryRequest(() => api.put(url, data, config));
-      return response.data;
+      return await api.post(url, data, config);
     } catch (error) {
-      const errorResponse = createErrorResponse(error);
-      throw errorResponse;
+      return retryRequest(error);
     }
   },
 
-  // PATCH request
-  async patch(url, data = {}, config = {}) {
+  put: async (url, data = {}, config = {}) => {
     try {
-      const response = await retryRequest(() => api.patch(url, data, config));
-      return response.data;
+      return await api.put(url, data, config);
     } catch (error) {
-      const errorResponse = createErrorResponse(error);
-      throw errorResponse;
+      return retryRequest(error);
     }
   },
 
-  // DELETE request
-  async delete(url, config = {}) {
+  patch: async (url, data = {}, config = {}) => {
     try {
-      const response = await retryRequest(() => api.delete(url, config));
-      return response.data;
+      return await api.patch(url, data, config);
     } catch (error) {
-      const errorResponse = createErrorResponse(error);
-      throw errorResponse;
+      return retryRequest(error);
     }
   },
 
-  // File upload
-  async upload(url, file, onProgress, config = {}) {
+  delete: async (url, config = {}) => {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      return await api.delete(url, config);
+    } catch (error) {
+      return retryRequest(error);
+    }
+  },
 
-      const response = await api.post(url, formData, {
+  upload: async (url, formData, config = {}) => {
+    try {
+      return await api.post(url, formData, {
         ...config,
         headers: {
-          'Content-Type': 'multipart/form-data',
           ...config.headers,
-        },
-        onUploadProgress: (progressEvent) => {
-          if (onProgress) {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-            onProgress(percentCompleted);
-          }
+          'Content-Type': 'multipart/form-data',
         },
       });
-
-      return response.data;
     } catch (error) {
-      const errorResponse = createErrorResponse(error);
-      throw errorResponse;
+      return retryRequest(error);
     }
   },
 
-  // Download file
-  async download(url, filename, config = {}) {
+  download: async (url, config = {}) => {
     try {
-      const response = await api.get(url, {
+      return await api.get(url, {
         ...config,
         responseType: 'blob',
       });
-
-      const blob = new Blob([response.data]);
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-
-      return { success: true };
     } catch (error) {
-      const errorResponse = createErrorResponse(error);
-      throw errorResponse;
+      return retryRequest(error);
     }
   },
 };
 
-// Hook for API calls with automatic error handling
-export const useApi = () => {
-  const toast = useToast();
-
-  const handleApiCall = async (apiCall, options = {}) => {
-    const {
-      showLoading = true,
-      showSuccess = true,
-      showError = true,
-      successMessage,
-      errorMessage,
-      onSuccess,
-      onError,
-    } = options;
-
-    try {
-      if (showLoading) {
-        // You can implement a loading state here
-      }
-
-      const result = await apiCall();
-
-      if (showSuccess && successMessage) {
-        toast.showSuccess(successMessage);
-      }
-
-      if (onSuccess) {
-        onSuccess(result);
-      }
-
-      return result;
-    } catch (error) {
-      if (showError) {
-        const message = errorMessage || error.message;
-        if (error.statusCode === 0) {
-          toast.showNetworkError(error);
-        } else if (error.statusCode >= 500) {
-          toast.showServerError(error);
-        } else if (error.statusCode === 422) {
-          toast.showValidationError(error.errors);
-        } else {
-          toast.showError(message);
-        }
-      }
-
-      if (onError) {
-        onError(error);
-      }
-
-      throw error;
+// Utility functions
+const apiUtils = {
+  isSuccess: (response) => response && response.status >= 200 && response.status < 300,
+  
+  getErrorMessage: (error) => {
+    if (error.response?.data?.message) {
+      return error.response.data.message;
     }
-  };
+    if (error.response?.data?.error) {
+      return error.response.data.error;
+    }
+    if (error.message) {
+      return error.message;
+    }
+    return 'An unexpected error occurred';
+  },
 
-  return {
-    get: (url, config, options) => handleApiCall(() => apiService.get(url, config), options),
-    post: (url, data, config, options) => handleApiCall(() => apiService.post(url, data, config), options),
-    put: (url, data, config, options) => handleApiCall(() => apiService.put(url, data, config), options),
-    patch: (url, data, config, options) => handleApiCall(() => apiService.patch(url, data, config), options),
-    delete: (url, config, options) => handleApiCall(() => apiService.delete(url, config), options),
-    upload: (url, file, onProgress, config, options) => 
-      handleApiCall(() => apiService.upload(url, file, onProgress, config), options),
-    download: (url, filename, config, options) => 
-      handleApiCall(() => apiService.download(url, filename, config), options),
-  };
+  getPaginationParams: (page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc') => ({
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+  }),
+
+  buildQueryString: (params) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        searchParams.append(key, value);
+      }
+    });
+    return searchParams.toString();
+  },
 };
 
-export default apiService; 
+export default enhancedApi;
+export { apiUtils }; 

@@ -59,4 +59,4 @@ export class AccountTypesController {
   createDefaults() {
     return this.accountTypesService.createDefaults();
   }
-} 
+}

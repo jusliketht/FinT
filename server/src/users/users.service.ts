@@ -5,4 +5,4 @@ export class UsersService {
   async findOne() {
     return { id: 1, username: 'dummy' };
   }
-} 
+}

@@ -42,15 +42,14 @@ export class JournalEntryService {
         const account = await prisma.account.findFirst({
           where: {
             id: line.accountId,
-            OR: [
-              { userId: data.userId },
-              { businessId: data.businessId }
-            ]
-          }
+            OR: [{ userId: data.userId }, { businessId: data.businessId }],
+          },
         });
 
         if (!account) {
-          throw new BadRequestException(`Account with ID ${line.accountId} not found or access denied`);
+          throw new BadRequestException(
+            `Account with ID ${line.accountId} not found or access denied`
+          );
         }
 
         if (!account.isActive) {
@@ -75,16 +74,16 @@ export class JournalEntryService {
               description: line.description,
               debit: line.debit,
               credit: line.credit,
-            }))
-          }
+            })),
+          },
         },
         include: {
           Lines: {
             include: {
-              Account: true
-            }
-          }
-        }
+              Account: true,
+            },
+          },
+        },
       });
 
       this.logger.log(`Created journal entry: ${journalEntry.description} (${journalEntry.id})`);
@@ -109,10 +108,7 @@ export class JournalEntryService {
   ): Promise<(JournalEntry & { Lines: (JournalEntryLine & { Account: any })[] })[]> {
     try {
       const whereClause: any = {
-        OR: [
-          { userId: userId },
-          { businessId: businessId }
-        ]
+        OR: [{ userId: userId }, { businessId: businessId }],
       };
 
       if (filters?.startDate || filters?.endDate) {
@@ -128,26 +124,23 @@ export class JournalEntryService {
       if (filters?.accountId) {
         whereClause.Lines = {
           some: {
-            accountId: filters.accountId
-          }
+            accountId: filters.accountId,
+          },
         };
       }
 
       const journalEntries = await prisma.journalEntry.findMany({
         where: whereClause,
-        orderBy: [
-          { date: 'desc' },
-          { createdAt: 'desc' }
-        ],
+        orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
         take: filters?.limit || 50,
         skip: filters?.offset || 0,
         include: {
           Lines: {
             include: {
-              Account: true
-            }
-          }
-        }
+              Account: true,
+            },
+          },
+        },
       });
 
       return journalEntries;
@@ -157,23 +150,24 @@ export class JournalEntryService {
     }
   }
 
-  async getJournalEntry(id: string, userId: string, businessId?: string): Promise<JournalEntry & { Lines: (JournalEntryLine & { Account: any })[] }> {
+  async getJournalEntry(
+    id: string,
+    userId: string,
+    businessId?: string
+  ): Promise<JournalEntry & { Lines: (JournalEntryLine & { Account: any })[] }> {
     try {
       const journalEntry = await prisma.journalEntry.findFirst({
         where: {
           id: id,
-          OR: [
-            { userId: userId },
-            { businessId: businessId }
-          ]
+          OR: [{ userId: userId }, { businessId: businessId }],
         },
         include: {
           Lines: {
             include: {
-              Account: true
-            }
-          }
-        }
+              Account: true,
+            },
+          },
+        },
       });
 
       if (!journalEntry) {
@@ -230,15 +224,14 @@ export class JournalEntryService {
           const account = await prisma.account.findFirst({
             where: {
               id: line.accountId,
-              OR: [
-                { userId: userId },
-                { businessId: businessId }
-              ]
-            }
+              OR: [{ userId: userId }, { businessId: businessId }],
+            },
           });
 
           if (!account) {
-            throw new BadRequestException(`Account with ID ${line.accountId} not found or access denied`);
+            throw new BadRequestException(
+              `Account with ID ${line.accountId} not found or access denied`
+            );
           }
         }
       }
@@ -253,15 +246,15 @@ export class JournalEntryService {
           status: data.status,
         },
         include: {
-          Lines: true
-        }
+          Lines: true,
+        },
       });
 
       // Update lines if provided
       if (data.lines) {
         // Delete existing lines
         await prisma.journalEntryLine.deleteMany({
-          where: { journalEntryId: id }
+          where: { journalEntryId: id },
         });
 
         // Create new lines
@@ -273,7 +266,7 @@ export class JournalEntryService {
             description: line.description,
             debit: line.debit,
             credit: line.credit,
-          }))
+          })),
         });
 
         // Fetch updated entry with lines
@@ -300,7 +293,7 @@ export class JournalEntryService {
 
       // Delete journal entry (lines will be deleted automatically due to cascade)
       await prisma.journalEntry.delete({
-        where: { id: id }
+        where: { id: id },
       });
 
       this.logger.log(`Deleted journal entry: ${existingEntry.description} (${existingEntry.id})`);
@@ -326,7 +319,7 @@ export class JournalEntryService {
       // Update status to POSTED
       const updatedEntry = await prisma.journalEntry.update({
         where: { id: id },
-        data: { status: 'POSTED' }
+        data: { status: 'POSTED' },
       });
 
       this.logger.log(`Posted journal entry: ${updatedEntry.description} (${updatedEntry.id})`);
@@ -349,7 +342,7 @@ export class JournalEntryService {
       // Update status to VOID
       const updatedEntry = await prisma.journalEntry.update({
         where: { id: id },
-        data: { status: 'VOID' }
+        data: { status: 'VOID' },
       });
 
       this.logger.log(`Voided journal entry: ${updatedEntry.description} (${updatedEntry.id})`);
@@ -370,25 +363,24 @@ export class JournalEntryService {
       limit?: number;
       offset?: number;
     }
-  ): Promise<Array<{
-    date: Date;
-    description: string;
-    referenceNumber?: string;
-    debit: number;
-    credit: number;
-    balance: number;
-    journalEntryId: string;
-  }>> {
+  ): Promise<
+    Array<{
+      date: Date;
+      description: string;
+      referenceNumber?: string;
+      debit: number;
+      credit: number;
+      balance: number;
+      journalEntryId: string;
+    }>
+  > {
     try {
       // Validate account access
       const account = await prisma.account.findFirst({
         where: {
           id: accountId,
-          OR: [
-            { userId: userId },
-            { businessId: businessId }
-          ]
-        }
+          OR: [{ userId: userId }, { businessId: businessId }],
+        },
       });
 
       if (!account) {
@@ -399,11 +391,8 @@ export class JournalEntryService {
         accountId: accountId,
         JournalEntry: {
           status: 'POSTED',
-          OR: [
-            { userId: userId },
-            { businessId: businessId }
-          ]
-        }
+          OR: [{ userId: userId }, { businessId: businessId }],
+        },
       };
 
       if (filters?.startDate || filters?.endDate) {
@@ -414,15 +403,12 @@ export class JournalEntryService {
 
       const ledgerEntries = await prisma.journalEntryLine.findMany({
         where: whereClause,
-        orderBy: [
-          { JournalEntry: { date: 'asc' } },
-          { JournalEntry: { createdAt: 'asc' } }
-        ],
+        orderBy: [{ JournalEntry: { date: 'asc' } }, { JournalEntry: { createdAt: 'asc' } }],
         take: filters?.limit || 100,
         skip: filters?.offset || 0,
         include: {
-          JournalEntry: true
-        }
+          JournalEntry: true,
+        },
       });
 
       // Calculate running balance
@@ -455,4 +441,4 @@ export class JournalEntryService {
   private generateId(): string {
     return Math.random().toString(36).substr(2, 9);
   }
-} 
+}

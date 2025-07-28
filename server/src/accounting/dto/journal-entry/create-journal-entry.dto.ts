@@ -1,4 +1,13 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, IsNumber, IsDateString, ValidateNested, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+  IsNumber,
+  IsDateString,
+  ValidateNested,
+  IsUUID,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -53,4 +62,4 @@ export class CreateJournalEntryDto {
   @ValidateNested({ each: true })
   @Type(() => JournalEntryLineDto)
   lines: JournalEntryLineDto[];
-} 
+}

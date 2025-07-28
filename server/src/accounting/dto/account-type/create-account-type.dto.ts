@@ -16,4 +16,4 @@ export class CreateAccountTypeDto {
   @IsString()
   @IsOptional()
   description?: string;
-} 
+}

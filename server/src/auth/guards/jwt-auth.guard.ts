@@ -12,7 +12,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     // Development mode bypass
     const isDev = process.env.NODE_ENV !== 'production';
     const bypassAuth = isDev && process.env.BYPASS_AUTH === 'true';
-    
+
     if (bypassAuth) {
       const request = context.switchToHttp().getRequest();
       // Create a mock user with admin privileges for development
@@ -23,7 +23,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       };
       return true;
     }
-    
+
     return super.canActivate(context);
   }
-} 
+}

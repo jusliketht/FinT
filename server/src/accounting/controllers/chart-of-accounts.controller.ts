@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 // import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { ChartOfAccountsService } from '../services/chart-of-accounts.service';
@@ -15,7 +26,8 @@ export class ChartOfAccountsController {
   @ApiResponse({ status: 201, description: 'Account created successfully' })
   async createAccount(
     @Request() req,
-    @Body() data: {
+    @Body()
+    data: {
       code: string;
       name: string;
       type: string;
@@ -25,7 +37,7 @@ export class ChartOfAccountsController {
   ) {
     return this.chartOfAccountsService.createAccount({
       ...data,
-      userId: req.user?.id || 'test-user-id'
+      userId: req.user?.id || 'test-user-id',
     });
   }
 
@@ -75,7 +87,8 @@ export class ChartOfAccountsController {
   @ApiResponse({ status: 200, description: 'Account updated successfully' })
   async updateAccount(
     @Param('id') id: string,
-    @Body() data: {
+    @Body()
+    data: {
       code?: string;
       name?: string;
       type?: string;
@@ -94,6 +107,4 @@ export class ChartOfAccountsController {
     await this.chartOfAccountsService.deleteAccount(id, req.user?.id || 'test-user-id');
     return { message: 'Account deleted successfully' };
   }
-
-
-} 
+}

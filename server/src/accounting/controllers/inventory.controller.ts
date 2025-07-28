@@ -36,4 +36,4 @@ export class InventoryController {
   async getLocations(@Query('businessId') businessId: string) {
     return this.inventoryService.getLocations(businessId);
   }
-} 
+}

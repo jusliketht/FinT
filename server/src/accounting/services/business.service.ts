@@ -15,10 +15,12 @@ export class BusinessService {
       data: {
         ...createBusinessDto,
         Users: {
-          create: [{
-            userId: createBusinessDto.ownerId,
-            role: 'ADMIN',
-          }],
+          create: [
+            {
+              userId: createBusinessDto.ownerId,
+              role: 'ADMIN',
+            },
+          ],
         },
       },
     });
@@ -68,7 +70,7 @@ export class BusinessService {
       { code: '22200', name: 'Bank Overdraft', type: 'liability' },
 
       // Equity (3000-3999)
-      { code: '31100', name: 'Owner\'s Capital', type: 'equity' },
+      { code: '31100', name: "Owner's Capital", type: 'equity' },
       { code: '31200', name: 'Retained Earnings', type: 'equity' },
       { code: '31300', name: 'Drawings', type: 'equity' },
       { code: '31400', name: 'Current Year Earnings', type: 'equity' },
@@ -115,11 +117,11 @@ export class BusinessService {
       { code: '53200', name: 'Loan Interest', type: 'expense' },
       { code: '54100', name: 'Depreciation on Office Equipment', type: 'expense' },
       { code: '54200', name: 'Depreciation on Software', type: 'expense' },
-      { code: '54300', name: 'Depreciation on Furniture', type: 'expense' }
+      { code: '54300', name: 'Depreciation on Furniture', type: 'expense' },
     ];
 
     // Create accounts for the business
-    const accountPromises = standardAccounts.map(account => 
+    const accountPromises = standardAccounts.map(account =>
       prisma.account.create({
         data: {
           code: account.code,
@@ -128,8 +130,8 @@ export class BusinessService {
           userId: userId,
           businessId: businessId,
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       })
     );
 
@@ -206,4 +208,4 @@ export class BusinessService {
     });
     return { message: 'User removed from business successfully' };
   }
-} 
+}

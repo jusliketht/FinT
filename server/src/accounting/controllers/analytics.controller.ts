@@ -16,7 +16,10 @@ export class AnalyticsController {
   }
 
   @Get('cash-flow')
-  async getCashFlowReport(@Query('businessId') businessId: string, @Query('period') period?: string) {
+  async getCashFlowReport(
+    @Query('businessId') businessId: string,
+    @Query('period') period?: string
+  ) {
     if (!businessId) {
       throw new Error('businessId is required');
     }
@@ -24,7 +27,10 @@ export class AnalyticsController {
   }
 
   @Get('profitability')
-  async getProfitabilityAnalysis(@Query('businessId') businessId: string, @Query('period') period?: string) {
+  async getProfitabilityAnalysis(
+    @Query('businessId') businessId: string,
+    @Query('period') period?: string
+  ) {
     if (!businessId) {
       throw new Error('businessId is required');
     }
@@ -50,4 +56,4 @@ export class AnalyticsController {
     }
     return this.analyticsService.generateBusinessMetrics(businessId);
   }
-} 
+}

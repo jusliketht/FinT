@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+  Query,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { BusinessService } from '../services/business.service';
 import { UserRole, BusinessType } from '../../constants/enums';
@@ -22,7 +33,7 @@ export class BusinessController {
   create(@Body() createBusinessDto: CreateBusinessDto, @Request() req) {
     return this.businessService.create({
       ...createBusinessDto,
-      ownerId: req.user.id
+      ownerId: req.user.id,
     });
   }
 
@@ -69,7 +80,11 @@ export class BusinessController {
   @Roles(UserRole.Admin, UserRole.BusinessOwner)
   @ApiOperation({ summary: 'Add a user to a business' })
   @ApiResponse({ status: 200, description: 'User added to business successfully' })
-  addUser(@Param('id') id: string, @Param('userId') userId: string, @Query('role') role: string = 'VIEWER') {
+  addUser(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Query('role') role: string = 'VIEWER'
+  ) {
     return this.businessService.addUser(id, userId, role);
   }
 
@@ -80,4 +95,4 @@ export class BusinessController {
   removeUser(@Param('id') id: string, @Param('userId') userId: string) {
     return this.businessService.removeUser(id, userId);
   }
-} 
+}

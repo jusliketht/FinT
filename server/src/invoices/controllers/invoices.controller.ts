@@ -1,15 +1,15 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Put, 
-  Delete, 
-  Body, 
-  Param, 
-  Query, 
-  UseGuards, 
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
   Request,
-  BadRequestException 
+  BadRequestException,
 } from '@nestjs/common';
 import { InvoicesService } from '../services/invoices.service';
 import { CreateInvoiceDto } from '../dto/create-invoice.dto';
@@ -21,20 +21,13 @@ export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
   @Post()
-  async createInvoice(
-    @Body() createInvoiceDto: CreateInvoiceDto,
-    @Request() req: any
-  ) {
+  async createInvoice(@Body() createInvoiceDto: CreateInvoiceDto, @Request() req: any) {
     const { businessId } = req.user;
     if (!businessId) {
       throw new BadRequestException('Business ID is required');
     }
 
-    return await this.invoicesService.createInvoice(
-      createInvoiceDto,
-      req.user.id,
-      businessId
-    );
+    return await this.invoicesService.createInvoice(createInvoiceDto, req.user.id, businessId);
   }
 
   @Get()
@@ -68,10 +61,7 @@ export class InvoicesController {
   }
 
   @Get(':id')
-  async getInvoiceById(
-    @Param('id') id: string,
-    @Request() req: any
-  ) {
+  async getInvoiceById(@Param('id') id: string, @Request() req: any) {
     const { businessId } = req.user;
     if (!businessId) {
       throw new BadRequestException('Business ID is required');
@@ -110,10 +100,7 @@ export class InvoicesController {
   }
 
   @Delete(':id')
-  async deleteInvoice(
-    @Param('id') id: string,
-    @Request() req: any
-  ) {
+  async deleteInvoice(@Param('id') id: string, @Request() req: any) {
     const { businessId } = req.user;
     if (!businessId) {
       throw new BadRequestException('Business ID is required');
@@ -122,4 +109,4 @@ export class InvoicesController {
     await this.invoicesService.deleteInvoice(id, businessId);
     return { message: 'Invoice deleted successfully' };
   }
-} 
+}

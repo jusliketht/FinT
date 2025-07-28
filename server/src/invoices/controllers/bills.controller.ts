@@ -1,15 +1,15 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Put, 
-  Delete, 
-  Body, 
-  Param, 
-  Query, 
-  UseGuards, 
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
   Request,
-  BadRequestException 
+  BadRequestException,
 } from '@nestjs/common';
 import { BillsService } from '../services/bills.service';
 import { CreateBillDto } from '../dto/create-bill.dto';
@@ -21,20 +21,13 @@ export class BillsController {
   constructor(private readonly billsService: BillsService) {}
 
   @Post()
-  async createBill(
-    @Body() createBillDto: CreateBillDto,
-    @Request() req: any
-  ) {
+  async createBill(@Body() createBillDto: CreateBillDto, @Request() req: any) {
     const { businessId } = req.user;
     if (!businessId) {
       throw new BadRequestException('Business ID is required');
     }
 
-    return await this.billsService.createBill(
-      createBillDto,
-      req.user.id,
-      businessId
-    );
+    return await this.billsService.createBill(createBillDto, req.user.id, businessId);
   }
 
   @Get()
@@ -68,10 +61,7 @@ export class BillsController {
   }
 
   @Get(':id')
-  async getBillById(
-    @Param('id') id: string,
-    @Request() req: any
-  ) {
+  async getBillById(@Param('id') id: string, @Request() req: any) {
     const { businessId } = req.user;
     if (!businessId) {
       throw new BadRequestException('Business ID is required');
@@ -110,10 +100,7 @@ export class BillsController {
   }
 
   @Delete(':id')
-  async deleteBill(
-    @Param('id') id: string,
-    @Request() req: any
-  ) {
+  async deleteBill(@Param('id') id: string, @Request() req: any) {
     const { businessId } = req.user;
     if (!businessId) {
       throw new BadRequestException('Business ID is required');
@@ -122,4 +109,4 @@ export class BillsController {
     await this.billsService.deleteBill(id, businessId);
     return { message: 'Bill deleted successfully' };
   }
-} 
+}

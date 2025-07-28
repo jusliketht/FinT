@@ -72,15 +72,6 @@ const TransactionList = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  useEffect(() => {
-    loadTransactions();
-  }, [loadTransactions]);
-
-  useEffect(() => {
-    // Reset to first page when filters change
-    setPagination(prev => ({ ...prev, page: 1 }));
-  }, [searchQuery, dateRange, transactionType, category, personEntity, reconciliationStatus, sortBy, sortOrder]);
-
   const loadTransactions = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -134,6 +125,15 @@ const TransactionList = () => {
       setLoading(false);
     }
   }, [selectedBusiness, searchQuery, dateRange, transactionType, category, personEntity, reconciliationStatus, sortBy, sortOrder, pagination.page, pagination.limit, toast]);
+
+  useEffect(() => {
+    loadTransactions();
+  }, [loadTransactions]);
+
+  useEffect(() => {
+    // Reset to first page when filters change
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, [searchQuery, dateRange, transactionType, category, personEntity, reconciliationStatus, sortBy, sortOrder]);
 
   const handleEdit = (transaction) => {
     openEditTransaction(transaction);

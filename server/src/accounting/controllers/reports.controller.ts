@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
 import { ReportsService } from '../services/reports.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
@@ -28,7 +22,7 @@ export class ReportsController {
     const end = endDate ? new Date(endDate) : undefined;
     const pageNum = page ? parseInt(page) : 1;
     const limitNum = limit ? parseInt(limit) : 20;
-    
+
     return this.reportsService.generateGeneralLedger(
       req.user.id,
       businessId || req.user.businessId,
@@ -102,4 +96,4 @@ export class ReportsController {
       end
     );
   }
-} 
+}

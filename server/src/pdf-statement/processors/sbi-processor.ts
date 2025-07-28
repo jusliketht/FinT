@@ -1,7 +1,8 @@
 import { Transaction } from '../pdf-statement.service';
 
 export class SbiProcessor {
-  private readonly transactionPattern = /\d{2}\/\d{2}\/\d{4}\s+([^\s]+(?:\s+[^\s]+)*?)\s+([\d,]+\.\d{2})/g;
+  private readonly transactionPattern =
+    /\d{2}\/\d{2}\/\d{4}\s+([^\s]+(?:\s+[^\s]+)*?)\s+([\d,]+\.\d{2})/g;
   private readonly datePattern = /(\d{2})\/(\d{2})\/(\d{4})/;
   private readonly amountPattern = /([\d,]+\.\d{2})/;
 
@@ -53,7 +54,8 @@ export class SbiProcessor {
       const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
 
       // Extract description (everything between date and amount)
-      const dateEndIndex = line.indexOf(`${day}/${month}/${year}`) + `${day}/${month}/${year}`.length;
+      const dateEndIndex =
+        line.indexOf(`${day}/${month}/${year}`) + `${day}/${month}/${year}`.length;
       const amountMatch = line.match(this.amountPattern);
       if (!amountMatch) {
         return null;
@@ -108,14 +110,18 @@ export class SbiProcessor {
    */
   private determineTransactionType(line: string, amount: number): 'credit' | 'debit' {
     const lowerLine = line.toLowerCase();
-    
+
     // Look for credit indicators
     if (lowerLine.includes('cr') || lowerLine.includes('credit') || lowerLine.includes('deposit')) {
       return 'credit';
     }
-    
+
     // Look for debit indicators
-    if (lowerLine.includes('dr') || lowerLine.includes('debit') || lowerLine.includes('withdrawal')) {
+    if (
+      lowerLine.includes('dr') ||
+      lowerLine.includes('debit') ||
+      lowerLine.includes('withdrawal')
+    ) {
       return 'debit';
     }
 
@@ -132,4 +138,4 @@ export class SbiProcessor {
       .replace(/[^\w\s\-\.]/g, '') // Remove special characters except spaces, hyphens, and dots
       .trim();
   }
-} 
+}

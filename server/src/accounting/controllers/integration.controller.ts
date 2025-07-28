@@ -36,4 +36,4 @@ export class IntegrationController {
   async getIntegrationStatus(@Body() data: { businessId: string }) {
     return this.integrationService.getIntegrationStatus(data.businessId);
   }
-} 
+}

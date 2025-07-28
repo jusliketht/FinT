@@ -12,11 +12,7 @@ export class AuthController {
   }
 
   @Post('register')
-  async register(@Body() registerDto: {
-    name: string;
-    email: string;
-    password: string;
-  }) {
+  async register(@Body() registerDto: { name: string; email: string; password: string }) {
     return this.authService.register(registerDto);
   }
 
@@ -25,4 +21,4 @@ export class AuthController {
   async getProfile(@Request() req) {
     return this.authService.getProfile(req.user.id);
   }
-} 
+}

@@ -29,15 +29,9 @@ export class ReportsService {
       // Get all accounts
       const accounts = await prisma.account.findMany({
         where: {
-          OR: [
-            { userId: userId },
-            { businessId: businessId }
-          ]
+          OR: [{ userId: userId }, { businessId: businessId }],
         },
-        orderBy: [
-          { type: 'asc' },
-          { code: 'asc' }
-        ]
+        orderBy: [{ type: 'asc' }, { code: 'asc' }],
       });
 
       const trialBalanceAccounts = [];
@@ -46,7 +40,7 @@ export class ReportsService {
 
       for (const account of accounts) {
         const balance = await this.getAccountBalance(account.id, userId, businessId, asOfDate);
-        
+
         let debitBalance = 0;
         let creditBalance = 0;
 
@@ -171,8 +165,20 @@ export class ReportsService {
     };
   }> {
     try {
-      const revenue = await this.getAccountsByTypeForPeriod(userId, 'revenue', businessId, startDate, endDate);
-      const expenses = await this.getAccountsByTypeForPeriod(userId, 'expense', businessId, startDate, endDate);
+      const revenue = await this.getAccountsByTypeForPeriod(
+        userId,
+        'revenue',
+        businessId,
+        startDate,
+        endDate
+      );
+      const expenses = await this.getAccountsByTypeForPeriod(
+        userId,
+        'expense',
+        businessId,
+        startDate,
+        endDate
+      );
 
       const totalRevenue = revenue.reduce((sum, account) => sum + account.amount, 0);
       const totalExpenses = expenses.reduce((sum, account) => sum + account.amount, 0);
@@ -228,13 +234,10 @@ export class ReportsService {
   }> {
     try {
       const skip = (page - 1) * limit;
-      
+
       // Build where clause
       const where: any = {
-        OR: [
-          { userId: userId },
-          { businessId: businessId }
-        ]
+        OR: [{ userId: userId }, { businessId: businessId }],
       };
 
       if (accountId) {
@@ -250,7 +253,7 @@ export class ReportsService {
       if (search) {
         where.OR = [
           { description: { contains: search, mode: 'insensitive' } },
-          { reference: { contains: search, mode: 'insensitive' } }
+          { reference: { contains: search, mode: 'insensitive' } },
         ];
       }
 
@@ -265,17 +268,14 @@ export class ReportsService {
                 code: true,
                 name: true,
                 type: true,
-              }
-            }
+              },
+            },
           },
-          orderBy: [
-            { date: 'desc' },
-            { createdAt: 'desc' }
-          ],
+          orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
           skip,
           take: limit,
         }),
-        prisma.transaction.count({ where })
+        prisma.transaction.count({ where }),
       ]);
 
       // Calculate running balance
@@ -370,10 +370,7 @@ export class ReportsService {
       // In a real application, you would categorize transactions based on business rules
       const transactions = await prisma.transaction.findMany({
         where: {
-          OR: [
-            { userId: userId },
-            { businessId: businessId }
-          ],
+          OR: [{ userId: userId }, { businessId: businessId }],
           date: {
             gte: startDate || new Date(0),
             lte: endDate || new Date(),
@@ -387,8 +384,8 @@ export class ReportsService {
       const financingActivities = [];
 
       let netOperatingCashFlow = 0;
-      let netInvestingCashFlow = 0;
-      let netFinancingCashFlow = 0;
+      const netInvestingCashFlow = 0;
+      const netFinancingCashFlow = 0;
 
       for (const transaction of transactions) {
         // Simplified categorization - in practice, you'd use account types and categories
@@ -440,10 +437,7 @@ export class ReportsService {
       // Get balance from transactions
       const where: any = {
         accountId: accountId,
-        OR: [
-          { userId: userId },
-          { businessId: businessId }
-        ]
+        OR: [{ userId: userId }, { businessId: businessId }],
       };
 
       if (asOfDate) {
@@ -452,7 +446,7 @@ export class ReportsService {
 
       const transactions = await prisma.transaction.findMany({
         where,
-        select: { amount: true, type: true }
+        select: { amount: true, type: true },
       });
 
       let balance = 0;
@@ -480,22 +474,21 @@ export class ReportsService {
     type: string,
     businessId?: string,
     asOfDate?: Date
-  ): Promise<Array<{
-    id: string;
-    code: string;
-    name: string;
-    balance: number;
-  }>> {
+  ): Promise<
+    Array<{
+      id: string;
+      code: string;
+      name: string;
+      balance: number;
+    }>
+  > {
     try {
       const accounts = await prisma.account.findMany({
         where: {
           type: type,
-          OR: [
-            { userId: userId },
-            { businessId: businessId }
-          ]
+          OR: [{ userId: userId }, { businessId: businessId }],
         },
-        orderBy: { code: 'asc' }
+        orderBy: { code: 'asc' },
       });
 
       const accountsWithBalance = [];
@@ -522,27 +515,32 @@ export class ReportsService {
     businessId?: string,
     startDate?: Date,
     endDate?: Date
-  ): Promise<Array<{
-    id: string;
-    code: string;
-    name: string;
-    amount: number;
-  }>> {
+  ): Promise<
+    Array<{
+      id: string;
+      code: string;
+      name: string;
+      amount: number;
+    }>
+  > {
     try {
       const accounts = await prisma.account.findMany({
         where: {
           type: type,
-          OR: [
-            { userId: userId },
-            { businessId: businessId }
-          ]
+          OR: [{ userId: userId }, { businessId: businessId }],
         },
-        orderBy: { code: 'asc' }
+        orderBy: { code: 'asc' },
       });
 
       const accountsWithAmount = [];
       for (const account of accounts) {
-        const amount = await this.getAccountBalanceForPeriod(account.id, userId, businessId, startDate, endDate);
+        const amount = await this.getAccountBalanceForPeriod(
+          account.id,
+          userId,
+          businessId,
+          startDate,
+          endDate
+        );
         if (amount !== 0) {
           accountsWithAmount.push({
             id: account.id,
@@ -570,10 +568,7 @@ export class ReportsService {
     try {
       const where: any = {
         accountId: accountId,
-        OR: [
-          { userId: userId },
-          { businessId: businessId }
-        ]
+        OR: [{ userId: userId }, { businessId: businessId }],
       };
 
       if (startDate || endDate) {
@@ -584,7 +579,7 @@ export class ReportsService {
 
       const transactions = await prisma.transaction.findMany({
         where,
-        select: { amount: true, type: true }
+        select: { amount: true, type: true },
       });
 
       let balance = 0;
@@ -604,4 +599,4 @@ export class ReportsService {
       return 0;
     }
   }
-} 
+}

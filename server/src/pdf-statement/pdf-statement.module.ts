@@ -7,4 +7,4 @@ import { PdfStatementService } from './pdf-statement.service';
   providers: [PdfStatementService],
   exports: [PdfStatementService],
 })
-export class PdfStatementModule {} 
+export class PdfStatementModule {}

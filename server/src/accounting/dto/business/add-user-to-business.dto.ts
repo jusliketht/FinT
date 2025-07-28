@@ -4,7 +4,7 @@ export enum UserRole {
   ADMIN = 'ADMIN',
   BUSINESS_OWNER = 'BUSINESS_OWNER',
   ACCOUNTANT = 'ACCOUNTANT',
-  VIEWER = 'VIEWER'
+  VIEWER = 'VIEWER',
 }
 
 export class AddUserToBusinessDto {
@@ -14,4 +14,4 @@ export class AddUserToBusinessDto {
 
   @IsEnum(UserRole)
   role: UserRole;
-} 
+}

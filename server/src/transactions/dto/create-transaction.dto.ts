@@ -1,11 +1,19 @@
-import { IsDateString, IsString, IsNotEmpty, IsNumber, IsPositive, IsEnum, IsOptional } from 'class-validator';
+import {
+  IsDateString,
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export enum TransactionType {
   INCOME = 'income',
   EXPENSE = 'expense',
   TRANSFER = 'transfer',
-  ADJUSTMENT = 'adjustment'
+  ADJUSTMENT = 'adjustment',
 }
 
 export class CreateTransactionDto {
@@ -52,4 +60,4 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsString()
   thirdPartyId?: string;
-} 
+}

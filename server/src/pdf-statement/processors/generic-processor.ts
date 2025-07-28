@@ -3,8 +3,8 @@ import { Transaction } from '../pdf-statement.service';
 export class GenericProcessor {
   private readonly datePatterns = [
     /(\d{2})\/(\d{2})\/(\d{4})/g, // DD/MM/YYYY
-    /(\d{2})-(\w{3})-(\d{4})/g,  // DD-MMM-YYYY
-    /(\d{4})-(\d{2})-(\d{2})/g,  // YYYY-MM-DD
+    /(\d{2})-(\w{3})-(\d{4})/g, // DD-MMM-YYYY
+    /(\d{4})-(\d{2})-(\d{2})/g, // YYYY-MM-DD
   ];
   private readonly amountPattern = /([\d,]+\.\d{2})/g;
 
@@ -104,8 +104,18 @@ export class GenericProcessor {
    */
   private parseDateWithMonth(day: string, month: string, year: string): Date {
     const monthMap: { [key: string]: number } = {
-      'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
-      'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+      jan: 0,
+      feb: 1,
+      mar: 2,
+      apr: 3,
+      may: 4,
+      jun: 5,
+      jul: 6,
+      aug: 7,
+      sep: 8,
+      oct: 9,
+      nov: 10,
+      dec: 11,
     };
 
     const monthIndex = monthMap[month.toLowerCase()];
@@ -139,11 +149,11 @@ export class GenericProcessor {
 
     // Find the amount string in the line
     const amountStr = amount.toFixed(2);
-    
+
     // Extract text between date and amount
     const dateIndex = line.indexOf(dateStr);
     const amountIndex = line.lastIndexOf(amountStr);
-    
+
     if (dateIndex !== -1 && amountIndex !== -1) {
       const startIndex = dateIndex + dateStr.length;
       const endIndex = amountIndex;
@@ -181,7 +191,20 @@ export class GenericProcessor {
    * Get month name
    */
   private getMonthName(monthIndex: number): string {
-    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const months = [
+      'jan',
+      'feb',
+      'mar',
+      'apr',
+      'may',
+      'jun',
+      'jul',
+      'aug',
+      'sep',
+      'oct',
+      'nov',
+      'dec',
+    ];
     return months[monthIndex];
   }
 
@@ -213,14 +236,18 @@ export class GenericProcessor {
    */
   private determineTransactionType(line: string, amount: number): 'credit' | 'debit' {
     const lowerLine = line.toLowerCase();
-    
+
     // Look for credit indicators
     if (lowerLine.includes('cr') || lowerLine.includes('credit') || lowerLine.includes('deposit')) {
       return 'credit';
     }
-    
+
     // Look for debit indicators
-    if (lowerLine.includes('dr') || lowerLine.includes('debit') || lowerLine.includes('withdrawal')) {
+    if (
+      lowerLine.includes('dr') ||
+      lowerLine.includes('debit') ||
+      lowerLine.includes('withdrawal')
+    ) {
       return 'debit';
     }
 
@@ -237,4 +264,4 @@ export class GenericProcessor {
       .replace(/[^\w\s\-\.]/g, '') // Remove special characters except spaces, hyphens, and dots
       .trim();
   }
-} 
+}

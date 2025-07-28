@@ -62,7 +62,7 @@ const Register = () => {
 
       if (response.ok) {
         setUser(data.user);
-        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('authToken', data.access_token);
         showToast('Registration successful!', 'success');
         navigate('/');
       } else {

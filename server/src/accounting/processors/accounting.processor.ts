@@ -8,4 +8,4 @@ export class AccountingProcessor {
     // Process accounting transactions
     console.log('Processing transaction:', job.data);
   }
-} 
+}

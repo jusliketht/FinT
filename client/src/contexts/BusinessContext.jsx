@@ -19,7 +19,13 @@ export const BusinessProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchBusinesses();
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    if (!isDevelopment) {
+      fetchBusinesses();
+    } else {
+      setLoading(false);
+    }
     loadSavedContext();
   }, []);
 

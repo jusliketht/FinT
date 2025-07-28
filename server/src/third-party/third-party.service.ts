@@ -16,22 +16,22 @@ export class ThirdPartyService {
       businessId: createThirdPartyDto.businessId,
       userId,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
   async findAll(query: any, userId: string) {
     // Placeholder implementation
     const where: any = { userId };
-    
+
     if (query.businessId) {
       where.businessId = query.businessId;
     }
-    
+
     if (query.type) {
       where.type = query.type;
     }
-    
+
     if (query.isActive !== undefined) {
       where.isActive = query.isActive;
     }
@@ -51,9 +51,9 @@ export class ThirdPartyService {
         createdAt: new Date(),
         updatedAt: new Date(),
         _count: {
-          Transaction: 5
-        }
-      }
+          Transaction: 5,
+        },
+      },
     ];
   }
 
@@ -77,12 +77,12 @@ export class ThirdPartyService {
           id: 'trans_1',
           date: new Date(),
           amount: 1000,
-          description: 'Sample transaction'
-        }
+          description: 'Sample transaction',
+        },
       ],
       _count: {
-        Transaction: 5
-      }
+        Transaction: 5,
+      },
     };
 
     if (!thirdParty) {
@@ -106,7 +106,7 @@ export class ThirdPartyService {
       businessId: 'business_1',
       userId,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     if (!thirdParty) {
@@ -116,7 +116,7 @@ export class ThirdPartyService {
     return {
       ...thirdParty,
       ...updateThirdPartyDto,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -136,8 +136,8 @@ export class ThirdPartyService {
       createdAt: new Date(),
       updatedAt: new Date(),
       _count: {
-        Transaction: 0
-      }
+        Transaction: 0,
+      },
     };
 
     if (!thirdParty) {
@@ -149,7 +149,7 @@ export class ThirdPartyService {
       return {
         ...thirdParty,
         isActive: false,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
     }
 
@@ -171,7 +171,7 @@ export class ThirdPartyService {
       businessId: 'business_1',
       userId,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     if (!thirdParty) {
@@ -186,15 +186,15 @@ export class ThirdPartyService {
         date: new Date(),
         amount: 1000,
         description: 'Sample transaction 1',
-        thirdPartyId: id
+        thirdPartyId: id,
       },
       {
         id: 'trans_2',
         date: new Date(),
         amount: 2000,
         description: 'Sample transaction 2',
-        thirdPartyId: id
-      }
+        thirdPartyId: id,
+      },
     ];
 
     const total = transactions.length;
@@ -205,8 +205,8 @@ export class ThirdPartyService {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -219,16 +219,16 @@ export class ThirdPartyService {
       byType: {
         VENDOR: 5,
         CUSTOMER: 3,
-        SUPPLIER: 2
+        SUPPLIER: 2,
       },
       recentActivity: [
         {
           id: 'third_party_1',
           name: 'Recent Vendor',
           type: 'VENDOR',
-          lastTransaction: new Date()
-        }
-      ]
+          lastTransaction: new Date(),
+        },
+      ],
     };
   }
-} 
+}

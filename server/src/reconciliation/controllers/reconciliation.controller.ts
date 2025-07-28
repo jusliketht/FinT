@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Put,
-  Body,
-  Param,
-  Query,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Put, Body, Param, Query, Request, UseGuards } from '@nestjs/common';
 import { ReconciliationService } from '../services/reconciliation.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
@@ -20,7 +10,8 @@ export class ReconciliationController {
   @Post('auto-match')
   async performAutoMatching(
     @Request() req,
-    @Body() data: {
+    @Body()
+    data: {
       statementTransactions: any[];
       accountId: string;
       businessId?: string;
@@ -36,7 +27,8 @@ export class ReconciliationController {
   @Post('create')
   async createReconciliation(
     @Request() req,
-    @Body() data: {
+    @Body()
+    data: {
       accountId: string;
       statementDate: string;
       closingBalance: number;
@@ -52,15 +44,8 @@ export class ReconciliationController {
   }
 
   @Put(':id/lock')
-  async lockReconciliation(
-    @Request() req,
-    @Param('id') id: string
-  ) {
-    return this.reconciliationService.lockReconciliation(
-      id,
-      req.user.id,
-      req.user.businessId
-    );
+  async lockReconciliation(@Request() req, @Param('id') id: string) {
+    return this.reconciliationService.lockReconciliation(id, req.user.id, req.user.businessId);
   }
 
   @Get('history/:accountId')
@@ -76,21 +61,12 @@ export class ReconciliationController {
   }
 
   @Get('report/:id')
-  async generateReconciliationReport(
-    @Request() req,
-    @Param('id') id: string
-  ) {
-    return this.reconciliationService.generateReconciliationReport(
-      id,
-      req.user.businessId
-    );
+  async generateReconciliationReport(@Request() req, @Param('id') id: string) {
+    return this.reconciliationService.generateReconciliationReport(id, req.user.businessId);
   }
 
   @Post('create-entries')
-  async createJournalEntries(
-    @Request() req,
-    @Body() data: { transactions: any[] }
-  ) {
+  async createJournalEntries(@Request() req, @Body() data: { transactions: any[] }) {
     return this.reconciliationService.createJournalEntries(
       data.transactions,
       req.user.id,
@@ -104,11 +80,7 @@ export class ReconciliationController {
     @Param('id') id: string,
     @Query('format') format: string = 'pdf'
   ) {
-    return this.reconciliationService.exportReconciliationReport(
-      id,
-      format,
-      req.user.businessId
-    );
+    return this.reconciliationService.exportReconciliationReport(id, format, req.user.businessId);
   }
 
   @Get('stats/:accountId')
@@ -167,4 +139,4 @@ export class ReconciliationController {
       req.user.businessId
     );
   }
-} 
+}

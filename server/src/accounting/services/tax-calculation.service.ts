@@ -34,10 +34,12 @@ export interface TaxReportDto {
   fromDate: Date;
   toDate: Date;
   taxType?: string;
-  transactions: Array<any & {
-    Transaction: any;
-    TaxRate: any;
-  }>;
+  transactions: Array<
+    any & {
+      Transaction: any;
+      TaxRate: any;
+    }
+  >;
   summary: {
     totalTaxableAmount: number;
     totalTaxAmount: number;
@@ -55,32 +57,31 @@ export interface CreateTaxRateDto {
 
 @Injectable()
 export class TaxCalculationService {
-
   async calculateTax(
     amount: number,
     taxType: string,
     businessId?: string
   ): Promise<TaxCalculationDto> {
     const taxRate = await this.getApplicableTaxRate(taxType, businessId);
-    
+
     if (!taxRate) {
       return {
         taxableAmount: amount,
         taxAmount: 0,
         taxRate: 0,
-        totalAmount: amount
+        totalAmount: amount,
       };
     }
 
     const taxAmount = (amount * taxRate.rate) / 100;
-    
+
     return {
       taxableAmount: amount,
       taxAmount,
       taxRate: taxRate.rate,
       totalAmount: amount + taxAmount,
       taxRateId: taxRate.id,
-      taxType: taxRate.type
+      taxType: taxRate.type,
     };
   }
 
@@ -96,7 +97,7 @@ export class TaxCalculationService {
       taxableAmount: taxCalculation.taxableAmount,
       taxAmount: taxCalculation.taxAmount,
       taxType: taxCalculation.taxType!,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
   }
 
@@ -109,7 +110,7 @@ export class TaxCalculationService {
       type: data.type,
       effectiveFrom: new Date(data.effectiveFrom),
       effectiveTo: data.effectiveTo ? new Date(data.effectiveTo) : undefined,
-      businessId: data.businessId
+      businessId: data.businessId,
     };
   }
 
@@ -122,7 +123,7 @@ export class TaxCalculationService {
       type: data.type || 'GST',
       effectiveFrom: data.effectiveFrom ? new Date(data.effectiveFrom) : new Date(),
       effectiveTo: data.effectiveTo ? new Date(data.effectiveTo) : undefined,
-      businessId: data.businessId
+      businessId: data.businessId,
     };
   }
 
@@ -135,7 +136,7 @@ export class TaxCalculationService {
         rate: 18,
         type: 'GST',
         effectiveFrom: new Date('2023-01-01'),
-        businessId
+        businessId,
       },
       {
         id: 'rate_2',
@@ -143,8 +144,8 @@ export class TaxCalculationService {
         rate: 10,
         type: 'TDS',
         effectiveFrom: new Date('2023-01-01'),
-        businessId
-      }
+        businessId,
+      },
     ];
   }
 
@@ -165,8 +166,13 @@ export class TaxCalculationService {
     toDate: Date,
     taxType?: string
   ): Promise<TaxReportDto> {
-    const transactions = await this.getTaxTransactionsByPeriod(businessId, fromDate, toDate, taxType);
-    
+    const transactions = await this.getTaxTransactionsByPeriod(
+      businessId,
+      fromDate,
+      toDate,
+      taxType
+    );
+
     const totalTaxableAmount = transactions.reduce((sum, t) => sum + t.taxableAmount, 0);
     const totalTaxAmount = transactions.reduce((sum, t) => sum + t.taxAmount, 0);
 
@@ -177,12 +183,12 @@ export class TaxCalculationService {
       transactions: transactions.map(t => ({
         ...t,
         Transaction: { id: t.transactionId },
-        TaxRate: { id: t.taxRateId, rate: 18, type: t.taxType }
+        TaxRate: { id: t.taxRateId, rate: 18, type: t.taxType },
       })),
       summary: {
         totalTaxableAmount,
-        totalTaxAmount
-      }
+        totalTaxAmount,
+      },
     };
   }
 
@@ -201,8 +207,8 @@ export class TaxCalculationService {
         taxableAmount: 1000,
         taxAmount: 180,
         taxType: 'GST',
-        createdAt: new Date()
-      }
+        createdAt: new Date(),
+      },
     ];
   }
 
@@ -215,7 +221,7 @@ export class TaxCalculationService {
     total: { taxableAmount: number; taxAmount: number };
   }> {
     const transactions = await this.getTaxTransactionsByPeriod(businessId, fromDate, toDate);
-    
+
     const byType: Record<string, { taxableAmount: number; taxAmount: number }> = {};
     let totalTaxableAmount = 0;
     let totalTaxAmount = 0;
@@ -224,17 +230,17 @@ export class TaxCalculationService {
       if (!byType[transaction.taxType]) {
         byType[transaction.taxType] = { taxableAmount: 0, taxAmount: 0 };
       }
-      
+
       byType[transaction.taxType].taxableAmount += transaction.taxableAmount;
       byType[transaction.taxType].taxAmount += transaction.taxAmount;
-      
+
       totalTaxableAmount += transaction.taxableAmount;
       totalTaxAmount += transaction.taxAmount;
     });
 
     return {
       byType,
-      total: { taxableAmount: totalTaxableAmount, taxAmount: totalTaxAmount }
+      total: { taxableAmount: totalTaxableAmount, taxAmount: totalTaxAmount },
     };
   }
 
@@ -246,4 +252,4 @@ export class TaxCalculationService {
     const rates = await this.getTaxRates(businessId);
     return rates.find(rate => rate.type === taxType) || null;
   }
-} 
+}

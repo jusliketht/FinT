@@ -61,4 +61,4 @@ import { PrismaService } from '../prisma/prisma.service';
     PrismaService,
   ],
 })
-export class AccountingModule {} 
+export class AccountingModule {}

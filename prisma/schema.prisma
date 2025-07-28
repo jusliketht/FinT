@@ -27,6 +27,7 @@ model User {
   Bills      Bill[]
 
   @@index([email])
+  @@index([createdAt])
 }
 
 model Business {
@@ -67,6 +68,8 @@ model Business {
 
   @@index([ownerId])
   @@index([type])
+  @@index([createdAt])
+  @@index([name])
 }
 
 model UserBusiness {
@@ -83,6 +86,7 @@ model UserBusiness {
   @@index([userId])
   @@index([businessId])
   @@index([role])
+  @@index([createdAt])
 }
 
 // Financial Models
@@ -100,6 +104,7 @@ model AccountType {
 
   @@index([value])
   @@index([isActive])
+  @@index([createdAt])
 }
 
 model Account {
@@ -124,6 +129,9 @@ model Account {
   @@index([businessId])
   @@index([type])
   @@index([code])
+  @@index([isActive])
+  @@index([createdAt])
+  @@index([name])
 }
 
 model Transaction {
@@ -153,6 +161,8 @@ model Transaction {
   @@index([date])
   @@index([type])
   @@index([category])
+  @@index([createdAt])
+  @@index([amount])
 }
 
 model JournalEntry {
@@ -179,6 +189,8 @@ model JournalEntry {
   @@index([businessId])
   @@index([date])
   @@index([status])
+  @@index([createdAt])
+  @@index([referenceNumber])
 }
 
 model JournalEntryLine {
@@ -197,6 +209,9 @@ model JournalEntryLine {
 
   @@index([journalEntryId])
   @@index([accountId])
+  @@index([createdAt])
+  @@index([debit])
+  @@index([credit])
 }
 
 // Phase 3: Inventory Management Models

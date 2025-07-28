@@ -17,7 +17,7 @@ export class InvoicesService {
     items.forEach(item => {
       const itemTotal = item.quantity * item.unitPrice;
       subtotal += itemTotal;
-      taxAmount += itemTotal * (item.taxRate || 0) / 100;
+      taxAmount += (itemTotal * (item.taxRate || 0)) / 100;
     });
 
     const totalAmount = subtotal + taxAmount;
@@ -28,7 +28,7 @@ export class InvoicesService {
       orderBy: { invoiceNumber: 'desc' },
     });
 
-    const invoiceNumber = lastInvoice 
+    const invoiceNumber = lastInvoice
       ? `INV-${businessId.slice(0, 8)}-${String(parseInt(lastInvoice.invoiceNumber.split('-')[2]) + 1).padStart(6, '0')}`
       : `INV-${businessId.slice(0, 8)}-000001`;
 
@@ -53,7 +53,7 @@ export class InvoicesService {
       // Create invoice items
       for (const item of items) {
         const itemTotal = item.quantity * item.unitPrice;
-        const itemTaxAmount = itemTotal * (item.taxRate || 0) / 100;
+        const itemTaxAmount = (itemTotal * (item.taxRate || 0)) / 100;
 
         await prisma.invoiceItem.create({
           data: {
@@ -77,7 +77,7 @@ export class InvoicesService {
 
   async getAllInvoices(businessId: string, page = 1, limit = 10, status?: string): Promise<any> {
     const skip = (page - 1) * limit;
-    
+
     const where: any = { businessId };
     if (status) {
       where.status = status;
@@ -157,7 +157,7 @@ export class InvoicesService {
     // Update invoice status
     const updatedInvoice = await prisma.invoice.update({
       where: { id },
-      data: { 
+      data: {
         status: 'PAID',
         updatedAt: new Date(),
       },
@@ -220,8 +220,8 @@ export class InvoicesService {
       totalAmount: totalAmount._sum.totalAmount || 0,
       paidAmount: paidAmount._sum.totalAmount || 0,
       overdueAmount: overdueAmount._sum.totalAmount || 0,
-      collectionRate: totalAmount._sum.totalAmount 
-        ? (paidAmount._sum.totalAmount || 0) / totalAmount._sum.totalAmount * 100 
+      collectionRate: totalAmount._sum.totalAmount
+        ? ((paidAmount._sum.totalAmount || 0) / totalAmount._sum.totalAmount) * 100
         : 0,
     };
   }
@@ -232,12 +232,20 @@ export class InvoicesService {
       where: { businessId: invoice.businessId },
     });
 
-    const accountsReceivable = accounts.find(a => a.type === 'asset' && a.name.toLowerCase().includes('receivable'));
-    const cashAccount = accounts.find(a => a.type === 'asset' && a.name.toLowerCase().includes('cash'));
-    const salesAccount = accounts.find(a => a.type === 'revenue' && a.name.toLowerCase().includes('sales'));
+    const accountsReceivable = accounts.find(
+      a => a.type === 'asset' && a.name.toLowerCase().includes('receivable')
+    );
+    const cashAccount = accounts.find(
+      a => a.type === 'asset' && a.name.toLowerCase().includes('cash')
+    );
+    const salesAccount = accounts.find(
+      a => a.type === 'revenue' && a.name.toLowerCase().includes('sales')
+    );
 
     if (!accountsReceivable || !cashAccount || !salesAccount) {
-      throw new BadRequestException('Required accounts not found. Please set up Chart of Accounts.');
+      throw new BadRequestException(
+        'Required accounts not found. Please set up Chart of Accounts.'
+      );
     }
 
     // Create journal entry
@@ -279,4 +287,4 @@ export class InvoicesService {
 
     return journalEntry;
   }
-} 
+}

@@ -25,11 +25,8 @@ export class AccountsService {
       const existingAccount = await prisma.account.findFirst({
         where: {
           code: data.code,
-          OR: [
-            { userId: data.userId },
-            { businessId: data.businessId }
-          ]
-        }
+          OR: [{ userId: data.userId }, { businessId: data.businessId }],
+        },
       });
 
       if (existingAccount) {
@@ -44,7 +41,7 @@ export class AccountsService {
           description: data.description,
           userId: data.userId,
           businessId: data.businessId,
-        }
+        },
       });
 
       this.logger.log(`Created account: ${account.name} (${account.code})`);
@@ -55,7 +52,11 @@ export class AccountsService {
     }
   }
 
-  async getAccounts(userId: string, businessId?: string, includePersonal: boolean = false): Promise<Account[]> {
+  async getAccounts(
+    userId: string,
+    businessId?: string,
+    includePersonal: boolean = false
+  ): Promise<Account[]> {
     try {
       const whereClause: any = {};
 
@@ -67,18 +68,12 @@ export class AccountsService {
         whereClause.userId = userId;
       } else {
         // Default - get accounts for current context
-        whereClause.OR = [
-          { userId: userId },
-          { businessId: businessId }
-        ];
+        whereClause.OR = [{ userId: userId }, { businessId: businessId }];
       }
 
       const accounts = await prisma.account.findMany({
         where: whereClause,
-        orderBy: [
-          { type: 'asc' },
-          { code: 'asc' }
-        ]
+        orderBy: [{ type: 'asc' }, { code: 'asc' }],
       });
 
       return accounts;
@@ -95,20 +90,20 @@ export class AccountsService {
           id: id,
           OR: [
             { userId: userId },
-            { 
+            {
               businessId: {
-                not: null
+                not: null,
               },
               Business: {
                 Users: {
                   some: {
-                    userId: userId
-                  }
-                }
-              }
-            }
-          ]
-        }
+                    userId: userId,
+                  },
+                },
+              },
+            },
+          ],
+        },
       });
 
       if (!account) {
@@ -135,7 +130,7 @@ export class AccountsService {
           type: data.type,
           description: data.description,
           isActive: data.isActive,
-        }
+        },
       });
 
       this.logger.log(`Updated account: ${account.name} (${account.code})`);
@@ -153,7 +148,7 @@ export class AccountsService {
 
       // Check if account has transactions
       const transactionCount = await prisma.transaction.count({
-        where: { accountId: id }
+        where: { accountId: id },
       });
 
       if (transactionCount > 0) {
@@ -161,7 +156,7 @@ export class AccountsService {
       }
 
       await prisma.account.delete({
-        where: { id }
+        where: { id },
       });
 
       this.logger.log(`Deleted account: ${id}`);
@@ -171,7 +166,10 @@ export class AccountsService {
     }
   }
 
-  async getAccountBalance(id: string, userId: string): Promise<{
+  async getAccountBalance(
+    id: string,
+    userId: string
+  ): Promise<{
     account: Account;
     balance: number;
     debitTotal: number;
@@ -182,7 +180,7 @@ export class AccountsService {
 
       // Calculate balance from transactions
       const transactions = await prisma.transaction.findMany({
-        where: { accountId: id }
+        where: { accountId: id },
       });
 
       let debitTotal = 0;
@@ -209,7 +207,7 @@ export class AccountsService {
         account,
         balance,
         debitTotal,
-        creditTotal
+        creditTotal,
       };
     } catch (error) {
       this.logger.error(`Error calculating account balance: ${error.message}`);
@@ -223,26 +221,71 @@ export class AccountsService {
         // Assets
         { code: '1000', name: 'Cash', type: 'asset', description: 'Personal cash on hand' },
         { code: '1100', name: 'Bank Account', type: 'asset', description: 'Personal bank account' },
-        { code: '1200', name: 'Savings Account', type: 'asset', description: 'Personal savings account' },
-        { code: '1300', name: 'Credit Card', type: 'liability', description: 'Personal credit card' },
-        
+        {
+          code: '1200',
+          name: 'Savings Account',
+          type: 'asset',
+          description: 'Personal savings account',
+        },
+        {
+          code: '1300',
+          name: 'Credit Card',
+          type: 'liability',
+          description: 'Personal credit card',
+        },
+
         // Income
         { code: '4000', name: 'Salary', type: 'revenue', description: 'Personal salary income' },
-        { code: '4100', name: 'Freelance Income', type: 'revenue', description: 'Freelance work income' },
-        { code: '4200', name: 'Investment Income', type: 'revenue', description: 'Investment returns' },
-        { code: '4300', name: 'Other Income', type: 'revenue', description: 'Other personal income' },
-        
+        {
+          code: '4100',
+          name: 'Freelance Income',
+          type: 'revenue',
+          description: 'Freelance work income',
+        },
+        {
+          code: '4200',
+          name: 'Investment Income',
+          type: 'revenue',
+          description: 'Investment returns',
+        },
+        {
+          code: '4300',
+          name: 'Other Income',
+          type: 'revenue',
+          description: 'Other personal income',
+        },
+
         // Expenses
-        { code: '5000', name: 'Food & Dining', type: 'expense', description: 'Food and dining expenses' },
-        { code: '5100', name: 'Transportation', type: 'expense', description: 'Transportation costs' },
-        { code: '5200', name: 'Entertainment', type: 'expense', description: 'Entertainment expenses' },
+        {
+          code: '5000',
+          name: 'Food & Dining',
+          type: 'expense',
+          description: 'Food and dining expenses',
+        },
+        {
+          code: '5100',
+          name: 'Transportation',
+          type: 'expense',
+          description: 'Transportation costs',
+        },
+        {
+          code: '5200',
+          name: 'Entertainment',
+          type: 'expense',
+          description: 'Entertainment expenses',
+        },
         { code: '5300', name: 'Shopping', type: 'expense', description: 'Shopping expenses' },
         { code: '5400', name: 'Healthcare', type: 'expense', description: 'Healthcare expenses' },
         { code: '5500', name: 'Utilities', type: 'expense', description: 'Utility bills' },
         { code: '5600', name: 'Rent', type: 'expense', description: 'Rent payments' },
         { code: '5700', name: 'Insurance', type: 'expense', description: 'Insurance premiums' },
         { code: '5800', name: 'Education', type: 'expense', description: 'Education expenses' },
-        { code: '5900', name: 'Other Expenses', type: 'expense', description: 'Other personal expenses' },
+        {
+          code: '5900',
+          name: 'Other Expenses',
+          type: 'expense',
+          description: 'Other personal expenses',
+        },
       ];
 
       const createdAccounts = [];
@@ -252,7 +295,7 @@ export class AccountsService {
           const account = await this.createAccount({
             ...accountData,
             userId: userId,
-            businessId: null
+            businessId: null,
           });
           createdAccounts.push(account);
         } catch (error) {
@@ -293,10 +336,7 @@ export class AccountsService {
 
       const accounts = await prisma.account.findMany({
         where: whereClause,
-        orderBy: [
-          { type: 'asc' },
-          { code: 'asc' }
-        ]
+        orderBy: [{ type: 'asc' }, { code: 'asc' }],
       });
 
       return accounts;
@@ -305,4 +345,4 @@ export class AccountsService {
       throw error;
     }
   }
-} 
+}

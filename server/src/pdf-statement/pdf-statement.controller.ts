@@ -26,7 +26,7 @@ class NoValidationPipe {
 export class UploadPdfDto {
   @IsString()
   bankType: string;
-  
+
   @IsOptional()
   @IsString()
   password?: string;
@@ -40,33 +40,31 @@ export class PdfStatementController {
   constructor(private readonly pdfStatementService: PdfStatementService) {}
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file', {
-    storage: undefined, // Use memory storage
-    limits: {
-      fileSize: 50 * 1024 * 1024, // 50MB limit
-    },
-    fileFilter: (req, file, cb) => {
-      console.log('Multer fileFilter called with:', {
-        fieldname: file.fieldname,
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size
-      });
-      
-      if (file.mimetype !== 'application/pdf') {
-        return cb(new BadRequestException('Only PDF files are allowed'), false);
-      }
-      cb(null, true);
-    }
-  }))
-  async uploadStatement(
-    @UploadedFile() file: any,
-    @Body() body: any,
-    @Req() request: Request,
-  ) {
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: undefined, // Use memory storage
+      limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB limit
+      },
+      fileFilter: (req, file, cb) => {
+        console.log('Multer fileFilter called with:', {
+          fieldname: file.fieldname,
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+        });
+
+        if (file.mimetype !== 'application/pdf') {
+          return cb(new BadRequestException('Only PDF files are allowed'), false);
+        }
+        cb(null, true);
+      },
+    })
+  )
+  async uploadStatement(@UploadedFile() file: any, @Body() body: any, @Req() request: Request) {
     try {
       this.logger.log(`Received PDF upload request for bank: ${body.bankType}`);
-      
+
       // Log request details
       this.logger.log('Request details:', {
         method: request.method,
@@ -74,20 +72,25 @@ export class PdfStatementController {
         headers: {
           'content-type': request.headers['content-type'],
           'content-length': request.headers['content-length'],
-          'authorization': request.headers.authorization ? 'Present' : 'Not present'
-        }
+          authorization: request.headers.authorization ? 'Present' : 'Not present',
+        },
       });
-      
-      this.logger.log(`File received:`, file ? {
-        fieldname: file.fieldname,
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size,
-        buffer: file.buffer ? 'Buffer present' : 'No buffer'
-      } : 'No file received');
-      
+
+      this.logger.log(
+        `File received:`,
+        file
+          ? {
+              fieldname: file.fieldname,
+              originalname: file.originalname,
+              mimetype: file.mimetype,
+              size: file.size,
+              buffer: file.buffer ? 'Buffer present' : 'No buffer',
+            }
+          : 'No file received'
+      );
+
       this.logger.log(`Body received:`, body);
-      
+
       // Log raw request body for debugging
       this.logger.log('Raw request body keys:', Object.keys(request.body || {}));
       this.logger.log('Request files:', (request as any).files);
@@ -95,7 +98,9 @@ export class PdfStatementController {
 
       // Validate file
       if (!file) {
-        throw new BadRequestException('No file uploaded. Please ensure you are sending a file with the field name "file"');
+        throw new BadRequestException(
+          'No file uploaded. Please ensure you are sending a file with the field name "file"'
+        );
       }
 
       const validation = this.pdfStatementService.validateFile(file);
@@ -106,14 +111,16 @@ export class PdfStatementController {
       // Validate bank type
       const supportedBanks = this.pdfStatementService.getSupportedBanks();
       if (!supportedBanks.includes(body.bankType)) {
-        throw new BadRequestException(`Unsupported bank type. Supported types: ${supportedBanks.join(', ')}`);
+        throw new BadRequestException(
+          `Unsupported bank type. Supported types: ${supportedBanks.join(', ')}`
+        );
       }
 
       // Process the bank statement
       const result = await this.pdfStatementService.processBankStatement(
         file,
         body.bankType,
-        body.password,
+        body.password
       );
 
       if (!result.success) {
@@ -135,7 +142,7 @@ export class PdfStatementController {
   @UseInterceptors(FileInterceptor('files'))
   async uploadBatchStatements(
     @UploadedFile() files: any[],
-    @Body() body: any, // Use any instead of UploadPdfDto for multipart uploads
+    @Body() body: any // Use any instead of UploadPdfDto for multipart uploads
   ) {
     try {
       this.logger.log(`Received batch PDF upload request for bank: ${body.bankType}`);
@@ -160,7 +167,7 @@ export class PdfStatementController {
           const result = await this.pdfStatementService.processBankStatement(
             file,
             body.bankType,
-            body.password,
+            body.password
           );
 
           results.push({
@@ -200,4 +207,4 @@ export class PdfStatementController {
       data: banks,
     };
   }
-} 
+}

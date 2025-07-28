@@ -13,15 +13,17 @@ export class AccountTypesService {
     try {
       // Check if account type with same value already exists
       const existingType = await this.prisma.accountType.findFirst({
-        where: { value: createAccountTypeDto.value }
+        where: { value: createAccountTypeDto.value },
       });
 
       if (existingType) {
-        throw new BadRequestException(`Account type with value '${createAccountTypeDto.value}' already exists`);
+        throw new BadRequestException(
+          `Account type with value '${createAccountTypeDto.value}' already exists`
+        );
       }
 
       const accountType = await this.prisma.accountType.create({
-        data: createAccountTypeDto
+        data: createAccountTypeDto,
       });
 
       this.logger.log(`Created account type: ${accountType.label} (${accountType.value})`);
@@ -35,7 +37,7 @@ export class AccountTypesService {
   async findAll() {
     try {
       return await this.prisma.accountType.findMany({
-        orderBy: { value: 'asc' }
+        orderBy: { value: 'asc' },
       });
     } catch (error) {
       this.logger.error(`Error fetching account types: ${error.message}`);
@@ -46,7 +48,7 @@ export class AccountTypesService {
   async findOne(id: string) {
     try {
       const accountType = await this.prisma.accountType.findUnique({
-        where: { id }
+        where: { id },
       });
 
       if (!accountType) {
@@ -64,7 +66,7 @@ export class AccountTypesService {
     try {
       // Check if account type exists
       const existingType = await this.prisma.accountType.findUnique({
-        where: { id }
+        where: { id },
       });
 
       if (!existingType) {
@@ -74,20 +76,22 @@ export class AccountTypesService {
       // If value is being updated, check for duplicates
       if (updateAccountTypeDto.value && updateAccountTypeDto.value !== existingType.value) {
         const duplicateType = await this.prisma.accountType.findFirst({
-          where: { 
+          where: {
             value: updateAccountTypeDto.value,
-            id: { not: id }
-          }
+            id: { not: id },
+          },
         });
 
         if (duplicateType) {
-          throw new BadRequestException(`Account type with value '${updateAccountTypeDto.value}' already exists`);
+          throw new BadRequestException(
+            `Account type with value '${updateAccountTypeDto.value}' already exists`
+          );
         }
       }
 
       const updatedType = await this.prisma.accountType.update({
         where: { id },
-        data: updateAccountTypeDto
+        data: updateAccountTypeDto,
       });
 
       this.logger.log(`Updated account type: ${updatedType.label} (${updatedType.value})`);
@@ -102,7 +106,7 @@ export class AccountTypesService {
     try {
       // Check if account type exists
       const existingType = await this.prisma.accountType.findUnique({
-        where: { id }
+        where: { id },
       });
 
       if (!existingType) {
@@ -111,15 +115,17 @@ export class AccountTypesService {
 
       // Check if account type is being used by any accounts
       const accountsUsingType = await this.prisma.account.findFirst({
-        where: { type: existingType.value }
+        where: { type: existingType.value },
       });
 
       if (accountsUsingType) {
-        throw new BadRequestException(`Cannot delete account type '${existingType.value}' as it is being used by accounts`);
+        throw new BadRequestException(
+          `Cannot delete account type '${existingType.value}' as it is being used by accounts`
+        );
       }
 
       await this.prisma.accountType.delete({
-        where: { id }
+        where: { id },
       });
 
       this.logger.log(`Deleted account type: ${existingType.label} (${existingType.value})`);
@@ -135,21 +141,21 @@ export class AccountTypesService {
       const defaultTypes = [
         { value: 'asset', label: 'Asset', description: 'Resources owned by the business' },
         { value: 'liability', label: 'Liability', description: 'Obligations owed by the business' },
-        { value: 'equity', label: 'Equity', description: 'Owner\'s investment in the business' },
+        { value: 'equity', label: 'Equity', description: "Owner's investment in the business" },
         { value: 'revenue', label: 'Revenue', description: 'Income earned by the business' },
-        { value: 'expense', label: 'Expense', description: 'Costs incurred by the business' }
+        { value: 'expense', label: 'Expense', description: 'Costs incurred by the business' },
       ];
 
       const createdTypes = [];
 
       for (const typeData of defaultTypes) {
         const existingType = await this.prisma.accountType.findFirst({
-          where: { value: typeData.value }
+          where: { value: typeData.value },
         });
 
         if (!existingType) {
           const createdType = await this.prisma.accountType.create({
-            data: typeData
+            data: typeData,
           });
           createdTypes.push(createdType);
         }
@@ -162,4 +168,4 @@ export class AccountTypesService {
       throw error;
     }
   }
-} 
+}

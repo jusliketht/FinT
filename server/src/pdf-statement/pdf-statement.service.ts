@@ -41,13 +41,15 @@ export class PdfStatementService {
    */
   async extractTextFromPdf(buffer: Buffer, password?: string): Promise<string> {
     try {
-      this.logger.log(`Extracting text from PDF with password: ${password ? 'Provided' : 'Not provided'}`);
-      
+      this.logger.log(
+        `Extracting text from PDF with password: ${password ? 'Provided' : 'Not provided'}`
+      );
+
       // First try to extract text directly from PDF
       const pdfData = await pdf(buffer, {
         password: password || undefined,
       });
-      
+
       if (pdfData.text && pdfData.text.trim().length > 0) {
         this.logger.log('Text extracted directly from PDF');
         return pdfData.text;
@@ -67,11 +69,13 @@ export class PdfStatementService {
    */
   private async extractTextWithOCR(buffer: Buffer): Promise<string> {
     const worker = await createWorker();
-    
+
     try {
       await worker.loadLanguage('eng');
       await worker.initialize('eng');
-      const { data: { text } } = await worker.recognize(buffer);
+      const {
+        data: { text },
+      } = await worker.recognize(buffer);
       return text;
     } finally {
       await worker.terminate();
@@ -95,17 +99,17 @@ export class PdfStatementService {
 
       // Extract text from PDF
       const text = await this.extractTextFromPdf(file.buffer, password);
-      
+
       if (!text || text.trim().length === 0) {
         throw new Error('No text could be extracted from the PDF');
       }
 
       // Get appropriate processor
       const processor = this.processors[bankType] || this.processors.generic;
-      
+
       // Extract transactions
       const transactions = await processor.extractTransactions(text);
-      
+
       if (transactions.length === 0) {
         throw new Error('No transactions found in the statement');
       }
@@ -172,7 +176,10 @@ export class PdfStatementService {
 
         journalEntries.push(journalEntry);
       } catch (error) {
-        this.logger.error(`Error generating journal entry for transaction: ${transaction.description}`, error);
+        this.logger.error(
+          `Error generating journal entry for transaction: ${transaction.description}`,
+          error
+        );
       }
     }
 
@@ -231,4 +238,4 @@ export class PdfStatementService {
       errors,
     };
   }
-} 
+}

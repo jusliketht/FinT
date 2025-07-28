@@ -1,11 +1,19 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsDateString, IsEmail, IsUrl } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsDateString,
+  IsEmail,
+  IsUrl,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export enum BusinessType {
   SOLE_PROPRIETORSHIP = 'sole_proprietorship',
   PARTNERSHIP = 'partnership',
   CORPORATION = 'corporation',
-  LLC = 'llc'
+  LLC = 'llc',
 }
 
 export class CreateBusinessDto {
@@ -26,17 +34,17 @@ export class CreateBusinessDto {
 
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value ? new Date(value) : undefined)
+  @Transform(({ value }) => (value ? new Date(value) : undefined))
   incorporationDate?: Date;
 
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value ? new Date(value) : undefined)
+  @Transform(({ value }) => (value ? new Date(value) : undefined))
   fiscalYearStart?: Date;
 
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value ? new Date(value) : undefined)
+  @Transform(({ value }) => (value ? new Date(value) : undefined))
   fiscalYearEnd?: Date;
 
   @IsOptional()
@@ -74,4 +82,4 @@ export class CreateBusinessDto {
   @IsOptional()
   @IsUrl()
   website?: string;
-} 
+}

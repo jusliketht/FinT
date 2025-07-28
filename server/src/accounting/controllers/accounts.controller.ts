@@ -1,5 +1,25 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, HttpStatus, HttpException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 // import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AccountsService } from '../services/accounts.service';
 import { CreateAccountDto } from '../dto/account/create-account.dto';
@@ -20,7 +40,7 @@ export class AccountsController {
     try {
       return await this.accountsService.createAccount({
         ...createAccountDto,
-        userId: req.user?.id || 'test-user-id'
+        userId: req.user?.id || 'test-user-id',
       });
     } catch (error) {
       throw new HttpException(
@@ -36,7 +56,11 @@ export class AccountsController {
   @ApiQuery({ name: 'businessId', required: false, description: 'Business ID filter' })
   async getAllAccounts(@Request() req, @Query('businessId') businessId?: string) {
     try {
-      return await this.accountsService.getAccounts(req.user?.id || 'test-user-id', businessId, true);
+      return await this.accountsService.getAccounts(
+        req.user?.id || 'test-user-id',
+        businessId,
+        true
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Failed to retrieve accounts',
@@ -66,9 +90,17 @@ export class AccountsController {
   @ApiResponse({ status: 200, description: 'Account updated successfully' })
   @ApiResponse({ status: 404, description: 'Account not found' })
   @ApiParam({ name: 'id', description: 'Account ID' })
-  async updateAccount(@Param('id') id: string, @Body() updateAccountDto: UpdateAccountDto, @Request() req) {
+  async updateAccount(
+    @Param('id') id: string,
+    @Body() updateAccountDto: UpdateAccountDto,
+    @Request() req
+  ) {
     try {
-      return await this.accountsService.updateAccount(id, updateAccountDto, req.user?.id || 'test-user-id');
+      return await this.accountsService.updateAccount(
+        id,
+        updateAccountDto,
+        req.user?.id || 'test-user-id'
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Failed to update account',
@@ -118,7 +150,11 @@ export class AccountsController {
     @Query('businessId') businessId?: string
   ) {
     try {
-      return await this.accountsService.getAccountsByType(req.user?.id || 'test-user-id', businessId, type);
+      return await this.accountsService.getAccountsByType(
+        req.user?.id || 'test-user-id',
+        businessId,
+        type
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Failed to retrieve accounts by type',
@@ -126,4 +162,4 @@ export class AccountsController {
       );
     }
   }
-} 
+}

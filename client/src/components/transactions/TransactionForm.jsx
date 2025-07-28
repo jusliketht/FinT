@@ -40,7 +40,7 @@ import { AddIcon, CalendarIcon, InfoIcon } from '@chakra-ui/icons';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { transactionSchema, formatCurrency } from '../../utils/validation';
-import { useApi } from '../../services/api';
+import { useApi } from '../../hooks/useApi';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { LoadingSpinner } from '../common/LoadingStates';
 

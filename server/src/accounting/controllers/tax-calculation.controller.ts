@@ -1,6 +1,22 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { TaxCalculationService, CreateTaxRateDto, TaxRate, TaxTransaction } from '../services/tax-calculation.service';
+import {
+  TaxCalculationService,
+  CreateTaxRateDto,
+  TaxRate,
+  TaxTransaction,
+} from '../services/tax-calculation.service';
 
 @Controller('tax')
 @UseGuards(JwtAuthGuard)
@@ -8,20 +24,12 @@ export class TaxCalculationController {
   constructor(private taxCalculationService: TaxCalculationService) {}
 
   @Post('calculate')
-  async calculateTax(
-    @Body() body: { amount: number; taxType: string; businessId?: string }
-  ) {
-    return this.taxCalculationService.calculateTax(
-      body.amount,
-      body.taxType,
-      body.businessId
-    );
+  async calculateTax(@Body() body: { amount: number; taxType: string; businessId?: string }) {
+    return this.taxCalculationService.calculateTax(body.amount, body.taxType, body.businessId);
   }
 
   @Post('rates')
-  async createTaxRate(
-    @Body() data: CreateTaxRateDto
-  ): Promise<TaxRate> {
+  async createTaxRate(@Body() data: CreateTaxRateDto): Promise<TaxRate> {
     return this.taxCalculationService.createTaxRate(data);
   }
 
@@ -90,4 +98,4 @@ export class TaxCalculationController {
       taxType
     );
   }
-} 
+}

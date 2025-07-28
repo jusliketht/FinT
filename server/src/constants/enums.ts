@@ -24,4 +24,4 @@ export enum JournalEntryStatus {
   Draft = 'draft',
   Posted = 'posted',
   Void = 'void',
-} 
+}

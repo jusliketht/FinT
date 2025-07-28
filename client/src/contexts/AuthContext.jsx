@@ -12,8 +12,10 @@ export const AuthProvider = ({ children }) => {
 
   // Check for existing token and validate it on app start
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
+    const token = localStorage.getItem('authToken');
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    if (token && !isDevelopment) {
       validateToken(token);
     } else {
       setLoading(false);
@@ -27,11 +29,11 @@ export const AuthProvider = ({ children }) => {
         setUser(response.data);
       } else {
         // Token is invalid, remove it
-        localStorage.removeItem('token');
+        localStorage.removeItem('authToken');
       }
     } catch (error) {
       console.error('Token validation error:', error);
-      localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
     } finally {
       setLoading(false);
     }
@@ -44,7 +46,7 @@ export const AuthProvider = ({ children }) => {
       // Check if the response has the expected structure
       if (data && data.user && data.access_token) {
         setUser(data.user);
-        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('authToken', data.access_token);
         return { success: true, data };
       } else {
         console.error('Invalid response structure:', data);
@@ -78,7 +80,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await userService.createUser(userData);
       setUser(data.user);
-      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('authToken', data.access_token);
       return { success: true, data };
     } catch (error) {
       console.error('Registration error:', error);
@@ -91,7 +93,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
   };
 
   const updateUser = (userData) => {

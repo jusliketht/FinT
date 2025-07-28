@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import api from '../services/api';
+import enhancedApi from '../services/api';
 
 export const useApi = () => {
   const [loading, setLoading] = useState(false);
@@ -9,7 +9,7 @@ export const useApi = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api(config);
+      const response = await enhancedApi.request(config);
       return response.data;
     } catch (err) {
       setError(err.response?.data?.error || err.message);
@@ -20,20 +20,20 @@ export const useApi = () => {
   }, []);
 
   const get = useCallback((url, config = {}) => {
-    return request({ ...config, method: 'GET', url });
-  }, [request]);
+    return enhancedApi.get(url, config);
+  }, []);
 
   const post = useCallback((url, data, config = {}) => {
-    return request({ ...config, method: 'POST', url, data });
-  }, [request]);
+    return enhancedApi.post(url, data, config);
+  }, []);
 
   const put = useCallback((url, data, config = {}) => {
-    return request({ ...config, method: 'PUT', url, data });
-  }, [request]);
+    return enhancedApi.put(url, data, config);
+  }, []);
 
   const del = useCallback((url, config = {}) => {
-    return request({ ...config, method: 'DELETE', url });
-  }, [request]);
+    return enhancedApi.delete(url, config);
+  }, []);
 
   return {
     loading,

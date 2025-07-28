@@ -7,7 +7,7 @@ declare module 'canvas' {
   }
 
   export function createCanvas(width: number, height: number): Canvas;
-  
+
   export class Image {
     src: string | Buffer;
     onload: () => void;
@@ -17,4 +17,4 @@ declare module 'canvas' {
   }
 
   export function loadImage(src: string | Buffer): Promise<Image>;
-} 
+}

@@ -9,4 +9,4 @@ import { BillsService } from './services/bills.service';
   providers: [InvoicesService, BillsService],
   exports: [InvoicesService, BillsService],
 })
-export class InvoicesModule {} 
+export class InvoicesModule {}

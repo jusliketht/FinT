@@ -17,7 +17,7 @@ export class InventoryService {
       isActive: data.isActive !== false,
       businessId: data.businessId,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -46,11 +46,11 @@ export class InventoryService {
               id: 'loc_1',
               code: 'WH001',
               name: 'Main Warehouse',
-              type: 'WAREHOUSE'
-            }
-          }
-        ]
-      }
+              type: 'WAREHOUSE',
+            },
+          },
+        ],
+      },
     ];
   }
 
@@ -78,11 +78,11 @@ export class InventoryService {
             id: 'loc_1',
             code: 'WH001',
             name: 'Main Warehouse',
-            type: 'WAREHOUSE'
-          }
-        }
+            type: 'WAREHOUSE',
+          },
+        },
       ],
-      InventoryMovements: []
+      InventoryMovements: [],
     };
   }
 
@@ -91,7 +91,7 @@ export class InventoryService {
     return {
       id,
       ...data,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -100,7 +100,7 @@ export class InventoryService {
     return {
       id,
       isActive: false,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -119,7 +119,7 @@ export class InventoryService {
       businessId: data.businessId,
       movementDate: new Date(),
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -133,13 +133,13 @@ export class InventoryService {
           id: 'item_1',
           name: 'Low Stock Item',
           sku: 'SKU002',
-          reorderLevel: 10
+          reorderLevel: 10,
         },
         Location: {
           id: 'loc_1',
-          name: 'Main Warehouse'
-        }
-      }
+          name: 'Main Warehouse',
+        },
+      },
     ];
   }
 
@@ -154,10 +154,10 @@ export class InventoryService {
           totalValue: 5000,
           InventoryItem: {
             id: 'item_1',
-            name: 'Product 1'
-          }
-        }
-      ]
+            name: 'Product 1',
+          },
+        },
+      ],
     };
   }
 
@@ -172,7 +172,7 @@ export class InventoryService {
       isActive: data.isActive !== false,
       businessId: data.businessId,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -186,8 +186,8 @@ export class InventoryService {
         type: 'WAREHOUSE',
         address: '123 Main St',
         isActive: true,
-        businessId
-      }
+        businessId,
+      },
     ];
   }
-} 
+}

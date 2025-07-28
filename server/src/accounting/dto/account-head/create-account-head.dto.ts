@@ -28,4 +28,4 @@ export class CreateAccountHeadDto {
   @IsOptional()
   @IsBoolean()
   isCustom?: boolean;
-} 
+}
