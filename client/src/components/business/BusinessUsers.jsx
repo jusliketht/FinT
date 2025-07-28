@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -41,22 +41,14 @@ const BusinessUsers = ({ business, onBack }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [newUser, setNewUser] = useState({ userId: '', role: '' });
-  const [availableUsers, setAvailableUsers] = useState([]);
-  
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  useEffect(() => {
-    fetchUsers();
-  }, [business]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await businessService.getUsers(business.id);
-      setUsers(data);
+      const response = await businessService.getUsers(business.id);
+      setUsers(response.data || response);
     } catch (err) {
       setError('Failed to fetch users');
       toast({
@@ -69,7 +61,11 @@ const BusinessUsers = ({ business, onBack }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [business.id, toast]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleAddUser = async () => {
     if (!newUser.userId || !newUser.role) {

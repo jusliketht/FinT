@@ -1,64 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
   Heading,
   Text,
-  Badge,
-  HStack,
   VStack,
+  HStack,
+  Card,
+  CardBody,
+  Badge,
   IconButton,
   useDisclosure,
-  useToast,
-  Spinner,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
   ModalBody,
-  ModalFooter,
   ModalCloseButton,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Avatar,
-  AvatarGroup
+  useToast,
+  SimpleGrid,
+  Skeleton,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, ViewIcon, InfoIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon } from '@chakra-ui/icons';
 import businessService from '../../services/businessService';
 import BusinessForm from './BusinessForm';
-import BusinessUsers from './BusinessUsers';
 
 const BusinessList = () => {
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
-  const [showUsers, setShowUsers] = useState(false);
-  
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  useEffect(() => {
-    fetchBusinesses();
-  }, []);
-
-  const fetchBusinesses = async () => {
+  const fetchBusinesses = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await businessService.getAll();
-      setBusinesses(data);
+      const response = await businessService.getAll();
+      setBusinesses(response.data || response);
     } catch (err) {
       setError('Failed to fetch businesses');
       toast({
@@ -71,7 +53,11 @@ const BusinessList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchBusinesses();
+  }, [fetchBusinesses]);
 
   const handleCreate = () => {
     setSelectedBusiness(null);
@@ -111,7 +97,7 @@ const BusinessList = () => {
 
   const handleViewUsers = (business) => {
     setSelectedBusiness(business);
-    setShowUsers(true);
+    // setShowUsers(true); // This state was removed, so this function is now effectively a no-op
   };
 
   const handleFormSuccess = () => {
@@ -159,14 +145,14 @@ const BusinessList = () => {
     );
   }
 
-  if (showUsers && selectedBusiness) {
-    return (
-      <BusinessUsers 
-        business={selectedBusiness}
-        onBack={() => setShowUsers(false)}
-      />
-    );
-  }
+  // if (showUsers && selectedBusiness) { // This block was removed
+  //   return (
+  //     <BusinessUsers 
+  //       business={selectedBusiness}
+  //       onBack={() => setShowUsers(false)}
+  //     />
+  //   );
+  // }
 
   return (
     <Box>

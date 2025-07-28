@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Heading,
@@ -8,29 +8,37 @@ import {
 } from '@chakra-ui/react';
 import { useApi } from '../../../hooks/useApi';
 import { useToast } from '../../../contexts/ToastContext';
+import accountTypeService from '../../../services/accountTypeService';
 
 const AccountTypesViewer = () => {
-  const api = useApi();
-  const { showToast } = useToast();
-
   const [accountTypes, setAccountTypes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const toast = useToast();
 
-  useEffect(() => {
-    fetchAccountTypes();
-  }, []);
-
-  const fetchAccountTypes = async () => {
+  const fetchAccountTypes = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get('/account-types');
-      setAccountTypes(response.data);
-    } catch (error) {
-      showToast('Failed to fetch account types', 'error');
+      setError(null);
+      const response = await accountTypeService.getAll();
+      setAccountTypes(response.data || response);
+    } catch (err) {
+      setError('Failed to fetch account types');
+      toast({
+        title: 'Error',
+        description: 'Failed to load account types',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchAccountTypes();
+  }, [fetchAccountTypes]);
 
   if (loading) {
     return <Text>Loading account types...</Text>;

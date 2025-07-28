@@ -1,22 +1,19 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
   Box,
   Skeleton,
-  SkeletonText,
-  SkeletonCircle,
   Spinner,
   VStack,
   HStack,
   Text,
   Progress,
-  Flex,
   Card,
   CardBody,
   SimpleGrid,
 } from '@chakra-ui/react';
 
 // Skeleton Components
-export const TableSkeleton = ({ rows = 5, columns = 4 }) => {
+export const TableSkeleton = memo(({ rows = 5, columns = 4 }) => {
   return (
     <VStack spacing={4} align="stretch">
       {/* Header */}
@@ -36,9 +33,11 @@ export const TableSkeleton = ({ rows = 5, columns = 4 }) => {
       ))}
     </VStack>
   );
-};
+});
 
-export const CardSkeleton = ({ count = 4 }) => {
+TableSkeleton.displayName = 'TableSkeleton';
+
+export const CardSkeleton = memo(({ count = 4 }) => {
   return (
     <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
       {Array.from({ length: count }).map((_, index) => (
@@ -54,9 +53,11 @@ export const CardSkeleton = ({ count = 4 }) => {
       ))}
     </SimpleGrid>
   );
-};
+});
 
-export const DashboardSkeleton = () => {
+CardSkeleton.displayName = 'CardSkeleton';
+
+export const DashboardSkeleton = memo(() => {
   return (
     <VStack spacing={8} align="stretch">
       {/* Header */}
@@ -95,177 +96,172 @@ export const DashboardSkeleton = () => {
       </Card>
     </VStack>
   );
-};
+});
 
-export const FormSkeleton = () => {
+DashboardSkeleton.displayName = 'DashboardSkeleton';
+
+export const FormSkeleton = memo(() => {
   return (
     <VStack spacing={6} align="stretch">
       <Skeleton height="32px" width="200px" />
-      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-        {Array.from({ length: 6 }).map((_, index) => (
-          <VStack key={index} align="stretch" spacing={2}>
-            <Skeleton height="20px" width="100px" />
-            <Skeleton height="40px" />
-          </VStack>
-        ))}
-      </SimpleGrid>
-      <HStack spacing={3}>
-        <Skeleton height="40px" width="100px" />
-        <Skeleton height="40px" width="100px" />
+      <Skeleton height="40px" />
+      <Skeleton height="40px" />
+      <Skeleton height="40px" />
+      <Skeleton height="100px" />
+      <HStack spacing={4}>
+        <Skeleton height="40px" flex={1} />
+        <Skeleton height="40px" flex={1} />
       </HStack>
     </VStack>
   );
-};
+});
 
-export const InvoiceFormSkeleton = () => {
+FormSkeleton.displayName = 'FormSkeleton';
+
+export const InvoiceFormSkeleton = memo(() => {
   return (
     <VStack spacing={6} align="stretch">
       {/* Header */}
-      <HStack spacing={6}>
-        <VStack align="stretch" flex={1}>
-          <Skeleton height="20px" width="100px" />
-          <Skeleton height="40px" />
-        </VStack>
-        <VStack align="stretch" flex={1}>
-          <Skeleton height="20px" width="100px" />
-          <Skeleton height="40px" />
-        </VStack>
-        <VStack align="stretch" flex={1}>
-          <Skeleton height="20px" width="100px" />
-          <Skeleton height="40px" />
-        </VStack>
+      <HStack justify="space-between">
+        <Skeleton height="32px" width="200px" />
+        <Skeleton height="32px" width="100px" />
       </HStack>
 
-      {/* Line Items */}
-      <Box>
-        <HStack justify="space-between" mb={4}>
-          <Skeleton height="20px" width="100px" />
+      {/* Customer Selection */}
+      <Skeleton height="40px" />
+
+      {/* Invoice Items */}
+      <VStack spacing={4} align="stretch">
+        <HStack justify="space-between">
+          <Skeleton height="24px" width="150px" />
           <Skeleton height="32px" width="100px" />
         </HStack>
-        <TableSkeleton rows={3} columns={5} />
-      </Box>
-
-      {/* Totals */}
-      <VStack spacing={2} align="stretch">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <HStack key={index} justify="space-between">
-            <Skeleton height="16px" width="100px" />
-            <Skeleton height="16px" width="80px" />
+        
+        {/* Item Rows */}
+        {Array.from({ length: 3 }).map((_, index) => (
+          <HStack key={index} spacing={4}>
+            <Skeleton height="40px" flex={2} />
+            <Skeleton height="40px" flex={1} />
+            <Skeleton height="40px" flex={1} />
+            <Skeleton height="40px" flex={1} />
+            <Skeleton height="40px" width="60px" />
           </HStack>
         ))}
       </VStack>
+
+      {/* Totals */}
+      <VStack spacing={2} align="stretch">
+        <HStack justify="space-between">
+          <Skeleton height="20px" width="100px" />
+          <Skeleton height="20px" width="80px" />
+        </HStack>
+        <HStack justify="space-between">
+          <Skeleton height="20px" width="80px" />
+          <Skeleton height="20px" width="60px" />
+        </HStack>
+        <HStack justify="space-between">
+          <Skeleton height="24px" width="120px" />
+          <Skeleton height="24px" width="100px" />
+        </HStack>
+      </VStack>
+
+      {/* Actions */}
+      <HStack spacing={4}>
+        <Skeleton height="40px" flex={1} />
+        <Skeleton height="40px" flex={1} />
+      </HStack>
     </VStack>
   );
-};
+});
+
+InvoiceFormSkeleton.displayName = 'InvoiceFormSkeleton';
 
 // Loading Spinner Components
-export const LoadingSpinner = ({ size = 'lg', message = 'Loading...' }) => {
+export const LoadingSpinner = memo(({ size = 'lg', message = 'Loading...' }) => {
   return (
-    <Flex
-      direction="column"
-      align="center"
-      justify="center"
-      minH="200px"
-      spacing={4}
-    >
-      <Spinner
-        thickness="4px"
-        speed="0.65s"
-        emptyColor="gray.200"
-        color="blue.500"
-        size={size}
-      />
+    <VStack spacing={4} justify="center" align="center" minH="200px">
+      <Spinner size={size} color="blue.500" thickness="4px" />
       {message && (
-        <Text mt={4} color="gray.600" fontSize="sm">
+        <Text color="gray.600" fontSize="sm">
           {message}
         </Text>
       )}
-    </Flex>
+    </VStack>
   );
-};
+});
 
-export const PageLoadingSpinner = ({ message = 'Loading page...' }) => {
+LoadingSpinner.displayName = 'LoadingSpinner';
+
+export const PageLoadingSpinner = memo(({ message = 'Loading page...' }) => {
   return (
-    <Flex
-      direction="column"
-      align="center"
-      justify="center"
-      minH="100vh"
-      bg="gray.50"
+    <Box
+      position="fixed"
+      top="0"
+      left="0"
+      right="0"
+      bottom="0"
+      bg="rgba(255, 255, 255, 0.8)"
+      backdropFilter="blur(4px)"
+      zIndex={9999}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
     >
-      <VStack spacing={6}>
-        <Spinner
-          thickness="4px"
-          speed="0.65s"
-          emptyColor="gray.200"
-          color="blue.500"
-          size="xl"
-        />
-        <Text color="gray.600" fontSize="lg">
+      <VStack spacing={4}>
+        <Spinner size="xl" color="blue.500" thickness="4px" />
+        <Text color="gray.700" fontSize="lg" fontWeight="medium">
           {message}
         </Text>
       </VStack>
-    </Flex>
+    </Box>
   );
-};
+});
 
-export const ButtonLoadingSpinner = ({ size = 'sm' }) => {
-  return (
-    <Spinner
-      thickness="2px"
-      speed="0.65s"
-      emptyColor="gray.200"
-      color="white"
-      size={size}
-    />
-  );
-};
+PageLoadingSpinner.displayName = 'PageLoadingSpinner';
+
+export const ButtonLoadingSpinner = memo(({ size = 'sm' }) => {
+  return <Spinner size={size} color="current" thickness="2px" />;
+});
+
+ButtonLoadingSpinner.displayName = 'ButtonLoadingSpinner';
 
 // Progress Components
-export const UploadProgress = ({ progress, fileName }) => {
+export const UploadProgress = memo(({ progress, fileName }) => {
   return (
-    <VStack spacing={3} align="stretch" w="full">
+    <VStack spacing={2} align="stretch" w="full">
       <HStack justify="space-between">
-        <Text fontSize="sm" fontWeight="medium">
+        <Text fontSize="sm" color="gray.600" noOfLines={1}>
           {fileName}
         </Text>
         <Text fontSize="sm" color="gray.600">
-          {progress}%
+          {Math.round(progress)}%
         </Text>
       </HStack>
-      <Progress
-        value={progress}
-        colorScheme="blue"
-        size="sm"
-        borderRadius="full"
-      />
+      <Progress value={progress} size="sm" colorScheme="blue" />
     </VStack>
   );
-};
+});
 
-export const ProcessingProgress = ({ progress, message }) => {
+UploadProgress.displayName = 'UploadProgress';
+
+export const ProcessingProgress = memo(({ progress, message }) => {
   return (
-    <VStack spacing={4} align="stretch" w="full">
-      <Text fontSize="sm" fontWeight="medium">
+    <VStack spacing={3} align="stretch" w="full">
+      <Text fontSize="sm" color="gray.600">
         {message}
       </Text>
-      <Progress
-        value={progress}
-        colorScheme="green"
-        size="sm"
-        borderRadius="full"
-        hasStripe
-        isAnimated
-      />
-      <Text fontSize="xs" color="gray.600" textAlign="center">
-        {progress}% complete
+      <Progress value={progress} size="sm" colorScheme="green" />
+      <Text fontSize="xs" color="gray.500" textAlign="center">
+        {Math.round(progress)}% complete
       </Text>
     </VStack>
   );
-};
+});
+
+ProcessingProgress.displayName = 'ProcessingProgress';
 
 // Empty State Components
-export const EmptyState = ({ 
+export const EmptyState = memo(({ 
   title, 
   description, 
   icon, 
@@ -273,78 +269,99 @@ export const EmptyState = ({
   image 
 }) => {
   return (
-    <Flex
-      direction="column"
-      align="center"
-      justify="center"
-      minH="300px"
-      p={8}
-      textAlign="center"
-    >
-      <VStack spacing={6} maxW="400px">
-        {image && (
-          <Box w="120px" h="120px">
-            {image}
-          </Box>
-        )}
-        {icon && (
-          <Box fontSize="4xl" color="gray.400">
-            {icon}
-          </Box>
-        )}
-        <VStack spacing={2}>
-          <Text fontSize="lg" fontWeight="semibold" color="gray.800">
-            {title}
-          </Text>
-          <Text fontSize="sm" color="gray.600">
-            {description}
-          </Text>
-        </VStack>
-        {action && action}
+    <VStack spacing={6} py={12} textAlign="center">
+      {image && (
+        <Box maxW="200px">
+          <img src={image} alt={title} style={{ width: '100%', height: 'auto' }} />
+        </Box>
+      )}
+      
+      {icon && (
+        <Box
+          p={4}
+          borderRadius="full"
+          bg="blue.50"
+          color="blue.500"
+          fontSize="3xl"
+        >
+          {icon}
+        </Box>
+      )}
+      
+      <VStack spacing={2}>
+        <Text fontSize="xl" fontWeight="bold" color="gray.800">
+          {title}
+        </Text>
+        <Text color="gray.600" maxW="400px">
+          {description}
+        </Text>
       </VStack>
-    </Flex>
+      
+      {action && (
+        <Box>
+          {action}
+        </Box>
+      )}
+    </VStack>
   );
-};
+});
 
-export const NoDataState = ({ 
+EmptyState.displayName = 'EmptyState';
+
+export const NoDataState = memo(({ 
   type = 'data',
   action 
 }) => {
-  const config = {
-    data: {
-      title: 'No data available',
-      description: 'There are no items to display at the moment.',
-    },
-    transactions: {
-      title: 'No transactions found',
-      description: 'Start by adding your first transaction to track your finances.',
-    },
-    invoices: {
-      title: 'No invoices found',
-      description: 'Create your first invoice to start billing your customers.',
-    },
-    reports: {
-      title: 'No reports available',
-      description: 'Generate reports to analyze your financial data.',
-    },
-    customers: {
-      title: 'No customers found',
-      description: 'Add customers to start creating invoices and managing relationships.',
-    },
+  const getContent = () => {
+    switch (type) {
+      case 'transactions':
+        return {
+          title: 'No Transactions Found',
+          description: 'Start by adding your first transaction to track your financial activities.',
+          icon: '📊'
+        };
+      case 'accounts':
+        return {
+          title: 'No Accounts Found',
+          description: 'Create your first account to organize your financial data.',
+          icon: '🏦'
+        };
+      case 'invoices':
+        return {
+          title: 'No Invoices Found',
+          description: 'Create your first invoice to start managing your billing.',
+          icon: '📄'
+        };
+      case 'reports':
+        return {
+          title: 'No Reports Available',
+          description: 'Generate reports once you have some financial data.',
+          icon: '📈'
+        };
+      default:
+        return {
+          title: 'No Data Found',
+          description: 'There\'s no data to display at the moment.',
+          icon: '📋'
+        };
+    }
   };
 
-  const { title, description } = config[type] || config.data;
+  const content = getContent();
 
   return (
     <EmptyState
-      title={title}
-      description={description}
+      title={content.title}
+      description={content.description}
+      icon={content.icon}
       action={action}
     />
   );
-};
+});
 
-export default {
+NoDataState.displayName = 'NoDataState';
+
+const LoadingStates = {
   TableSkeleton,
   CardSkeleton,
   DashboardSkeleton,
@@ -357,4 +374,6 @@ export default {
   ProcessingProgress,
   EmptyState,
   NoDataState,
-}; 
+};
+
+export default LoadingStates; 

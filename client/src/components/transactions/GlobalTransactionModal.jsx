@@ -1,43 +1,45 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  Button,
-  FormControl,
-  FormLabel,
-  FormHelperText,
-  FormErrorMessage,
-  Input,
-  Select,
-  Textarea,
-  VStack,
-  HStack,
-  Text,
-  useToast,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  Box,
-  IconButton,
-  Flex,
-} from '@chakra-ui/react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
 import {
   AddIcon,
   CloseIcon,
 } from '@chakra-ui/icons';
+import {
+  Box,
+  Button,
+  Flex,
+  FormControl,
+  FormErrorMessage,
+  FormHelperText,
+  FormLabel,
+  HStack,
+  IconButton,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  Select,
+  Text,
+  Textarea,
+  useToast,
+  VStack,
+} from '@chakra-ui/react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { useApi } from '../../hooks/useApi';
+
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useTransaction } from '../../contexts/TransactionContext';
 import { LoadingSpinner } from '../common/LoadingStates';
+import { useApi } from '../../hooks/useApi';
 
 const GlobalTransactionModal = () => {
   const { isModalOpen, selectedTransaction, closeModal, handleTransactionSuccess } = useTransaction();
@@ -138,12 +140,13 @@ const GlobalTransactionModal = () => {
     },
   });
 
-  const resetForm = () => {
+  // Memoized functions
+  const resetForm = useCallback(() => {
     formik.resetForm();
     setAttachments([]);
     setShowAddAccount(false);
     setNewAccount({ name: '', code: '', type: '', description: '' });
-  };
+  }, [formik]);
 
   const loadFormData = useCallback(async () => {
     setLoading(true);
@@ -174,44 +177,20 @@ const GlobalTransactionModal = () => {
     }
   }, [api, selectedBusiness, toast]);
 
-  // Load accounts and categories
-  useEffect(() => {
-    if (isModalOpen) {
-      loadFormData();
-    }
-  }, [isModalOpen, loadFormData]);
-
-  // Filter categories by transaction type
-  const filteredCategories = categories.filter(cat => 
-    cat.type === formik.values.transactionType || cat.type === 'general'
-  );
-
-  // Filter accounts by transaction type
-  const filteredAccounts = accounts.filter(acc => {
-    if (formik.values.transactionType === 'Income') {
-      return acc.type === 'REVENUE' || acc.type === 'ASSET';
-    } else if (formik.values.transactionType === 'Expense') {
-      return acc.type === 'EXPENSE' || acc.type === 'ASSET';
-    } else if (formik.values.transactionType === 'Transfer') {
-      return acc.type === 'ASSET';
-    }
-    return true;
-  });
-
-  const handleAmountChange = (value) => {
+  const handleAmountChange = useCallback((value) => {
     formik.setFieldValue('amount', value);
-  };
+  }, [formik]);
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = useCallback((event) => {
     const files = Array.from(event.target.files);
     setAttachments(prev => [...prev, ...files]);
-  };
+  }, []);
 
-  const removeAttachment = (index) => {
+  const removeAttachment = useCallback((index) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
-  const handleAddAccount = async () => {
+  const handleAddAccount = useCallback(async () => {
     try {
       const accountData = {
         ...newAccount,
@@ -238,26 +217,52 @@ const GlobalTransactionModal = () => {
           isClosable: true,
         });
       }
-      
     } catch (error) {
       console.error('Error creating account:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create account',
+        description: 'Failed to create account',
         status: 'error',
         duration: 3000,
         isClosable: true,
       });
     }
-  };
+  }, [api, newAccount, selectedBusiness, formik, toast]);
 
-  const getFieldError = (fieldName) => {
+  const getFieldError = useCallback((fieldName) => {
     return formik.touched[fieldName] && formik.errors[fieldName];
-  };
+  }, [formik]);
 
-  const isFieldInvalid = (fieldName) => {
+  const isFieldInvalid = useCallback((fieldName) => {
     return formik.touched[fieldName] && formik.errors[fieldName];
-  };
+  }, [formik]);
+
+  // Memoized computed values
+  const filteredCategories = useMemo(() => 
+    categories.filter(cat => 
+      cat.type === formik.values.transactionType || cat.type === 'general'
+    ), [categories, formik.values.transactionType]);
+
+  const filteredAccounts = useMemo(() => 
+    accounts.filter(acc => {
+      if (formik.values.transactionType === 'Income') {
+        return acc.type === 'REVENUE' || acc.type === 'ASSET';
+      } else if (formik.values.transactionType === 'Expense') {
+        return acc.type === 'EXPENSE' || acc.type === 'ASSET';
+      } else if (formik.values.transactionType === 'Transfer') {
+        return acc.type === 'ASSET';
+      }
+      return true;
+    }), [accounts, formik.values.transactionType]);
+
+  // Effects
+  useEffect(() => {
+    if (isModalOpen) {
+      loadFormData();
+    }
+  }, [isModalOpen, loadFormData]);
+
+
 
 
 

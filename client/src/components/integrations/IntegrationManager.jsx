@@ -1,26 +1,98 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Heading, Flex, HStack, Button, SimpleGrid, Card, CardHeader, CardBody, Text, Badge, Switch, FormControl, FormLabel, Input, VStack, useToast, Alert, AlertIcon, AlertTitle, AlertDescription
+  Box,
+  Heading,
+  Text,
+  Button,
+  VStack,
+  HStack,
+  Card,
+  CardBody,
+  Badge,
+  IconButton,
+  useDisclosure,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  useToast,
+  SimpleGrid,
+  Skeleton,
 } from '@chakra-ui/react';
-import { CheckIcon, CloseIcon, ExternalLinkIcon } from '@chakra-ui/icons';
-import { useApi } from '../../hooks/useApi';
+import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import integrationService from '../../services/integrationService';
 
 const IntegrationManager = () => {
-  const [bankConnections, setBankConnections] = useState([]);
-  const [paymentGateways, setPaymentGateways] = useState([]);
-  const [emailSettings, setEmailSettings] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [showBankForm, setShowBankForm] = useState(false);
-  const [bankCredentials, setBankCredentials] = useState({});
+  const [integrations, setIntegrations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedIntegration, setSelectedIntegration] = useState(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
-  const api = useApi();
+
+  const fetchIntegrationData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await integrationService.getAll();
+      setIntegrations(response.data || response);
+    } catch (err) {
+      setError('Failed to fetch integrations');
+      toast({
+        title: 'Error',
+        description: 'Failed to load integrations',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
     fetchIntegrationData();
-  }, []);
+  }, [fetchIntegrationData]);
 
-  const fetchIntegrationData = async () => {
+  const handleEdit = (integration) => {
+    setSelectedIntegration(integration);
+    onOpen();
+  };
+
+  const handleDelete = async (id) => {
     try {
+      await integrationService.delete(id);
+      toast({
+        title: 'Success',
+        description: 'Integration deleted successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+      fetchIntegrationData();
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete integration',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleAdd = () => {
+    setSelectedIntegration(null);
+    onOpen();
+  };
+
+  const handleSave = async (integration) => {
+    try {
+      if (integration.id) {
+        await integrationService.update(integration.id, integration);
+        toast({
       setLoading(true);
       // Placeholder data - would fetch from API
       setBankConnections([

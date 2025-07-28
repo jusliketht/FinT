@@ -1,70 +1,91 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
-  Heading,
-  Text,
-  Table,
-  IconButton,
-  Input,
-  FormHelperText,
-  Alert,
-  Spinner,
-  HStack,
   VStack,
-  Select
+  HStack,
+  useDisclosure,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  useToast,
+  SimpleGrid,
+  Skeleton,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { AddIcon } from '@chakra-ui/icons';
 import accountTypeService from '../../../services/accountTypeService';
-import { useToast } from '../../../contexts/ToastContext';
-import { useApi } from '../../../hooks/useApi';
 
 const AccountTypesManager = () => {
-  const api = useApi();
-  const { showToast } = useToast();
-  
   const [accountTypes, setAccountTypes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    value: '',
-    label: '',
-    description: ''
-  });
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const toast = useToast();
 
-  useEffect(() => {
-    fetchAccountTypes();
-  }, []);
-
-  const fetchAccountTypes = async () => {
+  const fetchAccountTypes = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get('/account-types');
-      setAccountTypes(response.data);
-    } catch (error) {
-      showToast('Failed to fetch account types', 'error');
+      setError(null);
+      const response = await accountTypeService.getAll();
+      setAccountTypes(response.data || response);
+    } catch (err) {
+      setError('Failed to fetch account types');
+      toast({
+        title: 'Error',
+        description: 'Failed to load account types',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchAccountTypes();
+  }, [fetchAccountTypes]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
       if (selectedType) {
-        await api.put(`/account-types/${selectedType.id}`, formData);
-        showToast('Account type updated successfully', 'success');
+        await accountTypeService.update(selectedType.id, formData);
+        toast({
+          title: 'Success',
+          description: 'Account type updated successfully',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
       } else {
-        await api.post('/account-types', formData);
-        showToast('Account type created successfully', 'success');
+        await accountTypeService.create(formData);
+        toast({
+          title: 'Success',
+          description: 'Account type created successfully',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
       }
       
       fetchAccountTypes();
       handleClose();
     } catch (error) {
-      showToast('Failed to save account type', 'error');
+      toast({
+        title: 'Error',
+        description: 'Failed to save account type',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     }
   };
 
@@ -75,7 +96,7 @@ const AccountTypesManager = () => {
       label: accountType.label,
       description: accountType.description || ''
     });
-    setShowForm(true);
+    onOpen();
   };
 
   const handleDelete = async (id) => {
@@ -84,18 +105,30 @@ const AccountTypesManager = () => {
     }
     
     try {
-      await api.delete(`/account-types/${id}`);
-      showToast('Account type deleted successfully', 'success');
+      await accountTypeService.delete(id);
+      toast({
+        title: 'Success',
+        description: 'Account type deleted successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
       fetchAccountTypes();
     } catch (error) {
-      showToast('Failed to delete account type', 'error');
+      toast({
+        title: 'Error',
+        description: 'Failed to delete account type',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     }
   };
 
   const handleClose = () => {
     setSelectedType(null);
     setFormData({ value: '', label: '', description: '' });
-    setShowForm(false);
+    onClose();
   };
 
   return (
@@ -105,63 +138,66 @@ const AccountTypesManager = () => {
         <Button
           leftIcon={<AddIcon />}
           colorScheme="brand"
-          onClick={() => setShowForm(true)}
+          onClick={onOpen}
         >
           Add Account Type
         </Button>
       </HStack>
 
-      {showForm && (
-        <Box borderWidth="1px" borderRadius="lg" p={6} bg="gray.50">
-          <VStack spacing={4}>
-            <Heading size="md">
-              {selectedType ? 'Edit Account Type' : 'Add Account Type'}
-            </Heading>
-            
-            <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-              <VStack spacing={4}>
-                <Box width="100%">
-                  <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Value *</label>
-                  <Input
-                    value={formData.value}
-                    onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
-                    placeholder="e.g., asset, liability"
-                    required
-                  />
-                </Box>
-                
-                <Box width="100%">
-                  <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Label *</label>
-                  <Input
-                    value={formData.label}
-                    onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
-                    placeholder="e.g., Asset, Liability"
-                    required
-                  />
-                </Box>
-                
-                <Box width="100%">
-                  <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Description</label>
-                  <Input
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Optional description"
-                  />
-                </Box>
-                
-                <HStack spacing={3}>
-                  <Button variant="ghost" onClick={handleClose}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" colorScheme="brand">
-                    {selectedType ? 'Update' : 'Create'}
-                  </Button>
-                </HStack>
-              </VStack>
-            </form>
-          </VStack>
-        </Box>
-      )}
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            {selectedType ? 'Edit Account Type' : 'Add Account Type'}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+                <VStack spacing={4}>
+                  <Box width="100%">
+                    <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Value *</label>
+                    <Input
+                      value={formData.value}
+                      onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
+                      placeholder="e.g., asset, liability"
+                      required
+                    />
+                  </Box>
+                  
+                  <Box width="100%">
+                    <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Label *</label>
+                    <Input
+                      value={formData.label}
+                      onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
+                      placeholder="e.g., Asset, Liability"
+                      required
+                    />
+                  </Box>
+                  
+                  <Box width="100%">
+                    <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Description</label>
+                    <Input
+                      value={formData.description}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Optional description"
+                    />
+                  </Box>
+                  
+                  <HStack spacing={3}>
+                    <Button variant="ghost" onClick={onClose}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" colorScheme="brand">
+                      {selectedType ? 'Update' : 'Create'}
+                    </Button>
+                  </HStack>
+                </VStack>
+              </form>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       <Box borderWidth="1px" borderRadius="lg" overflow="hidden">
         <Table variant="simple">

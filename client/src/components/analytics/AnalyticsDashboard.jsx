@@ -1,45 +1,90 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+
 import {
-  Box, Heading, Flex, HStack, Button, SimpleGrid, Stat, StatLabel, StatNumber, StatHelpText, Card, CardHeader, CardBody, Select, Text, Badge, useToast
+  DownloadIcon,
+  TrendingDownIcon,
+  TrendingUpIcon,
+} from '@chakra-ui/icons';
+import {
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Flex,
+  Heading,
+  HStack,
+  Select,
+  SimpleGrid,
+  Stat,
+  StatHelpText,
+  StatLabel,
+  StatNumber,
+  Text,
+  useToast,
 } from '@chakra-ui/react';
-import { DownloadIcon, TrendingUpIcon, TrendingDownIcon } from '@chakra-ui/icons';
+
+import { useBusiness } from '../../hooks/useBusiness';
+import analyticsService from '../../services/analyticsService';
 import { formatCurrency, formatPercentage } from '../../utils/formatters';
-import { useApi } from '../../hooks/useApi';
 
 const AnalyticsDashboard = () => {
-  const [kpis, setKpis] = useState({});
-  const [profitability, setProfitability] = useState({});
-  const [businessMetrics, setBusinessMetrics] = useState({});
-  const [trends, setTrends] = useState([]);
+  const [analyticsData, setAnalyticsData] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('current');
-  const [selectedMetric, setSelectedMetric] = useState('revenue');
-  const [loading, setLoading] = useState(false);
+  const { selectedBusiness } = useBusiness();
   const toast = useToast();
-  const api = useApi();
+
+  const fetchAnalyticsData = useCallback(async () => {
+    if (!selectedBusiness?.id) return;
+    
+    try {
+      setError(null);
+      const response = await analyticsService.getAnalytics(selectedBusiness.id);
+      setAnalyticsData(response);
+    } catch (err) {
+      setError('Failed to load analytics data');
+      toast({
+        title: 'Error',
+        description: 'Failed to load analytics data',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [selectedBusiness?.id, toast]);
+
+  // Extract KPIs from analytics data
+  const kpis = analyticsData?.kpis || {
+    revenue: 0,
+    expenses: 0,
+    profit: 0,
+    profitMargin: 0,
+  };
+
+  const profitability = analyticsData?.profitability || {
+    grossMargin: 0,
+    netMargin: 0,
+    operatingMargin: 0,
+  };
+
+  const businessMetrics = analyticsData?.businessMetrics || {
+    customerCount: 0,
+    transactionCount: 0,
+    averageTransactionValue: 0,
+  };
+
+  const trends = analyticsData?.trends || {
+    revenueGrowth: 0,
+    expenseGrowth: 0,
+    profitGrowth: 0,
+  };
+
+  const [selectedMetric, setSelectedMetric] = useState('revenue');
 
   useEffect(() => {
     fetchAnalyticsData();
-  }, [selectedPeriod]);
-
-  const fetchAnalyticsData = async () => {
-    try {
-      setLoading(true);
-      const [kpisResponse, profitabilityResponse, businessMetricsResponse, trendsResponse] = await Promise.all([
-        api.get(`/analytics/kpis?period=${selectedPeriod}`),
-        api.get(`/analytics/profitability?period=${selectedPeriod}`),
-        api.get('/analytics/business-metrics'),
-        api.get(`/analytics/trends?metric=${selectedMetric}&periods=12`)
-      ]);
-      setKpis(kpisResponse.data);
-      setProfitability(profitabilityResponse.data);
-      setBusinessMetrics(businessMetricsResponse.data);
-      setTrends(trendsResponse.data);
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to fetch analytics data', status: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchAnalyticsData]);
 
   const exportAnalyticsReport = () => {
     toast({ title: 'Export', description: 'Export not implemented', status: 'info' });

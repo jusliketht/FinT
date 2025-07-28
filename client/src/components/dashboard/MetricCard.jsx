@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
   Box,
   Text,
@@ -7,7 +7,7 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react';
 
-const MetricCard = ({ 
+const MetricCard = memo(({ 
   title, 
   value, 
   gradient, 
@@ -163,6 +163,8 @@ const MetricCard = ({
       </Box>
     </Box>
   );
-};
+});
+
+MetricCard.displayName = 'MetricCard';
 
 export default MetricCard; 

@@ -1,45 +1,29 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React from 'react';
 import {
   Box,
   VStack,
+  HStack,
   Text,
-  Flex,
   Icon,
   useColorModeValue,
   useDisclosure,
-  IconButton,
-  Drawer,
-  DrawerBody,
-  DrawerHeader,
-  DrawerOverlay,
-  DrawerContent,
-  DrawerCloseButton,
-  Tooltip,
-  Divider,
+  Collapse,
+  Button,
 } from '@chakra-ui/react';
 import {
-  HamburgerIcon,
-  ViewIcon,
-  SettingsIcon,
-  InfoIcon,
-  RepeatIcon,
-  EditIcon,
-  CheckCircleIcon,
-  TimeIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from '@chakra-ui/icons';
-import { 
-  FiPackage, 
-  FiBarChart2, 
-  FiLink, 
-  FiPercent, 
+  FiHome,
   FiDollarSign,
   FiFileText,
-  FiUsers,
-  FiHome,
+  FiBarChart2,
+  FiSettings,
+  FiUser,
+  FiBuilding,
+  FiCreditCard,
+  FiBook,
+  FiCalculator,
+  FiDatabase,
   FiTrendingUp,
+  FiUsers,
   FiShield,
 } from 'react-icons/fi';
 
@@ -55,10 +39,10 @@ const navLinks = [
   { 
     section: 'Financial Management', 
     items: [
-      { label: 'Journal Entries', to: '/journal', icon: EditIcon },
-      { label: 'Transactions', to: '/transactions', icon: RepeatIcon },
-      { label: 'Bank Reconciliation', to: '/bank-statements', icon: CheckCircleIcon },
-      { label: 'Chart of Accounts', to: '/accounts', icon: ViewIcon },
+      { label: 'Journal Entries', to: '/journal', icon: FiBook },
+      { label: 'Transactions', to: '/transactions', icon: FiCreditCard },
+      { label: 'Bank Reconciliation', to: '/bank-statements', icon: FiDatabase },
+      { label: 'Chart of Accounts', to: '/accounts', icon: FiDollarSign },
     ]
   },
   // Business Operations
@@ -66,7 +50,7 @@ const navLinks = [
     section: 'Business Operations', 
     items: [
       { label: 'Invoices', to: '/invoices', icon: FiFileText },
-      { label: 'Business', to: '/business', icon: FiUsers },
+      { label: 'Business', to: '/business', icon: FiBuilding },
     ]
   },
   // Analytics & Reports
@@ -80,8 +64,8 @@ const navLinks = [
   { 
     section: 'System', 
     items: [
-      { label: 'Settings', to: '/settings', icon: SettingsIcon },
-      { label: 'Profile', to: '/profile', icon: InfoIcon },
+      { label: 'Settings', to: '/settings', icon: FiSettings },
+      { label: 'Profile', to: '/profile', icon: FiUser },
     ]
   },
 ];

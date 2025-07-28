@@ -1,65 +1,89 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
-  Input,
-  Select,
   VStack,
   HStack,
-  Heading,
-  Text,
-  IconButton,
+  useDisclosure,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  useToast,
+  SimpleGrid,
+  Skeleton,
   Alert,
-  Card,
-  CardBody,
-  Badge,
+  AlertIcon,
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, SearchIcon } from '@chakra-ui/icons';
-import { useToast } from '../../../contexts/ToastContext';
-import useApi from '../../../hooks/useApi';
-import AccountForm from './AccountForm';
+import { AddIcon } from '@chakra-ui/icons';
+import accountService from '../../../services/accountService';
 
 const AccountsManager = () => {
   const [accounts, setAccounts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [editingAccount, setEditingAccount] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('');
-  const [filterCategory, setFilterCategory] = useState('');
-  const api = useApi();
-  const { showToast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const toast = useToast();
 
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
-
-  const fetchAccounts = async () => {
-    setLoading(true);
+  const fetchAccounts = useCallback(async () => {
     try {
-      const response = await api.get('/api/accounts');
-      setAccounts(response.data);
-    } catch (error) {
-      showToast('Error fetching accounts', 'error');
+      setLoading(true);
+      setError(null);
+      const response = await accountService.getAll();
+      setAccounts(response.data || response);
+    } catch (err) {
+      setError('Failed to fetch accounts');
+      toast({
+        title: 'Error',
+        description: 'Failed to load accounts',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
 
   const handleSave = async (accountData) => {
     try {
-      if (editingAccount) {
-        await api.put(`/api/accounts/${editingAccount.id}`, accountData);
-        showToast('Account updated successfully', 'success');
+      if (selectedAccount) {
+        await accountService.update(selectedAccount.id, accountData);
+        toast({
+          title: 'Account updated',
+          description: 'Account updated successfully',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
       } else {
-        await api.post('/api/accounts', accountData);
-        showToast('Account created successfully', 'success');
+        await accountService.create(accountData);
+        toast({
+          title: 'Account created',
+          description: 'Account created successfully',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
       }
       fetchAccounts();
-      setShowForm(false);
-      setEditingAccount(null);
+      onClose();
+      setSelectedAccount(null);
     } catch (error) {
-      showToast('Error saving account', 'error');
+      toast({
+        title: 'Error saving account',
+        description: 'Failed to save account',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     }
   };
 

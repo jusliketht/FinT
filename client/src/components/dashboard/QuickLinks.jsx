@@ -1,26 +1,20 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import {
   Box,
-  Text,
+  SimpleGrid,
   Button,
   VStack,
-  HStack,
-  Icon,
+  Text,
   useColorModeValue,
-  Tooltip,
-  useDisclosure,
+  Icon,
 } from '@chakra-ui/react';
 import {
   AddIcon,
-  ViewIcon,
-  AttachmentIcon,
+  UploadIcon,
   SettingsIcon,
-  FileIcon,
-  CheckCircleIcon,
-  InfoIcon,
+  SearchIcon,
 } from '@chakra-ui/icons';
-import { FiDollarSign, FiTrendingUp, FiUsers, FiCreditCard } from 'react-icons/fi';
+import { FiFileText, FiBarChart2 } from 'react-icons/fi';
 import TransactionForm from '../transactions/TransactionForm';
 import { useBusiness } from '../../contexts/BusinessContext';
 

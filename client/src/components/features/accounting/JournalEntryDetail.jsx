@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -19,33 +19,41 @@ import { useApi } from '../../../hooks/useApi';
 import { useToast } from '../../../contexts/ToastContext';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorMessage from '../../common/ErrorMessage';
+import { journalEntryService } from '../../../services/journalEntryService';
 
-const JournalEntryDetail = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const api = useApi();
-  const { showToast } = useToast();
-  
+const JournalEntryDetail = ({ entryId, isOpen, onClose }) => {
   const [entry, setEntry] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const toast = useToast();
 
-  useEffect(() => {
-    fetchEntryDetails();
-  }, [id]);
-
-  const fetchEntryDetails = async () => {
+  const fetchEntryDetails = useCallback(async () => {
+    if (!entryId) return;
+    
     try {
       setLoading(true);
-      const response = await api.get(`/journal-entries/${id}`);
-      setEntry(response.data);
+      setError(null);
+      const response = await journalEntryService.getById(entryId);
+      setEntry(response.data || response);
     } catch (err) {
-      setError(err.message || 'Failed to fetch journal entry details');
-      showToast('Failed to fetch journal entry details', 'error');
+      setError('Failed to fetch entry details');
+      toast({
+        title: 'Error',
+        description: 'Failed to load entry details',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [entryId, toast]);
+
+  useEffect(() => {
+    if (isOpen && entryId) {
+      fetchEntryDetails();
+    }
+  }, [isOpen, entryId, fetchEntryDetails]);
 
   const handleEdit = () => {
     navigate(`/journal-entries/${id}/edit`);

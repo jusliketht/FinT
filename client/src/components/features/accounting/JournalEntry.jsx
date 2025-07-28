@@ -9,7 +9,7 @@ import {
   HStack,
   VStack
 } from '@chakra-ui/react';
-import { DataTable, FilterBar, SearchInput } from '../../../components/common';
+import { DataTable, SearchInput } from '../../../components/common';
 import { formatCurrency, formatDate } from '../../../utils/format';
 import JournalEntryForm from './JournalEntryForm';
 import JournalEntryDetail from './JournalEntryDetail';

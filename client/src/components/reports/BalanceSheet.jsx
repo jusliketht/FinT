@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -18,7 +18,6 @@ import {
   Stat,
   StatLabel,
   StatNumber,
-  StatGroup,
   Spinner,
   Alert,
   AlertIcon,
@@ -35,7 +34,7 @@ const BalanceSheet = () => {
   const [reportData, setReportData] = useState(null);
   const [asOfDate, setAsOfDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const fetchReport = async () => {
+  const fetchReport = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.get('/accounting/reports/balance-sheet', {
@@ -54,11 +53,11 @@ const BalanceSheet = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, asOfDate, toast]);
 
   useEffect(() => {
     fetchReport();
-  }, []);
+  }, [fetchReport]);
 
   const handleGenerate = () => {
     fetchReport();

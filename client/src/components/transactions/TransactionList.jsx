@@ -1,48 +1,43 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
 import {
-  Box,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Button,
-  HStack,
-  VStack,
-  Text,
-  Badge,
-  IconButton,
-  useDisclosure,
-  Flex,
-  Spinner,
+  DeleteIcon,
+  EditIcon,
+  SearchIcon,
+} from '@chakra-ui/icons';
+import {
   Alert,
   AlertIcon,
-  useToast,
-  Pagination,
-  Select,
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  Flex,
+  HStack,
+  IconButton,
   Input,
   InputGroup,
   InputLeftElement,
-  Card,
-  CardBody,
-  SimpleGrid,
-  useColorModeValue,
+  Select,
   Skeleton,
   SkeletonText,
+  SimpleGrid,
+  Table,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
+  useColorModeValue,
+  useToast,
+  VStack,
 } from '@chakra-ui/react';
-import {
-  EditIcon,
-  DeleteIcon,
-  ViewIcon,
-  ChevronDownIcon,
-  SearchIcon,
-  FilterIcon,
-} from '@chakra-ui/icons';
-import { useTransaction } from '../../contexts/TransactionContext';
+
 import { useBusiness } from '../../contexts/BusinessContext';
+import { useTransaction } from '../../contexts/TransactionContext';
 import transactionService from '../../services/transactionService';
-import journalEntryService from '../../services/journalEntryService';
 
 const TransactionList = () => {
   const { selectedBusiness } = useBusiness();
@@ -64,7 +59,6 @@ const TransactionList = () => {
   const [dateRange, setDateRange] = useState('');
   const [transactionType, setTransactionType] = useState('');
   const [category, setCategory] = useState('');
-  const [personEntity, setPersonEntity] = useState('');
   const [reconciliationStatus, setReconciliationStatus] = useState('');
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -72,6 +66,7 @@ const TransactionList = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
+  // Memoized functions
   const loadTransactions = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -91,7 +86,7 @@ const TransactionList = () => {
         dateRange: dateRange || undefined,
         type: transactionType || undefined,
         category: category || undefined,
-        personEntity: personEntity || undefined,
+        personEntity: undefined, // This was removed
         reconciliationStatus: reconciliationStatus || undefined,
         sortBy,
         sortOrder,
@@ -124,22 +119,13 @@ const TransactionList = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedBusiness, searchQuery, dateRange, transactionType, category, personEntity, reconciliationStatus, sortBy, sortOrder, pagination.page, pagination.limit, toast]);
+  }, [selectedBusiness, searchQuery, dateRange, transactionType, category, reconciliationStatus, sortBy, sortOrder, pagination.page, pagination.limit, toast]);
 
-  useEffect(() => {
-    loadTransactions();
-  }, [loadTransactions]);
-
-  useEffect(() => {
-    // Reset to first page when filters change
-    setPagination(prev => ({ ...prev, page: 1 }));
-  }, [searchQuery, dateRange, transactionType, category, personEntity, reconciliationStatus, sortBy, sortOrder]);
-
-  const handleEdit = (transaction) => {
+  const handleEdit = useCallback((transaction) => {
     openEditTransaction(transaction);
-  };
+  }, [openEditTransaction]);
 
-  const handleDelete = async (transaction) => {
+  const handleDelete = useCallback(async (transaction) => {
     if (!window.confirm(`Are you sure you want to delete this transaction: "${transaction.description}"?`)) {
       return;
     }
@@ -167,30 +153,43 @@ const TransactionList = () => {
         isClosable: true,
       });
     }
-  };
+  }, [loadTransactions, toast]);
 
-  const handlePageChange = (page) => {
+  const handlePageChange = useCallback((page) => {
     setPagination(prev => ({ ...prev, page }));
-  };
+  }, []);
 
-  const formatDate = (dateString) => {
+  // Effects
+  useEffect(() => {
+    loadTransactions();
+  }, [loadTransactions]);
+
+  useEffect(() => {
+    // Reset to first page when filters change
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, [searchQuery, dateRange, transactionType, category, reconciliationStatus, sortBy, sortOrder]);
+
+
+
+  // Utility functions
+  const formatDate = useCallback((dateString) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('en-IN', {
       month: 'short',
       day: '2-digit',
       year: 'numeric'
     });
-  };
+  }, []);
 
-  const formatAmount = (amount) => {
+  const formatAmount = useCallback((amount) => {
     if (typeof amount !== 'number') return '₹0';
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR'
     }).format(amount);
-  };
+  }, []);
 
-  const getStatusColor = (status) => {
+  const getStatusColor = useCallback((status) => {
     switch (status?.toLowerCase()) {
       case 'posted':
       case 'paid':
@@ -204,14 +203,14 @@ const TransactionList = () => {
       default:
         return 'gray';
     }
-  };
+  }, []);
 
-  const getStatusLabel = (status) => {
+  const getStatusLabel = useCallback((status) => {
     if (!status) return 'Unknown';
     return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-  };
+  }, []);
 
-  const LoadingSkeleton = () => (
+  const LoadingSkeleton = useMemo(() => (
     <VStack spacing={4} align="stretch">
       {Array.from({ length: 5 }).map((_, index) => (
         <Flex key={index} align="center" p={4}>
@@ -226,7 +225,7 @@ const TransactionList = () => {
         </Flex>
       ))}
     </VStack>
-  );
+  ), []);
 
   if (error) {
     return (

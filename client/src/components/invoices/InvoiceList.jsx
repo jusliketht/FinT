@@ -1,45 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
+  Button,
+  Heading,
+  Text,
   VStack,
   HStack,
-  Text,
-  Button,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
   Card,
   CardBody,
-  Heading,
   Badge,
-  Input,
-  InputGroup,
-  InputLeftElement,
   IconButton,
   useDisclosure,
-  Select,
-  Flex,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
-  SimpleGrid,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
   useToast,
+  SimpleGrid,
+  Skeleton,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
-import { 
-  SearchIcon, 
-  AddIcon, 
-  EditIcon, 
-  ViewIcon, 
-  DownloadIcon,
-  EmailIcon,
-  SettingsIcon,
-} from '@chakra-ui/icons';
-import { invoiceService } from '../../services/invoiceService';
+import { AddIcon, EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
+import invoiceService from '../../services/invoiceService';
 import { useBusiness } from '../../contexts/BusinessContext';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorMessage from '../common/ErrorMessage';
@@ -49,68 +34,38 @@ const InvoiceList = () => {
   const { selectedBusiness } = useBusiness();
   const toast = useToast();
   const [invoices, setInvoices] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
-  // Sample data for demonstration
-  const sampleInvoices = [
-    {
-      id: 1,
-      invoiceNumber: 'INV-001',
-      customer: 'Acme Corp',
-      issueDate: '2024-01-15',
-      dueDate: '2024-02-15',
-      totalAmount: 5000,
-      balanceAmount: 5000,
-      status: 'SENT',
-    },
-    {
-      id: 2,
-      invoiceNumber: 'INV-002',
-      customer: 'Tech Solutions',
-      issueDate: '2024-01-20',
-      dueDate: '2024-02-20',
-      totalAmount: 7500,
-      balanceAmount: 0,
-      status: 'PAID',
-    },
-    {
-      id: 3,
-      invoiceNumber: 'INV-003',
-      customer: 'Global Industries',
-      issueDate: '2024-01-10',
-      dueDate: '2024-02-10',
-      totalAmount: 12000,
-      balanceAmount: 12000,
-      status: 'OVERDUE',
-    },
-  ];
-
-  const fetchInvoices = async () => {
-    if (!selectedBusiness) return;
-
-    setLoading(true);
-    setError(null);
-
+  const fetchInvoices = useCallback(async () => {
     try {
-      // For now, use sample data
-      setInvoices(sampleInvoices);
+      setLoading(true);
+      setError(null);
+      const response = await invoiceService.getAll();
+      setInvoices(response.data || response);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch invoices');
+      setError('Failed to fetch invoices');
+      toast({
+        title: 'Error',
+        description: 'Failed to load invoices',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     if (selectedBusiness) {
       fetchInvoices();
     }
-  }, [selectedBusiness, statusFilter]);
+  }, [selectedBusiness, fetchInvoices]);
 
   const handleEdit = (invoice) => {
     setSelectedInvoice(invoice);
@@ -189,7 +144,7 @@ const InvoiceList = () => {
     <Box p={6}>
       <VStack spacing={6} align="stretch">
         {/* Header */}
-        <Flex justify="space-between" align="center">
+        <HStack justify="space-between" align="center">
           <Box>
             <Heading size="lg" mb={2}>Invoice Management</Heading>
             <Text color="gray.600">
@@ -204,44 +159,56 @@ const InvoiceList = () => {
           >
             Create Invoice
           </Button>
-        </Flex>
+        </HStack>
 
         {/* Summary Stats */}
         <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6}>
           <Card>
             <CardBody>
-              <Stat>
-                <StatLabel>Total Invoices</StatLabel>
-                <StatNumber>{totalInvoices}</StatNumber>
-                <StatHelpText>All time</StatHelpText>
-              </Stat>
+              <Badge
+                colorScheme="blue"
+                size="sm"
+                mb={2}
+              >
+                Total Invoices
+              </Badge>
+              <Heading size="md">{totalInvoices}</Heading>
             </CardBody>
           </Card>
           <Card>
             <CardBody>
-              <Stat>
-                <StatLabel>Total Amount</StatLabel>
-                <StatNumber>{formatCurrency(totalAmount)}</StatNumber>
-                <StatHelpText>Gross amount</StatHelpText>
-              </Stat>
+              <Badge
+                colorScheme="purple"
+                size="sm"
+                mb={2}
+              >
+                Total Amount
+              </Badge>
+              <Heading size="md">{formatCurrency(totalAmount)}</Heading>
             </CardBody>
           </Card>
           <Card>
             <CardBody>
-              <Stat>
-                <StatLabel>Total Paid</StatLabel>
-                <StatNumber color="green.500">{formatCurrency(totalPaid)}</StatNumber>
-                <StatHelpText>Received payments</StatHelpText>
-              </Stat>
+              <Badge
+                colorScheme="green"
+                size="sm"
+                mb={2}
+              >
+                Total Paid
+              </Badge>
+              <Heading size="md" color="green.500">{formatCurrency(totalPaid)}</Heading>
             </CardBody>
           </Card>
           <Card>
             <CardBody>
-              <Stat>
-                <StatLabel>Outstanding</StatLabel>
-                <StatNumber color="red.500">{formatCurrency(totalOutstanding)}</StatNumber>
-                <StatHelpText>Pending payments</StatHelpText>
-              </Stat>
+              <Badge
+                colorScheme="red"
+                size="sm"
+                mb={2}
+              >
+                Outstanding
+              </Badge>
+              <Heading size="md" color="red.500">{formatCurrency(totalOutstanding)}</Heading>
             </CardBody>
           </Card>
         </SimpleGrid>
@@ -252,16 +219,25 @@ const InvoiceList = () => {
             <VStack spacing={4} align="stretch">
               {/* Search and Filter */}
               <HStack spacing={4}>
-                <InputGroup maxW="400px">
-                  <InputLeftElement pointerEvents="none">
-                    <SearchIcon color="gray.400" />
-                  </InputLeftElement>
-                  <Input
-                    placeholder="Search invoices by number, customer..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </InputGroup>
+                <Box maxW="400px">
+                  <Badge
+                    colorScheme="blue"
+                    size="sm"
+                    mb={2}
+                  >
+                    Search Invoices
+                  </Badge>
+                  <InputGroup maxW="400px">
+                    <InputLeftElement pointerEvents="none">
+                      <SearchIcon color="gray.400" />
+                    </InputLeftElement>
+                    <Input
+                      placeholder="Search invoices by number, customer..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </InputGroup>
+                </Box>
 
                 <Select
                   placeholder="All Status"

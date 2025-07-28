@@ -3,14 +3,12 @@ import { Navigate, useLocation } from 'react-router-dom';
 import {
   Box,
   VStack,
-  Heading,
   Text,
-  Button,
+  useColorModeValue,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  Spinner,
 } from '@chakra-ui/react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';

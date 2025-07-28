@@ -9,7 +9,8 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  useToast,
+  Code,
+  useColorModeValue,
 } from '@chakra-ui/react';
 
 class ErrorBoundary extends React.Component {

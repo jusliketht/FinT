@@ -8,7 +8,6 @@ import {
   HStack,
   Text,
   useToast,
-  IconButton,
   Spinner
 } from '@chakra-ui/react';
 import accountService from '../../services/accountService';

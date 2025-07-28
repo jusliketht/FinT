@@ -1,39 +1,41 @@
 import React, { useState, useEffect, useCallback } from 'react';
+
 import {
+  AddIcon,
+  DownloadIcon,
+  SearchIcon,
+} from '@chakra-ui/icons';
+import {
+  Badge,
   Box,
-  Heading,
-  Text,
-  HStack,
-  VStack,
   Button,
+  Card,
+  CardBody,
+  Checkbox,
+  Divider,
+  Flex,
+  Heading,
+  HStack,
   Input,
   InputGroup,
   InputLeftElement,
   Select,
-  Checkbox,
-  Card,
-  CardBody,
-  useToast,
-  Flex,
+  Spinner,
   Stat,
+  StatArrow,
+  StatHelpText,
   StatLabel,
   StatNumber,
-  StatHelpText,
-  StatArrow,
-  Badge,
-  Divider,
-  Spinner,
+  Text,
+  useToast,
+  VStack,
 } from '@chakra-ui/react';
-import {
-  AddIcon,
-  SearchIcon,
-  DownloadIcon,
-} from '@chakra-ui/icons';
-import TransactionList from '../components/transactions/TransactionList';
-import transactionService from '../services/transactionService';
-import { analyticsService } from '../services/analyticsService';
+
 import { useBusiness } from '../contexts/BusinessContext';
 import { useTransaction } from '../contexts/TransactionContext';
+import TransactionList from '../components/transactions/TransactionList';
+import { analyticsService } from '../services/analyticsService';
+import transactionService from '../services/transactionService';
 
 const TransactionsPage = () => {
   const { selectedBusiness } = useBusiness();
@@ -97,12 +99,12 @@ const TransactionsPage = () => {
     loadSummaryStats();
   }, [loadSummaryStats]);
 
-  const formatCurrency = (amount) => {
+  const formatCurrency = useCallback((amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR'
     }).format(amount);
-  };
+  }, []);
 
   return (
     <Flex h="calc(100vh - 64px)">

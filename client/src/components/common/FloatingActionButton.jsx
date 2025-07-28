@@ -2,9 +2,8 @@ import React from 'react';
 import {
   Box,
   IconButton,
-  Tooltip,
   useColorModeValue,
-  useDisclosure,
+  Tooltip,
 } from '@chakra-ui/react';
 import { AddIcon } from '@chakra-ui/icons';
 import { useTransaction } from '../../contexts/TransactionContext';

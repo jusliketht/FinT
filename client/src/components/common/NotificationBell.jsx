@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   IconButton,
+  Badge,
   Popover,
   PopoverTrigger,
   PopoverContent,
@@ -9,10 +10,9 @@ import {
   VStack,
   HStack,
   Text,
-  Badge,
-  Divider,
+  Button,
   useColorModeValue,
-  useDisclosure,
+  useToast,
 } from '@chakra-ui/react';
 import { BellIcon } from '@chakra-ui/icons';
 import { FiCheckCircle, FiAlertCircle, FiInfo } from 'react-icons/fi';

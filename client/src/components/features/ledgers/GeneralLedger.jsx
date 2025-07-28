@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -16,33 +16,46 @@ import {
 import { SettingsIcon, RepeatIcon } from '@chakra-ui/icons';
 import { useToast } from '../../../contexts/ToastContext';
 import useApi from '../../../hooks/useApi';
+import accountService from '../../../services/accountService';
 
 const GeneralLedger = () => {
-  const [ledgerData, setLedgerData] = useState([]);
   const [accounts, setAccounts] = useState([]);
+  const [selectedAccount, setSelectedAccount] = useState('');
+  const [ledgerData, setLedgerData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showFilters, setShowFilters] = useState(true);
+  const [error, setError] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
     accountId: '',
     description: ''
   });
-  const api = useApi();
-  const { showToast } = useToast();
+  const toast = useToast();
+
+  const fetchAccounts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await accountService.getAll();
+      setAccounts(response.data || response);
+    } catch (err) {
+      setError('Failed to fetch accounts');
+      toast({
+        title: 'Error',
+        description: 'Failed to load accounts',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
     fetchAccounts();
-  }, []);
-
-  const fetchAccounts = async () => {
-    try {
-      const response = await api.get('/api/accounts');
-      setAccounts(response.data);
-    } catch (error) {
-      showToast('Error fetching accounts', 'error');
-    }
-  };
+  }, [fetchAccounts]);
 
   const fetchLedgerData = async () => {
     setLoading(true);

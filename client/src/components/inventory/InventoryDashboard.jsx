@@ -1,40 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Heading, Flex, HStack, Button, SimpleGrid, Stat, StatLabel, StatNumber, StatHelpText, Alert, AlertIcon, AlertTitle, AlertDescription, Card, CardHeader, CardBody, Table, Thead, Tbody, Tr, Th, Td, Badge, Menu, MenuButton, MenuList, MenuItem, IconButton, useToast
 } from '@chakra-ui/react';
 import { AddIcon, DownloadIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import { formatCurrency } from '../../utils/formatters';
 import { useApi } from '../../hooks/useApi';
+import { useBusiness } from '../../hooks/useBusiness';
+import inventoryService from '../../services/inventoryService';
 
 const InventoryDashboard = () => {
-  const [inventoryItems, setInventoryItems] = useState([]);
-  const [lowStockItems, setLowStockItems] = useState([]);
-  const [inventoryValue, setInventoryValue] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [inventoryData, setInventoryData] = useState(null);
+  const [error, setError] = useState(null);
+  const { selectedBusiness } = useBusiness();
   const toast = useToast();
-  const api = useApi();
+
+  const fetchInventoryData = useCallback(async () => {
+    if (!selectedBusiness?.id) return;
+    
+    try {
+      setError(null);
+      const response = await inventoryService.getInventory(selectedBusiness.id);
+      setInventoryData(response);
+    } catch (err) {
+      setError('Failed to load inventory data');
+      toast({
+        title: 'Error',
+        description: 'Failed to load inventory data',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [selectedBusiness?.id, toast]);
 
   useEffect(() => {
     fetchInventoryData();
-  }, []);
-
-  const fetchInventoryData = async () => {
-    try {
-      setLoading(true);
-      const [itemsResponse, lowStockResponse, valuationResponse] = await Promise.all([
-        api.get('/inventory/items'),
-        api.get('/inventory/low-stock'),
-        api.get('/inventory/valuation')
-      ]);
-      setInventoryItems(itemsResponse.data);
-      setLowStockItems(lowStockResponse.data);
-      setInventoryValue(valuationResponse.data.reduce((sum, item) => sum + item.totalValue, 0));
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to fetch inventory data', status: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchInventoryData]);
 
   const exportInventoryReport = () => {
     // Placeholder for export logic
@@ -62,17 +63,17 @@ const InventoryDashboard = () => {
       <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6} mb={8}>
         <Stat>
           <StatLabel>Total Items</StatLabel>
-          <StatNumber>{inventoryItems.length}</StatNumber>
+          <StatNumber>{inventoryData?.totalItems || 0}</StatNumber>
           <StatHelpText>Active inventory items</StatHelpText>
         </Stat>
         <Stat>
           <StatLabel>Total Value</StatLabel>
-          <StatNumber>{formatCurrency(inventoryValue)}</StatNumber>
+          <StatNumber>{formatCurrency(inventoryData?.totalValue || 0)}</StatNumber>
           <StatHelpText>Current inventory value</StatHelpText>
         </Stat>
         <Stat>
           <StatLabel>Low Stock Items</StatLabel>
-          <StatNumber color="red.500">{lowStockItems.length}</StatNumber>
+          <StatNumber color="red.500">{inventoryData?.lowStockItems?.length || 0}</StatNumber>
           <StatHelpText>Items below reorder level</StatHelpText>
         </Stat>
         <Stat>
@@ -81,13 +82,13 @@ const InventoryDashboard = () => {
           <StatHelpText>Active locations</StatHelpText>
         </Stat>
       </SimpleGrid>
-      {lowStockItems.length > 0 && (
+      {inventoryData?.lowStockItems?.length > 0 && (
         <Alert status="warning" mb={6}>
           <AlertIcon />
           <Box>
             <AlertTitle>Low Stock Alert!</AlertTitle>
             <AlertDescription>
-              {lowStockItems.length} items are below their reorder level.
+              {inventoryData?.lowStockItems?.length} items are below their reorder level.
               <Button size="sm" ml={2}>
                 View Details
               </Button>
@@ -115,7 +116,7 @@ const InventoryDashboard = () => {
               </Tr>
             </Thead>
             <Tbody>
-              {inventoryItems.map(item => (
+              {inventoryData?.items?.map(item => (
                 <Tr key={item.id}>
                   <Td fontFamily="mono">{item.sku}</Td>
                   <Td>{item.name}</Td>

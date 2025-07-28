@@ -1,27 +1,31 @@
 import React from 'react';
 import {
   Box,
-  Flex,
+  HStack,
+  VStack,
   Text,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  IconButton,
   Avatar,
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
+  MenuDivider,
+  IconButton,
   useColorModeValue,
-  HStack,
-  VStack,
-  Divider,
+  useDisclosure,
+  Drawer,
+  DrawerBody,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  Button,
+  useToast,
 } from '@chakra-ui/react';
 import { 
   SearchIcon,
   ChevronDownIcon,
   SettingsIcon,
-  InfoIcon,
 } from '@chakra-ui/icons';
 import { FiUser, FiLogOut } from 'react-icons/fi';
 import ContextSwitcher from '../common/ContextSwitcher';
@@ -131,7 +135,7 @@ const Topbar = () => {
               <MenuItem icon={<SettingsIcon />} onClick={() => navigate('/settings')}>
                 Settings
               </MenuItem>
-              <Divider />
+              <MenuDivider />
               <MenuItem icon={<FiLogOut />} onClick={handleLogout}>
                 Sign Out
               </MenuItem>

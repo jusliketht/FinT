@@ -1,27 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
-  ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Button,
-  VStack,
-  HStack,
   FormControl,
   FormLabel,
   Input,
   Textarea,
-  Select,
-  Grid,
-  GridItem,
-  Text,
-  IconButton,
-  Box,
-  Divider,
+  Button,
+  VStack,
+  HStack,
   useToast,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  FormHelperText,
 } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 import { useFormik } from 'formik';

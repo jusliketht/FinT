@@ -11,7 +11,7 @@ import {
   Textarea,
   IconButton
 } from '@chakra-ui/react';
-import { AddIcon, DeleteIcon, CheckIcon } from '@chakra-ui/icons';
+import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 import { useToast } from '../../../contexts/ToastContext';
 
 const JournalEntryForm = ({
