@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -8,7 +8,6 @@ import {
   HStack,
   Card,
   CardBody,
-  CardHeader,
   Badge,
   IconButton,
   useDisclosure,
@@ -36,13 +35,12 @@ import {
   ModalContent,
   ModalHeader,
   ModalBody,
-  ModalFooter,
   ModalCloseButton,
   FormControl,
   FormLabel,
   FormErrorMessage
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, ChevronDownIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import accountService from '../../services/accountService';
 import accountCategoryService from '../../services/accountCategoryService';
 
@@ -58,11 +56,7 @@ const ChartOfAccounts = ({ businessId }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  useEffect(() => {
-    fetchData();
-  }, [businessId]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -84,7 +78,11 @@ const ChartOfAccounts = ({ businessId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [businessId, toast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleCreate = () => {
     setSelectedAccount(null);
