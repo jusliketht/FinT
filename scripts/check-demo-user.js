@@ -14,6 +14,8 @@ async function checkAndCreateDemoUser() {
 
     if (existingUser) {
       console.log('✅ Demo user already exists:', existingUser.email);
+      console.log('📧 Email: demo@fint.com');
+      console.log('🔑 Password: demo123');
       return existingUser;
     }
 
@@ -29,12 +31,14 @@ async function checkAndCreateDemoUser() {
         name: 'Demo User',
         email: 'demo@fint.com',
         password: hashedPassword,
-        role: 'ADMIN',
-        updatedAt: new Date()
+        contactNumber: '+1234567890',
+        address: '123 Demo Street, Demo City, DC 12345'
       }
     });
 
     console.log('✅ Demo user created successfully:', demoUser.email);
+    console.log('📧 Email: demo@fint.com');
+    console.log('🔑 Password: demo123');
     return demoUser;
     
   } catch (error) {

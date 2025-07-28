@@ -1,6 +1,6 @@
 import api from './api';
 
-const RESOURCE_URL = '/api/accounts';
+const RESOURCE_URL = '/accounts';
 
 /**
  * Account Service for backend API calls

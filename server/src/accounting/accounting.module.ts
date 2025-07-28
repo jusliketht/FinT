@@ -9,6 +9,7 @@ import { JournalEntriesService } from './services/journal-entries.service';
 import { ChartOfAccountsService } from './services/chart-of-accounts.service';
 import { JournalEntryService } from './services/journal-entry.service';
 import { ReportsService } from './services/reports.service';
+import { AccountTypesService } from './services/account-types.service';
 import { InventoryController } from './controllers/inventory.controller';
 import { AnalyticsController } from './controllers/analytics.controller';
 import { IntegrationController } from './controllers/integration.controller';
@@ -19,6 +20,8 @@ import { JournalEntriesController } from './controllers/journal-entries.controll
 import { ChartOfAccountsController } from './controllers/chart-of-accounts.controller';
 import { JournalEntryController } from './controllers/journal-entry.controller';
 import { ReportsController } from './controllers/reports.controller';
+import { AccountTypesController } from './controllers/account-types.controller';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
   controllers: [
@@ -32,6 +35,7 @@ import { ReportsController } from './controllers/reports.controller';
     ChartOfAccountsController,
     JournalEntryController,
     ReportsController,
+    AccountTypesController,
   ],
   providers: [
     InventoryService,
@@ -44,6 +48,8 @@ import { ReportsController } from './controllers/reports.controller';
     ChartOfAccountsService,
     JournalEntryService,
     ReportsService,
+    AccountTypesService,
+    PrismaService,
   ],
   exports: [
     InventoryService,
@@ -56,6 +62,8 @@ import { ReportsController } from './controllers/reports.controller';
     ChartOfAccountsService,
     JournalEntryService,
     ReportsService,
+    AccountTypesService,
+    PrismaService,
   ],
 })
 export class AccountingModule {} 

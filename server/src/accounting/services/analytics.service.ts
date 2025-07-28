@@ -1,14 +1,20 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class AnalyticsService {
+  constructor(private prisma: PrismaService) {}
+
   async calculateKPIs(businessId: string, period: string = 'current'): Promise<any> {
     const startDate = this.getPeriodStartDate(period);
     const endDate = new Date();
 
-    // Placeholder calculations for now
+    // Calculate revenue from accounts with type 'revenue'
     const revenue = await this.calculateRevenue(businessId, startDate, endDate);
+    
+    // Calculate expenses from accounts with type 'expense'
     const expenses = await this.calculateExpenses(businessId, startDate, endDate);
+    
     const profit = revenue - expenses;
     const cashFlow = await this.calculateCashFlow(businessId, startDate, endDate);
     const inventoryValue = await this.calculateInventoryValue(businessId);
@@ -34,12 +40,14 @@ export class AnalyticsService {
     const investingActivities = await this.calculateInvestingCashFlow(businessId, startDate, endDate);
     const financingActivities = await this.calculateFinancingCashFlow(businessId, startDate, endDate);
 
+    const netCashFlow = operatingActivities + investingActivities + financingActivities;
+
     return {
-      period: { startDate, endDate },
       operatingActivities,
       investingActivities,
       financingActivities,
-      netCashFlow: operatingActivities + investingActivities + financingActivities
+      netCashFlow,
+      period: { startDate, endDate }
     };
   }
 
@@ -124,12 +132,13 @@ export class AnalyticsService {
   private getPeriodStartDate(period: string): Date {
     const now = new Date();
     switch (period) {
-      case 'current':
+      case 'week':
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+      case 'month':
         return new Date(now.getFullYear(), now.getMonth(), 1);
-      case 'previous':
-        return new Date(now.getFullYear(), now.getMonth() - 1, 1);
       case 'quarter':
-        return new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+        const quarter = Math.floor(now.getMonth() / 3);
+        return new Date(now.getFullYear(), quarter * 3, 1);
       case 'year':
         return new Date(now.getFullYear(), 0, 1);
       default:
@@ -137,15 +146,43 @@ export class AnalyticsService {
     }
   }
 
-  // Placeholder methods - these would be implemented with actual data
+  // Database-based calculation methods
   private async calculateRevenue(businessId: string, startDate: Date, endDate: Date): Promise<number> {
-    // Placeholder - would calculate from actual revenue data
-    return Math.random() * 10000;
+    const result = await this.prisma.journalEntryLine.aggregate({
+      where: {
+        JournalEntry: {
+          businessId,
+          date: { gte: startDate, lte: endDate },
+          status: 'POSTED'
+        },
+        Account: {
+          type: 'revenue'
+        }
+      },
+      _sum: {
+        credit: true
+      }
+    });
+    return result._sum.credit || 0;
   }
 
   private async calculateExpenses(businessId: string, startDate: Date, endDate: Date): Promise<number> {
-    // Placeholder - would calculate from actual expense data
-    return Math.random() * 8000;
+    const result = await this.prisma.journalEntryLine.aggregate({
+      where: {
+        JournalEntry: {
+          businessId,
+          date: { gte: startDate, lte: endDate },
+          status: 'POSTED'
+        },
+        Account: {
+          type: 'expense'
+        }
+      },
+      _sum: {
+        debit: true
+      }
+    });
+    return result._sum.debit || 0;
   }
 
   private async calculateProfit(businessId: string, startDate: Date, endDate: Date): Promise<number> {
@@ -155,30 +192,41 @@ export class AnalyticsService {
   }
 
   private async calculateCashFlow(businessId: string, startDate: Date, endDate: Date): Promise<number> {
-    const operating = await this.calculateOperatingCashFlow(businessId, startDate, endDate);
-    const investing = await this.calculateInvestingCashFlow(businessId, startDate, endDate);
-    const financing = await this.calculateFinancingCashFlow(businessId, startDate, endDate);
-    return operating + investing + financing;
-  }
-
-  private async calculateOperatingCashFlow(businessId: string, startDate: Date, endDate: Date): Promise<number> {
-    // Placeholder
-    return Math.random() * 5000;
-  }
-
-  private async calculateInvestingCashFlow(businessId: string, startDate: Date, endDate: Date): Promise<number> {
-    // Placeholder
-    return Math.random() * -2000;
-  }
-
-  private async calculateFinancingCashFlow(businessId: string, startDate: Date, endDate: Date): Promise<number> {
-    // Placeholder
-    return Math.random() * 1000;
+    const result = await this.prisma.journalEntryLine.aggregate({
+      where: {
+        JournalEntry: {
+          businessId,
+          date: { gte: startDate, lte: endDate },
+          status: 'POSTED'
+        },
+        Account: {
+          type: 'asset',
+          OR: [
+            { name: { contains: 'cash', mode: 'insensitive' } },
+            { name: { contains: 'bank', mode: 'insensitive' } }
+          ]
+        }
+      },
+      _sum: {
+        credit: true,
+        debit: true
+      }
+    });
+    return (result._sum.credit || 0) - (result._sum.debit || 0);
   }
 
   private async calculateInventoryValue(businessId: string): Promise<number> {
-    // Placeholder
-    return Math.random() * 15000;
+    const result = await this.prisma.inventoryLevel.aggregate({
+      where: {
+        InventoryItem: {
+          businessId
+        }
+      },
+      _sum: {
+        totalValue: true
+      }
+    });
+    return result._sum.totalValue || 0;
   }
 
   private async calculateCurrentRatio(businessId: string): Promise<number> {
@@ -200,42 +248,101 @@ export class AnalyticsService {
     return totalEquity > 0 ? totalLiabilities / totalEquity : 0;
   }
 
-  private async calculateCostOfGoodsSold(businessId: string, startDate: Date, endDate: Date): Promise<number> {
-    // Placeholder
-    return Math.random() * 6000;
-  }
-
-  private async calculateOperatingExpenses(businessId: string, startDate: Date, endDate: Date): Promise<number> {
-    return await this.calculateExpenses(businessId, startDate, endDate);
-  }
-
   private async calculateTotalAssets(businessId: string): Promise<number> {
-    // Placeholder
-    return Math.random() * 100000;
+    const result = await this.prisma.journalEntryLine.aggregate({
+      where: {
+        JournalEntry: {
+          businessId,
+          status: 'POSTED'
+        },
+        Account: {
+          type: 'asset'
+        }
+      },
+      _sum: {
+        debit: true,
+        credit: true
+      }
+    });
+    return (result._sum.debit || 0) - (result._sum.credit || 0);
   }
 
   private async calculateTotalLiabilities(businessId: string): Promise<number> {
-    // Placeholder
-    return Math.random() * 40000;
+    const result = await this.prisma.journalEntryLine.aggregate({
+      where: {
+        JournalEntry: {
+          businessId,
+          status: 'POSTED'
+        },
+        Account: {
+          type: 'liability'
+        }
+      },
+      _sum: {
+        credit: true,
+        debit: true
+      }
+    });
+    return (result._sum.credit || 0) - (result._sum.debit || 0);
   }
 
   private async calculateTotalEquity(businessId: string): Promise<number> {
-    // Placeholder
-    return Math.random() * 60000;
+    const result = await this.prisma.journalEntryLine.aggregate({
+      where: {
+        JournalEntry: {
+          businessId,
+          status: 'POSTED'
+        },
+        Account: {
+          type: 'equity'
+        }
+      },
+      _sum: {
+        credit: true,
+        debit: true
+      }
+    });
+    return (result._sum.credit || 0) - (result._sum.debit || 0);
   }
 
   private async calculateCurrentAssets(businessId: string): Promise<number> {
-    // Placeholder
-    return Math.random() * 50000;
+    // For simplicity, we'll consider all assets as current assets
+    return await this.calculateTotalAssets(businessId);
   }
 
   private async calculateCurrentLiabilities(businessId: string): Promise<number> {
-    // Placeholder
-    return Math.random() * 20000;
+    // For simplicity, we'll consider all liabilities as current liabilities
+    return await this.calculateTotalLiabilities(businessId);
   }
 
   private async calculateNetIncome(businessId: string): Promise<number> {
-    // Placeholder
-    return Math.random() * 10000;
+    const revenue = await this.calculateRevenue(businessId, new Date(new Date().getFullYear(), 0, 1), new Date());
+    const expenses = await this.calculateExpenses(businessId, new Date(new Date().getFullYear(), 0, 1), new Date());
+    return revenue - expenses;
+  }
+
+  private async calculateOperatingCashFlow(businessId: string, startDate: Date, endDate: Date): Promise<number> {
+    // Simplified calculation - in a real scenario, this would be more complex
+    return await this.calculateCashFlow(businessId, startDate, endDate);
+  }
+
+  private async calculateInvestingCashFlow(businessId: string, startDate: Date, endDate: Date): Promise<number> {
+    // Placeholder - would calculate from fixed asset transactions
+    return 0;
+  }
+
+  private async calculateFinancingCashFlow(businessId: string, startDate: Date, endDate: Date): Promise<number> {
+    // Placeholder - would calculate from equity and debt transactions
+    return 0;
+  }
+
+  private async calculateCostOfGoodsSold(businessId: string, startDate: Date, endDate: Date): Promise<number> {
+    // Placeholder - would calculate from inventory and cost of goods sold accounts
+    return await this.calculateExpenses(businessId, startDate, endDate) * 0.6; // Assume 60% of expenses are COGS
+  }
+
+  private async calculateOperatingExpenses(businessId: string, startDate: Date, endDate: Date): Promise<number> {
+    // Placeholder - would calculate from operating expense accounts
+    return await this.calculateExpenses(businessId, startDate, endDate) * 0.4; // Assume 40% of expenses are operating
   }
 } 

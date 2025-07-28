@@ -86,6 +86,22 @@ model UserBusiness {
 }
 
 // Financial Models
+model AccountType {
+  id          String   @id @default(uuid())
+  value       String   @unique // asset, liability, equity, revenue, expense
+  label       String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  Accounts    Account[]
+
+  @@index([value])
+  @@index([isActive])
+}
+
 model Account {
   id          String   @id @default(uuid())
   code        String
