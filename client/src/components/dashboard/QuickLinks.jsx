@@ -7,14 +7,19 @@ import {
   Text,
   useColorModeValue,
   Icon,
+  useDisclosure,
+  Tooltip,
+  HStack,
 } from '@chakra-ui/react';
 import {
   AddIcon,
-  UploadIcon,
+  ViewIcon,
+  AttachmentIcon,
   SettingsIcon,
-  SearchIcon,
+  CheckCircleIcon,
 } from '@chakra-ui/icons';
-import { FiFileText, FiBarChart2 } from 'react-icons/fi';
+import { FiFileText, FiBarChart2, FiDollarSign, FiCreditCard } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 import TransactionForm from '../transactions/TransactionForm';
 import { useBusiness } from '../../contexts/BusinessContext';
 
@@ -144,47 +149,29 @@ const QuickLinks = () => {
   };
 
   return (
-    <>
-      <Box
-        bg={cardBg}
-        borderRadius="xl"
-        boxShadow="md"
-        border="1px"
-        borderColor={borderColor}
-        overflow="hidden"
-      >
-        <Box p={6} borderBottom="1px" borderColor={borderColor}>
-          <HStack justify="space-between" align="center">
-            <Text fontSize="lg" fontWeight="bold">
-              Quick Actions
-            </Text>
-            {selectedBusiness && (
-              <Text fontSize="sm" color="gray.500">
-                {selectedBusiness.name}
-              </Text>
-            )}
-          </HStack>
-        </Box>
-        
-        <Box p={6}>
-          <VStack spacing={3}>
+    <Box>
+      <VStack spacing={6} align="stretch">
+        <Box>
+          <Text fontSize="lg" fontWeight="semibold" mb={4}>
+            Quick Actions
+          </Text>
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
             {quickActions.map((action, index) => (
               <QuickActionButton key={index} action={action} />
             ))}
-          </VStack>
+          </SimpleGrid>
         </Box>
-      </Box>
+      </VStack>
 
       {/* Transaction Modal */}
-      <TransactionForm
-        isOpen={isTransactionModalOpen}
-        onClose={onTransactionModalClose}
-        onSuccess={() => {
-          onTransactionModalClose();
-          // Optionally refresh dashboard data
-        }}
-      />
-    </>
+      {isTransactionModalOpen && (
+        <TransactionForm
+          isOpen={isTransactionModalOpen}
+          onClose={onTransactionModalClose}
+          businessId={selectedBusiness?.id}
+        />
+      )}
+    </Box>
   );
 };
 

@@ -1,304 +1,378 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Heading,
-  Text,
-  Button,
   VStack,
   HStack,
+  Text,
+  Button,
   Card,
   CardBody,
+  CardHeader,
   Badge,
   IconButton,
   useDisclosure,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Spinner,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
   ModalBody,
   ModalCloseButton,
-  useToast,
-  SimpleGrid,
-  Skeleton,
+  FormControl,
+  FormLabel,
+  Input,
+  Select,
+  Switch,
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
-import integrationService from '../../services/integrationService';
+import { SettingsIcon, DeleteIcon, EditIcon } from '@chakra-ui/icons';
+import { useBusiness } from '../../contexts/BusinessContext';
+import { useToast } from '../../contexts/ToastContext';
 
 const IntegrationManager = () => {
+  const { selectedBusiness } = useBusiness();
+  const { showToast } = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const [integrations, setIntegrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedIntegration, setSelectedIntegration] = useState(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const toast = useToast();
+  const [formData, setFormData] = useState({
+    name: '',
+    type: '',
+    apiKey: '',
+    apiSecret: '',
+    webhookUrl: '',
+    isActive: false,
+  });
 
-  const fetchIntegrationData = useCallback(async () => {
+  const fetchIntegrations = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await integrationService.getAll();
-      setIntegrations(response.data || response);
+      // Replace with actual API call
+      const response = await fetch(`/api/businesses/${selectedBusiness.id}/integrations`);
+      if (response.ok) {
+        const data = await response.json();
+        setIntegrations(data.data || []);
+      } else {
+        throw new Error('Failed to fetch integrations');
+      }
     } catch (err) {
-      setError('Failed to fetch integrations');
-      toast({
-        title: 'Error',
-        description: 'Failed to load integrations',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      setError(err.message);
+      showToast('Failed to load integrations', 'error');
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [selectedBusiness, showToast]);
 
   useEffect(() => {
-    fetchIntegrationData();
-  }, [fetchIntegrationData]);
+    if (selectedBusiness) {
+      fetchIntegrations();
+    }
+  }, [selectedBusiness, fetchIntegrations]);
+
+  const handleCreate = () => {
+    setSelectedIntegration(null);
+    setFormData({
+      name: '',
+      type: '',
+      apiKey: '',
+      apiSecret: '',
+      webhookUrl: '',
+      isActive: false,
+    });
+    onOpen();
+  };
 
   const handleEdit = (integration) => {
     setSelectedIntegration(integration);
+    setFormData({
+      name: integration.name,
+      type: integration.type,
+      apiKey: integration.apiKey || '',
+      apiSecret: integration.apiSecret || '',
+      webhookUrl: integration.webhookUrl || '',
+      isActive: integration.isActive,
+    });
     onOpen();
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (integrationId) => {
     try {
-      await integrationService.delete(id);
-      toast({
-        title: 'Success',
-        description: 'Integration deleted successfully',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
+      const response = await fetch(`/api/businesses/${selectedBusiness.id}/integrations/${integrationId}`, {
+        method: 'DELETE',
       });
-      fetchIntegrationData();
-    } catch (err) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete integration',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
+      if (response.ok) {
+        showToast('Integration deleted successfully', 'success');
+        fetchIntegrations();
+      } else {
+        throw new Error('Failed to delete integration');
+      }
+    } catch (error) {
+      showToast('Failed to delete integration', 'error');
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const url = selectedIntegration
+        ? `/api/businesses/${selectedBusiness.id}/integrations/${selectedIntegration.id}`
+        : `/api/businesses/${selectedBusiness.id}/integrations`;
+      
+      const method = selectedIntegration ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
-    }
-  };
 
-  const handleAdd = () => {
-    setSelectedIntegration(null);
-    onOpen();
-  };
-
-  const handleSave = async (integration) => {
-    try {
-      if (integration.id) {
-        await integrationService.update(integration.id, integration);
-        toast({
-      setLoading(true);
-      // Placeholder data - would fetch from API
-      setBankConnections([
-        { id: 'bank_1', name: 'HDFC Bank', status: 'connected', lastSync: '2024-01-15' },
-        { id: 'bank_2', name: 'ICICI Bank', status: 'disconnected', lastSync: null }
-      ]);
-      setPaymentGateways([
-        { id: 'stripe', name: 'Stripe', status: 'connected', type: 'payment' },
-        { id: 'paypal', name: 'PayPal', status: 'disconnected', type: 'payment' }
-      ]);
-      setEmailSettings({
-        notifications: true,
-        lowStockAlerts: true,
-        invoiceReminders: true,
-        paymentConfirmations: true
-      });
+      if (response.ok) {
+        showToast(
+          selectedIntegration ? 'Integration updated successfully' : 'Integration created successfully',
+          'success'
+        );
+        onClose();
+        fetchIntegrations();
+      } else {
+        throw new Error('Failed to save integration');
+      }
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to fetch integration data', status: 'error' });
-    } finally {
-      setLoading(false);
+      showToast('Failed to save integration', 'error');
     }
   };
 
-  const connectBank = async () => {
-    try {
-      const response = await api.post('/integrations/bank/connect', {
-        businessId: 'demo-business',
-        bankCredentials
-      });
-      toast({ title: 'Success', description: 'Bank connected successfully', status: 'success' });
-      setShowBankForm(false);
-      setBankCredentials({});
-      fetchIntegrationData();
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to connect bank', status: 'error' });
-    }
+  const getIntegrationTypeColor = (type) => {
+    const colors = {
+      bank: 'blue',
+      payment: 'green',
+      accounting: 'purple',
+      crm: 'orange',
+      erp: 'teal',
+    };
+    return colors[type] || 'gray';
   };
 
-  const disconnectBank = async (connectionId) => {
-    try {
-      await api.delete(`/integrations/bank/disconnect/${connectionId}`);
-      toast({ title: 'Success', description: 'Bank disconnected successfully', status: 'success' });
-      fetchIntegrationData();
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to disconnect bank', status: 'error' });
-    }
+  const getIntegrationTypeLabel = (type) => {
+    const labels = {
+      bank: 'Bank Integration',
+      payment: 'Payment Gateway',
+      accounting: 'Accounting Software',
+      crm: 'CRM System',
+      erp: 'ERP System',
+    };
+    return labels[type] || type;
   };
 
-  const syncBankTransactions = async (connectionId) => {
-    try {
-      const response = await api.post('/integrations/bank/sync', {
-        businessId: 'demo-business',
-        connectionId
-      });
-      toast({ title: 'Success', description: `Synced ${response.data.transactionsCount} transactions`, status: 'success' });
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to sync transactions', status: 'error' });
-    }
-  };
+  if (loading) {
+    return (
+      <Box textAlign="center" py={8}>
+        <Spinner size="lg" />
+        <Text mt={4}>Loading integrations...</Text>
+      </Box>
+    );
+  }
 
-  const toggleEmailSetting = async (setting) => {
-    try {
-      const newSettings = { ...emailSettings, [setting]: !emailSettings[setting] };
-      setEmailSettings(newSettings);
-      // Would call API to update settings
-      toast({ title: 'Success', description: 'Email settings updated', status: 'success' });
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to update email settings', status: 'error' });
-    }
-  };
+  if (error) {
+    return (
+      <Alert status="error" borderRadius="lg">
+        <AlertIcon />
+        <Box>
+          <AlertTitle>Error loading integrations</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Box>
+      </Alert>
+    );
+  }
 
   return (
     <Box>
-      <Heading mb={6}>Integration Management</Heading>
+      <VStack spacing={6} align="stretch">
+        <HStack justify="space-between" align="center">
+          <Box>
+            <Text fontSize="2xl" fontWeight="bold">
+              Integrations
+            </Text>
+            <Text color="gray.600">
+              Connect with external services and APIs
+            </Text>
+          </Box>
+          <Button colorScheme="blue" onClick={handleCreate}>
+            Add Integration
+          </Button>
+        </HStack>
 
-      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6} mb={8}>
-        <Card>
-          <CardHeader>
-            <Flex justify="space-between" align="center">
-              <Heading size="md">Bank Connections</Heading>
-              <Button size="sm" onClick={() => setShowBankForm(true)}>
-                Connect Bank
+        {integrations.length === 0 ? (
+          <Card>
+            <CardBody textAlign="center" py={12}>
+              <Text fontSize="lg" color="gray.500" mb={4}>
+                No integrations found
+              </Text>
+              <Text color="gray.400" mb={6}>
+                Connect your FinT account with external services to streamline your workflow
+              </Text>
+              <Button colorScheme="blue" onClick={handleCreate}>
+                Add First Integration
               </Button>
-            </Flex>
-          </CardHeader>
-          <CardBody>
-            <VStack spacing={4} align="stretch">
-              {bankConnections.map(connection => (
-                <Flex key={connection.id} justify="space-between" align="center" p={3} border="1px" borderColor="gray.200" borderRadius="md">
-                  <Box>
-                    <Text fontWeight="bold">{connection.name}</Text>
-                    <Text fontSize="sm" color="gray.600">
-                      Last sync: {connection.lastSync || 'Never'}
-                    </Text>
-                  </Box>
-                  <HStack>
-                    <Badge colorScheme={connection.status === 'connected' ? 'green' : 'red'}>
-                      {connection.status}
-                    </Badge>
-                    {connection.status === 'connected' && (
-                      <Button size="sm" onClick={() => syncBankTransactions(connection.id)}>
-                        Sync
-                      </Button>
-                    )}
-                    <Button size="sm" colorScheme="red" onClick={() => disconnectBank(connection.id)}>
-                      Disconnect
-                    </Button>
-                  </HStack>
-                </Flex>
-              ))}
-            </VStack>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <Heading size="md">Payment Gateways</Heading>
-          </CardHeader>
-          <CardBody>
-            <VStack spacing={4} align="stretch">
-              {paymentGateways.map(gateway => (
-                <Flex key={gateway.id} justify="space-between" align="center" p={3} border="1px" borderColor="gray.200" borderRadius="md">
-                  <Box>
-                    <Text fontWeight="bold">{gateway.name}</Text>
-                    <Text fontSize="sm" color="gray.600">{gateway.type}</Text>
-                  </Box>
-                  <HStack>
-                    <Badge colorScheme={gateway.status === 'connected' ? 'green' : 'red'}>
-                      {gateway.status}
-                    </Badge>
-                    <Button size="sm" leftIcon={<ExternalLinkIcon />}>
-                      Configure
-                    </Button>
-                  </HStack>
-                </Flex>
-              ))}
-            </VStack>
-          </CardBody>
-        </Card>
-      </SimpleGrid>
-
-      <Card>
-        <CardHeader>
-          <Heading size="md">Email Notifications</Heading>
-        </CardHeader>
-        <CardBody>
+            </CardBody>
+          </Card>
+        ) : (
           <VStack spacing={4} align="stretch">
-            <Flex justify="space-between" align="center">
-              <Box>
-                <Text fontWeight="bold">General Notifications</Text>
-                <Text fontSize="sm" color="gray.600">Receive general system notifications</Text>
-              </Box>
-              <Switch isChecked={emailSettings.notifications} onChange={() => toggleEmailSetting('notifications')} />
-            </Flex>
-            <Flex justify="space-between" align="center">
-              <Box>
-                <Text fontWeight="bold">Low Stock Alerts</Text>
-                <Text fontSize="sm" color="gray.600">Get notified when inventory is low</Text>
-              </Box>
-              <Switch isChecked={emailSettings.lowStockAlerts} onChange={() => toggleEmailSetting('lowStockAlerts')} />
-            </Flex>
-            <Flex justify="space-between" align="center">
-              <Box>
-                <Text fontWeight="bold">Invoice Reminders</Text>
-                <Text fontSize="sm" color="gray.600">Send automatic invoice reminders to customers</Text>
-              </Box>
-              <Switch isChecked={emailSettings.invoiceReminders} onChange={() => toggleEmailSetting('invoiceReminders')} />
-            </Flex>
-            <Flex justify="space-between" align="center">
-              <Box>
-                <Text fontWeight="bold">Payment Confirmations</Text>
-                <Text fontSize="sm" color="gray.600">Send payment confirmations to customers</Text>
-              </Box>
-              <Switch isChecked={emailSettings.paymentConfirmations} onChange={() => toggleEmailSetting('paymentConfirmations')} />
-            </Flex>
+            {integrations.map((integration) => (
+              <Card key={integration.id} variant="outline">
+                <CardHeader>
+                  <HStack justify="space-between" align="center">
+                    <HStack spacing={4}>
+                      <Box>
+                        <Text fontSize="lg" fontWeight="semibold">
+                          {integration.name}
+                        </Text>
+                        <Text fontSize="sm" color="gray.600">
+                          {getIntegrationTypeLabel(integration.type)}
+                        </Text>
+                      </Box>
+                    </HStack>
+                    <HStack spacing={2}>
+                      <Badge
+                        colorScheme={integration.isActive ? 'green' : 'gray'}
+                        variant="subtle"
+                      >
+                        {integration.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                      <Badge colorScheme={getIntegrationTypeColor(integration.type)}>
+                        {integration.type}
+                      </Badge>
+                    </HStack>
+                  </HStack>
+                </CardHeader>
+                <CardBody pt={0}>
+                  <VStack spacing={3} align="stretch">
+                    {integration.webhookUrl && (
+                      <Text fontSize="sm" color="gray.600">
+                        Webhook: {integration.webhookUrl}
+                      </Text>
+                    )}
+                    
+                    <HStack justify="end" spacing={2}>
+                      <IconButton
+                        icon={<EditIcon />}
+                        variant="ghost"
+                        size="sm"
+                        aria-label="Edit integration"
+                        onClick={() => handleEdit(integration)}
+                      />
+                      <IconButton
+                        icon={<DeleteIcon />}
+                        variant="ghost"
+                        size="sm"
+                        colorScheme="red"
+                        aria-label="Delete integration"
+                        onClick={() => handleDelete(integration.id)}
+                      />
+                    </HStack>
+                  </VStack>
+                </CardBody>
+              </Card>
+            ))}
           </VStack>
-        </CardBody>
-      </Card>
+        )}
+      </VStack>
 
-      {showBankForm && (
-        <Card mt={6}>
-          <CardHeader>
-            <Heading size="md">Connect Bank Account</Heading>
-          </CardHeader>
-          <CardBody>
-            <VStack spacing={4}>
-              <FormControl>
-                <FormLabel>Bank Name</FormLabel>
-                <Input placeholder="Enter bank name" value={bankCredentials.bankName || ''} onChange={(e) => setBankCredentials({...bankCredentials, bankName: e.target.value})} />
-              </FormControl>
-              <FormControl>
-                <FormLabel>Account Number</FormLabel>
-                <Input placeholder="Enter account number" value={bankCredentials.accountNumber || ''} onChange={(e) => setBankCredentials({...bankCredentials, accountNumber: e.target.value})} />
-              </FormControl>
-              <FormControl>
-                <FormLabel>IFSC Code</FormLabel>
-                <Input placeholder="Enter IFSC code" value={bankCredentials.ifscCode || ''} onChange={(e) => setBankCredentials({...bankCredentials, ifscCode: e.target.value})} />
-              </FormControl>
-              <HStack>
-                <Button onClick={connectBank}>Connect</Button>
-                <Button variant="outline" onClick={() => setShowBankForm(false)}>Cancel</Button>
-              </HStack>
-            </VStack>
-          </CardBody>
-        </Card>
-      )}
+      {/* Integration Form Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            {selectedIntegration ? 'Edit Integration' : 'Add Integration'}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <form onSubmit={handleSubmit}>
+              <VStack spacing={4}>
+                <FormControl isRequired>
+                  <FormLabel>Integration Name</FormLabel>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter integration name"
+                  />
+                </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel>Integration Type</FormLabel>
+                  <Select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    placeholder="Select integration type"
+                  >
+                    <option value="bank">Bank Integration</option>
+                    <option value="payment">Payment Gateway</option>
+                    <option value="accounting">Accounting Software</option>
+                    <option value="crm">CRM System</option>
+                    <option value="erp">ERP System</option>
+                  </Select>
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>API Key</FormLabel>
+                  <Input
+                    value={formData.apiKey}
+                    onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+                    placeholder="Enter API key"
+                    type="password"
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>API Secret</FormLabel>
+                  <Input
+                    value={formData.apiSecret}
+                    onChange={(e) => setFormData({ ...formData, apiSecret: e.target.value })}
+                    placeholder="Enter API secret"
+                    type="password"
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Webhook URL</FormLabel>
+                  <Input
+                    value={formData.webhookUrl}
+                    onChange={(e) => setFormData({ ...formData, webhookUrl: e.target.value })}
+                    placeholder="Enter webhook URL"
+                  />
+                </FormControl>
+
+                <FormControl display="flex" alignItems="center">
+                  <FormLabel mb="0">
+                    Active
+                  </FormLabel>
+                  <Switch
+                    isChecked={formData.isActive}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    colorScheme="blue"
+                  />
+                </FormControl>
+
+                <HStack spacing={3} w="full" justify="end">
+                  <Button variant="ghost" onClick={onClose}>
+                    Cancel
+                  </Button>
+                  <Button colorScheme="blue" type="submit">
+                    {selectedIntegration ? 'Update' : 'Create'}
+                  </Button>
+                </HStack>
+              </VStack>
+            </form>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

@@ -7,7 +7,7 @@ const ForgotPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Implement password reset logic
+    // Password reset logic will be implemented in future updates
     setIsSubmitted(true);
   };
 

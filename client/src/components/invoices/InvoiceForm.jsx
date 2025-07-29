@@ -4,454 +4,350 @@ import {
   Button,
   FormControl,
   FormLabel,
+  FormErrorMessage,
   Input,
   Textarea,
   VStack,
   HStack,
   IconButton,
+  Text,
   useToast,
+  Divider,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  Text,
-  Divider,
-  Badge,
 } from '@chakra-ui/react';
-import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
-import { invoiceService } from '../../services/invoiceService';
+import { AddIcon, CloseIcon } from '@chakra-ui/icons';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import invoiceService from '../../services/invoiceService';
 import { useBusiness } from '../../contexts/BusinessContext';
 
-const InvoiceForm = ({ isOpen, onClose, invoice, onSuccess }) => {
+const InvoiceForm = ({ invoice, onSuccess, onCancel }) => {
   const { selectedBusiness } = useBusiness();
   const toast = useToast();
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    invoiceNumber: '',
-    customerId: '',
-    issueDate: '',
-    dueDate: '',
-    paymentTerms: '30',
-    subtotal: 0,
-    taxRate: 18,
-    taxAmount: 0,
-    discountRate: 0,
-    discountAmount: 0,
-    totalAmount: 0,
-    notes: '',
-    terms: '',
+  const [submitting, setSubmitting] = useState(false);
+
+  const validationSchema = Yup.object({
+    customerName: Yup.string().required('Customer name is required'),
+    customerEmail: Yup.string().email('Invalid email format'),
+    customerPhone: Yup.string(),
+    customerAddress: Yup.string(),
+    dueDate: Yup.date().required('Due date is required'),
+    notes: Yup.string(),
+    items: Yup.array().of(
+      Yup.object({
+        description: Yup.string().required('Description is required'),
+        quantity: Yup.number().positive('Quantity must be positive').required('Quantity is required'),
+        unitPrice: Yup.number().positive('Unit price must be positive').required('Unit price is required'),
+        taxRate: Yup.number().min(0, 'Tax rate cannot be negative'),
+      })
+    ).min(1, 'At least one item is required'),
   });
 
-  const [lineItems, setLineItems] = useState([
-    { id: 1, description: '', quantity: 1, rate: 0, amount: 0 }
-  ]);
-
-  // Sample customers
-  const customers = [
-    { id: 1, name: 'Acme Corp', email: 'contact@acme.com' },
-    { id: 2, name: 'Tech Solutions', email: 'info@techsolutions.com' },
-    { id: 3, name: 'Global Industries', email: 'sales@global.com' },
-  ];
-
-  // Sample products/services
-  const products = [
-    { id: 1, name: 'Web Development', rate: 100 },
-    { id: 2, name: 'Consulting Services', rate: 150 },
-    { id: 3, name: 'Software License', rate: 500 },
-    { id: 4, name: 'Maintenance Support', rate: 75 },
-  ];
-
-  useEffect(() => {
-    if (invoice) {
-      setFormData({
-        invoiceNumber: invoice.invoiceNumber || '',
-        customerId: invoice.customerId || '',
-        issueDate: invoice.issueDate ? new Date(invoice.issueDate).toISOString().split('T')[0] : '',
-        dueDate: invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '',
-        paymentTerms: invoice.paymentTerms || '30',
-        subtotal: invoice.subtotal || 0,
-        taxRate: invoice.taxRate || 18,
-        taxAmount: invoice.taxAmount || 0,
-        discountRate: invoice.discountRate || 0,
-        discountAmount: invoice.discountAmount || 0,
-        totalAmount: invoice.totalAmount || 0,
-        notes: invoice.notes || '',
-        terms: invoice.terms || '',
-      });
-    } else {
-      setFormData({
-        invoiceNumber: '',
-        customerId: '',
-        issueDate: new Date().toISOString().split('T')[0],
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        paymentTerms: '30',
-        subtotal: 0,
-        taxRate: 18,
-        taxAmount: 0,
-        discountRate: 0,
-        discountAmount: 0,
-        totalAmount: 0,
-        notes: '',
-        terms: '',
-      });
-      setLineItems([{ id: 1, description: '', quantity: 1, rate: 0, amount: 0 }]);
-    }
-  }, [invoice, isOpen]);
-
-  const handleSubmit = async () => {
-    if (!selectedBusiness) {
-      toast({
-        title: 'Error',
-        description: 'Please select a business first',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const data = {
-        ...formData,
-        lineItems,
-        businessId: selectedBusiness.id,
-      };
-
-      if (invoice) {
-        await invoiceService.update(invoice.id, data);
-        toast({
-          title: 'Success',
-          description: 'Invoice updated successfully',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-      } else {
-        await invoiceService.create(data);
-        toast({
-          title: 'Success',
-          description: 'Invoice created successfully',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-      }
-      onSuccess();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to save invoice',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const addLineItem = () => {
-    const newId = Math.max(...lineItems.map(item => item.id)) + 1;
-    setLineItems([...lineItems, { id: newId, description: '', quantity: 1, rate: 0, amount: 0 }]);
-  };
-
-  const removeLineItem = (id) => {
-    if (lineItems.length > 1) {
-      setLineItems(lineItems.filter(item => item.id !== id));
-    }
-  };
-
-  const updateLineItem = (id, field, value) => {
-    setLineItems(lineItems.map(item => {
-      if (item.id === id) {
-        const updatedItem = { ...item, [field]: value };
-        if (field === 'quantity' || field === 'rate') {
-          updatedItem.amount = updatedItem.quantity * updatedItem.rate;
+  const formik = useFormik({
+    initialValues: {
+      customerName: invoice?.customerName || '',
+      customerEmail: invoice?.customerEmail || '',
+      customerPhone: invoice?.customerPhone || '',
+      customerAddress: invoice?.customerAddress || '',
+      dueDate: invoice?.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '',
+      notes: invoice?.notes || '',
+      items: invoice?.InvoiceItems?.map(item => ({
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        taxRate: item.taxRate || 0,
+      })) || [{ description: '', quantity: 1, unitPrice: 0, taxRate: 0 }],
+    },
+    validationSchema,
+    onSubmit: async (values) => {
+      setSubmitting(true);
+      try {
+        if (invoice) {
+          await invoiceService.update(invoice.id, values);
+        } else {
+          await invoiceService.create(values);
         }
-        return updatedItem;
+        onSuccess();
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: error.response?.data?.message || 'Failed to save invoice',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        setSubmitting(false);
       }
-      return item;
-    }));
+    },
+  });
+
+  const addItem = () => {
+    formik.setFieldValue('items', [
+      ...formik.values.items,
+      { description: '', quantity: 1, unitPrice: 0, taxRate: 0 }
+    ]);
   };
 
-  const selectProduct = (id, productId) => {
-    const product = products.find(p => p.id === parseInt(productId));
-    if (product) {
-      updateLineItem(id, 'description', product.name);
-      updateLineItem(id, 'rate', product.rate);
+  const removeItem = (index) => {
+    if (formik.values.items.length > 1) {
+      const newItems = formik.values.items.filter((_, i) => i !== index);
+      formik.setFieldValue('items', newItems);
     }
   };
 
-  // Calculate totals
-  const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
-  const taxAmount = (subtotal * formData.taxRate) / 100;
-  const discountAmount = (subtotal * formData.discountRate) / 100;
-  const totalAmount = subtotal + taxAmount - discountAmount;
+  const updateItem = (index, field, value) => {
+    const newItems = [...formik.values.items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    formik.setFieldValue('items', newItems);
+  };
 
-  // Update form data when calculations change
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      subtotal,
-      taxAmount,
-      discountAmount,
-      totalAmount,
-    }));
-  }, [subtotal, taxAmount, discountAmount, totalAmount]);
+  const calculateItemTotal = (item) => {
+    const subtotal = item.quantity * item.unitPrice;
+    const taxAmount = subtotal * (item.taxRate / 100);
+    return subtotal + taxAmount;
+  };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-    }).format(amount);
+  const calculateTotal = () => {
+    return formik.values.items.reduce((total, item) => {
+      return total + calculateItemTotal(item);
+    }, 0);
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="6xl">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>
-          {invoice ? 'Edit Invoice' : 'Create Invoice'}
-        </ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <VStack spacing={6} align="stretch">
-            {/* Invoice Header */}
-            <HStack spacing={6}>
-              <FormControl isRequired>
-                <FormLabel>Invoice Number</FormLabel>
+    <Box as="form" onSubmit={formik.handleSubmit}>
+      <VStack spacing={6} align="stretch">
+        {/* Customer Information */}
+        <Box>
+          <Text fontSize="lg" fontWeight="bold" mb={4}>
+            Customer Information
+          </Text>
+          <VStack spacing={4}>
+            <FormControl isInvalid={formik.touched.customerName && formik.errors.customerName}>
+              <FormLabel>Customer Name *</FormLabel>
+              <Input
+                {...formik.getFieldProps('customerName')}
+                placeholder="Enter customer name"
+              />
+              <FormErrorMessage>{formik.errors.customerName}</FormErrorMessage>
+            </FormControl>
+
+            <HStack spacing={4} w="full">
+              <FormControl isInvalid={formik.touched.customerEmail && formik.errors.customerEmail}>
+                <FormLabel>Email</FormLabel>
                 <Input
-                  value={formData.invoiceNumber}
-                  onChange={(e) => handleInputChange('invoiceNumber', e.target.value)}
-                  placeholder="INV-001"
+                  {...formik.getFieldProps('customerEmail')}
+                  type="email"
+                  placeholder="customer@example.com"
                 />
+                <FormErrorMessage>{formik.errors.customerEmail}</FormErrorMessage>
               </FormControl>
-              <FormControl isRequired>
-                <FormLabel>Customer</FormLabel>
-                <Select
-                  value={formData.customerId}
-                  onChange={(e) => handleInputChange('customerId', e.target.value)}
-                  placeholder="Select customer"
-                >
-                  {customers.map(customer => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl>
-                <FormLabel>Payment Terms</FormLabel>
-                <Select
-                  value={formData.paymentTerms}
-                  onChange={(e) => handleInputChange('paymentTerms', e.target.value)}
-                >
-                  <option value="0">Due on receipt</option>
-                  <option value="7">Net 7 days</option>
-                  <option value="15">Net 15 days</option>
-                  <option value="30">Net 30 days</option>
-                  <option value="45">Net 45 days</option>
-                  <option value="60">Net 60 days</option>
-                </Select>
+
+              <FormControl isInvalid={formik.touched.customerPhone && formik.errors.customerPhone}>
+                <FormLabel>Phone</FormLabel>
+                <Input
+                  {...formik.getFieldProps('customerPhone')}
+                  placeholder="+1234567890"
+                />
+                <FormErrorMessage>{formik.errors.customerPhone}</FormErrorMessage>
               </FormControl>
             </HStack>
 
-            <HStack spacing={6}>
-              <FormControl isRequired>
-                <FormLabel>Issue Date</FormLabel>
-                <Input
-                  type="date"
-                  value={formData.issueDate}
-                  onChange={(e) => handleInputChange('issueDate', e.target.value)}
-                />
-              </FormControl>
-              <FormControl isRequired>
-                <FormLabel>Due Date</FormLabel>
-                <Input
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => handleInputChange('dueDate', e.target.value)}
-                />
-              </FormControl>
-            </HStack>
-
-            {/* Line Items */}
-            <Box>
-              <HStack justify="space-between" mb={4}>
-                <Text fontWeight="medium">Line Items</Text>
-                <Button
-                  leftIcon={<AddIcon />}
-                  size="sm"
-                  onClick={addLineItem}
-                >
-                  Add Item
-                </Button>
-              </HStack>
-
-              <Table variant="simple" size="sm">
-                <Thead>
-                  <Tr>
-                    <Th>Description</Th>
-                    <Th>Quantity</Th>
-                    <Th>Rate</Th>
-                    <Th>Amount</Th>
-                    <Th>Action</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {lineItems.map((item) => (
-                    <Tr key={item.id}>
-                      <Td>
-                        <Select
-                          placeholder="Select product/service"
-                          value=""
-                          onChange={(e) => selectProduct(item.id, e.target.value)}
-                          size="sm"
-                        >
-                          {products.map(product => (
-                            <option key={product.id} value={product.id}>
-                              {product.name}
-                            </option>
-                          ))}
-                        </Select>
-                        <Input
-                          mt={2}
-                          placeholder="Or enter description"
-                          value={item.description}
-                          onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                          size="sm"
-                        />
-                      </Td>
-                      <Td>
-                        <NumberInput
-                          value={item.quantity}
-                          onChange={(value) => updateLineItem(item.id, 'quantity', parseInt(value) || 0)}
-                          min={1}
-                          size="sm"
-                        >
-                          <NumberInputField />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
-                      </Td>
-                      <Td>
-                        <NumberInput
-                          value={item.rate}
-                          onChange={(value) => updateLineItem(item.id, 'rate', parseFloat(value) || 0)}
-                          min={0}
-                          size="sm"
-                        >
-                          <NumberInputField />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
-                      </Td>
-                      <Td>
-                        <Text fontFamily="mono" fontWeight="medium">
-                          {formatCurrency(item.amount)}
-                        </Text>
-                      </Td>
-                      <Td>
-                        <IconButton
-                          icon={<DeleteIcon />}
-                          size="sm"
-                          variant="ghost"
-                          colorScheme="red"
-                          onClick={() => removeLineItem(item.id)}
-                          isDisabled={lineItems.length === 1}
-                        />
-                      </Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
-            </Box>
-
-            {/* Totals */}
-            <Box>
-              <VStack spacing={2} align="stretch">
-                <HStack justify="space-between">
-                  <Text>Subtotal:</Text>
-                  <Text fontFamily="mono" fontWeight="medium">
-                    {formatCurrency(subtotal)}
-                  </Text>
-                </HStack>
-                <HStack justify="space-between">
-                  <Text>Tax ({formData.taxRate}%):</Text>
-                  <Text fontFamily="mono" fontWeight="medium">
-                    {formatCurrency(taxAmount)}
-                  </Text>
-                </HStack>
-                <HStack justify="space-between">
-                  <Text>Discount ({formData.discountRate}%):</Text>
-                  <Text fontFamily="mono" fontWeight="medium" color="red.500">
-                    -{formatCurrency(discountAmount)}
-                  </Text>
-                </HStack>
-                <Divider />
-                <HStack justify="space-between">
-                  <Text fontWeight="bold">Total:</Text>
-                  <Text fontFamily="mono" fontWeight="bold" fontSize="lg">
-                    {formatCurrency(totalAmount)}
-                  </Text>
-                </HStack>
-              </VStack>
-            </Box>
-
-            {/* Notes and Terms */}
-            <HStack spacing={6}>
-              <FormControl>
-                <FormLabel>Notes</FormLabel>
-                <Textarea
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  placeholder="Additional notes for the customer..."
-                  rows={3}
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel>Terms & Conditions</FormLabel>
-                <Textarea
-                  value={formData.terms}
-                  onChange={(e) => handleInputChange('terms', e.target.value)}
-                  placeholder="Payment terms and conditions..."
-                  rows={3}
-                />
-              </FormControl>
-            </HStack>
+            <FormControl isInvalid={formik.touched.customerAddress && formik.errors.customerAddress}>
+              <FormLabel>Address</FormLabel>
+              <Textarea
+                {...formik.getFieldProps('customerAddress')}
+                placeholder="Enter customer address"
+                rows={3}
+              />
+              <FormErrorMessage>{formik.errors.customerAddress}</FormErrorMessage>
+            </FormControl>
           </VStack>
-        </ModalBody>
+        </Box>
 
-        <ModalFooter>
-          <HStack spacing={3}>
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
+        <Divider />
+
+        {/* Invoice Details */}
+        <Box>
+          <Text fontSize="lg" fontWeight="bold" mb={4}>
+            Invoice Details
+          </Text>
+          <VStack spacing={4}>
+            <FormControl isInvalid={formik.touched.dueDate && formik.errors.dueDate}>
+              <FormLabel>Due Date *</FormLabel>
+              <Input
+                {...formik.getFieldProps('dueDate')}
+                type="date"
+              />
+              <FormErrorMessage>{formik.errors.dueDate}</FormErrorMessage>
+            </FormControl>
+
+            <FormControl isInvalid={formik.touched.notes && formik.errors.notes}>
+              <FormLabel>Notes</FormLabel>
+              <Textarea
+                {...formik.getFieldProps('notes')}
+                placeholder="Additional notes..."
+                rows={3}
+              />
+              <FormErrorMessage>{formik.errors.notes}</FormErrorMessage>
+            </FormControl>
+          </VStack>
+        </Box>
+
+        <Divider />
+
+        {/* Invoice Items */}
+        <Box>
+          <HStack justify="space-between" mb={4}>
+            <Text fontSize="lg" fontWeight="bold">
+              Invoice Items
+            </Text>
             <Button
+              size="sm"
+              leftIcon={<AddIcon />}
+              onClick={addItem}
               colorScheme="blue"
-              onClick={handleSubmit}
-              isLoading={loading}
-              loadingText="Saving..."
             >
-              {invoice ? 'Update Invoice' : 'Create Invoice'}
+              Add Item
             </Button>
           </HStack>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+
+          <VStack spacing={4}>
+            {formik.values.items.map((item, index) => (
+              <Box
+                key={index}
+                p={4}
+                border="1px"
+                borderColor="gray.200"
+                borderRadius="md"
+                w="full"
+              >
+                <HStack justify="space-between" mb={3}>
+                  <Text fontWeight="medium">Item {index + 1}</Text>
+                  {formik.values.items.length > 1 && (
+                    <IconButton
+                      size="sm"
+                      icon={<CloseIcon />}
+                      onClick={() => removeItem(index)}
+                      colorScheme="red"
+                      variant="ghost"
+                    />
+                  )}
+                </HStack>
+
+                <VStack spacing={3}>
+                  <FormControl>
+                    <FormLabel>Description *</FormLabel>
+                    <Input
+                      value={item.description}
+                      onChange={(e) => updateItem(index, 'description', e.target.value)}
+                      placeholder="Item description"
+                    />
+                  </FormControl>
+
+                  <HStack spacing={4} w="full">
+                    <FormControl>
+                      <FormLabel>Quantity *</FormLabel>
+                      <NumberInput
+                        value={item.quantity}
+                        onChange={(value) => updateItem(index, 'quantity', parseFloat(value) || 0)}
+                        min={0}
+                      >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel>Unit Price *</FormLabel>
+                      <NumberInput
+                        value={item.unitPrice}
+                        onChange={(value) => updateItem(index, 'unitPrice', parseFloat(value) || 0)}
+                        min={0}
+                        precision={2}
+                      >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel>Tax Rate (%)</FormLabel>
+                      <NumberInput
+                        value={item.taxRate}
+                        onChange={(value) => updateItem(index, 'taxRate', parseFloat(value) || 0)}
+                        min={0}
+                        max={100}
+                        precision={2}
+                      >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    </FormControl>
+                  </HStack>
+
+                  <HStack justify="space-between" w="full">
+                    <Text fontSize="sm" color="gray.600">
+                      Subtotal: ₹{(item.quantity * item.unitPrice).toFixed(2)}
+                    </Text>
+                    <Text fontSize="sm" color="gray.600">
+                      Tax: ₹{((item.quantity * item.unitPrice) * (item.taxRate / 100)).toFixed(2)}
+                    </Text>
+                    <Text fontWeight="bold">
+                      Total: ₹{calculateItemTotal(item).toFixed(2)}
+                    </Text>
+                  </HStack>
+                </VStack>
+              </Box>
+            ))}
+          </VStack>
+        </Box>
+
+        <Divider />
+
+        {/* Total */}
+        <Box textAlign="right">
+          <Text fontSize="xl" fontWeight="bold">
+            Total Amount: ₹{calculateTotal().toFixed(2)}
+          </Text>
+        </Box>
+
+        {/* Form Errors */}
+        {formik.errors.items && (
+          <Text color="red.500" fontSize="sm">
+            {formik.errors.items}
+          </Text>
+        )}
+
+        {/* Actions */}
+        <HStack justify="flex-end" spacing={4}>
+          <Button onClick={onCancel} variant="outline">
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            colorScheme="blue"
+            isLoading={submitting}
+            loadingText="Saving..."
+          >
+            {invoice ? 'Update Invoice' : 'Create Invoice'}
+          </Button>
+        </HStack>
+      </VStack>
+    </Box>
   );
 };
 

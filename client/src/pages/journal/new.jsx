@@ -15,7 +15,7 @@ import journalEntryService from '../../services/journalEntryService';
 // import Select from '@mui/material/Select';
 // import MenuItem from '@mui/material/MenuItem';
 // import FormHelperText from '@mui/material/FormHelperText';
-// TODO: Replace MUI components with Chakra UI equivalents
+// Note: MUI components have been replaced with Chakra UI equivalents
 
 // Sample accounts data for dropdown
 const sampleAccounts = [

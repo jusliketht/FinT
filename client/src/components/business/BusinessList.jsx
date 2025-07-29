@@ -1,135 +1,70 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Button,
-  Heading,
-  Text,
   VStack,
   HStack,
+  Text,
+  Button,
   Card,
   CardBody,
+  CardHeader,
   Badge,
   IconButton,
   useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-  useToast,
-  SimpleGrid,
-  Skeleton,
   Alert,
   AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Spinner,
+  Avatar,
+  AvatarGroup,
+  AvatarBadge,
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon } from '@chakra-ui/icons';
-import businessService from '../../services/businessService';
+import { DeleteIcon } from '@chakra-ui/icons';
+import { useBusiness } from '../../contexts/BusinessContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import BusinessForm from './BusinessForm';
 
 const BusinessList = () => {
-  const [businesses, setBusinesses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedBusiness, setSelectedBusiness] = useState(null);
+  const { businesses, loading, error, fetchBusinesses, deleteBusiness } = useBusiness();
+  const { user } = useAuth();
+  const { showToast } = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const toast = useToast();
-
-  const fetchBusinesses = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await businessService.getAll();
-      setBusinesses(response.data || response);
-    } catch (err) {
-      setError('Failed to fetch businesses');
-      toast({
-        title: 'Error',
-        description: 'Failed to load businesses',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+  const [selectedBusiness, setSelectedBusiness] = useState(null);
 
   useEffect(() => {
     fetchBusinesses();
   }, [fetchBusinesses]);
-
-  const handleCreate = () => {
-    setSelectedBusiness(null);
-    onOpen();
-  };
 
   const handleEdit = (business) => {
     setSelectedBusiness(business);
     onOpen();
   };
 
-  const handleDelete = async (business) => {
-    if (!window.confirm(`Are you sure you want to delete ${business.name}? This action cannot be undone.`)) {
-      return;
-    }
-
+  const handleDelete = async (businessId) => {
     try {
-      await businessService.delete(business.id);
-      toast({
-        title: 'Success',
-        description: 'Business deleted successfully',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-      fetchBusinesses();
-    } catch (err) {
-      toast({
-        title: 'Error',
-        description: err.response?.data?.message || 'Failed to delete business',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      await deleteBusiness(businessId);
+      showToast('Business deleted successfully', 'success');
+    } catch (error) {
+      showToast('Failed to delete business', 'error');
     }
   };
 
-  const handleViewUsers = (business) => {
-    setSelectedBusiness(business);
-    // setShowUsers(true); // This state was removed, so this function is now effectively a no-op
+  const handleFormClose = () => {
+    setSelectedBusiness(null);
+    onClose();
   };
 
   const handleFormSuccess = () => {
-    onClose();
+    handleFormClose();
     fetchBusinesses();
-    toast({
-      title: 'Success',
-      description: selectedBusiness ? 'Business updated successfully' : 'Business created successfully',
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    });
-  };
-
-  const getBusinessTypeColor = (type) => {
-    const colors = {
-      sole_proprietorship: 'blue',
-      partnership: 'green',
-      corporation: 'purple',
-      llc: 'orange'
-    };
-    return colors[type] || 'gray';
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
   };
 
   if (loading) {
     return (
       <Box textAlign="center" py={8}>
-        <Spinner size="xl" />
+        <Spinner size="lg" />
         <Text mt={4}>Loading businesses...</Text>
       </Box>
     );
@@ -137,157 +72,141 @@ const BusinessList = () => {
 
   if (error) {
     return (
-      <Alert status="error">
+      <Alert status="error" borderRadius="lg">
         <AlertIcon />
-        <AlertTitle>Error!</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
+        <Box>
+          <AlertTitle>Error loading businesses</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Box>
       </Alert>
     );
   }
 
-  // if (showUsers && selectedBusiness) { // This block was removed
-  //   return (
-  //     <BusinessUsers 
-  //       business={selectedBusiness}
-  //       onBack={() => setShowUsers(false)}
-  //     />
-  //   );
-  // }
-
   return (
     <Box>
-      <HStack justify="space-between" mb={6}>
-        <Heading size="lg">My Businesses</Heading>
-        <Button
-          leftIcon={<AddIcon />}
-          colorScheme="blue"
-          onClick={handleCreate}
-        >
-          Create Business
-        </Button>
-      </HStack>
-
-      {businesses.length === 0 ? (
-        <Card>
-          <CardBody textAlign="center" py={12}>
-            <Text fontSize="lg" color="gray.500" mb={4}>
-              You don't have any businesses yet
+      <VStack spacing={6} align="stretch">
+        <HStack justify="space-between" align="center">
+          <Box>
+            <Text fontSize="2xl" fontWeight="bold">
+              My Businesses
             </Text>
-            <Button colorScheme="blue" onClick={handleCreate}>
-              Create Your First Business
-            </Button>
-          </CardBody>
-        </Card>
-      ) : (
-        <VStack spacing={4} align="stretch">
-          {businesses.map((business) => (
-            <Card key={business.id} variant="outline">
-              <CardHeader>
-                <HStack justify="space-between">
-                  <VStack align="start" spacing={2}>
-                    <Heading size="md">{business.name}</Heading>
+            <Text color="gray.600">
+              Manage your business accounts and settings
+            </Text>
+          </Box>
+          <Button colorScheme="blue" onClick={onOpen}>
+            Add Business
+          </Button>
+        </HStack>
+
+        {businesses.length === 0 ? (
+          <Card>
+            <CardBody textAlign="center" py={12}>
+              <Text fontSize="lg" color="gray.500" mb={4}>
+                No businesses found
+              </Text>
+              <Text color="gray.400" mb={6}>
+                Create your first business to get started with financial management
+              </Text>
+              <Button colorScheme="blue" onClick={onOpen}>
+                Create Business
+              </Button>
+            </CardBody>
+          </Card>
+        ) : (
+          <VStack spacing={4} align="stretch">
+            {businesses.map((business) => (
+              <Card key={business.id} variant="outline">
+                <CardHeader>
+                  <HStack justify="space-between" align="center">
                     <HStack spacing={4}>
-                      <Badge colorScheme={getBusinessTypeColor(business.type)}>
-                        {business.type.replace('_', ' ').toUpperCase()}
-                      </Badge>
-                      {business.registrationNumber && (
-                        <Text fontSize="sm" color="gray.600">
-                          Reg: {business.registrationNumber}
+                      <Avatar
+                        name={business.name}
+                        bg="blue.500"
+                        size="md"
+                      >
+                        <AvatarBadge
+                          boxSize="1em"
+                          bg={business.isActive ? 'green.500' : 'gray.400'}
+                        />
+                      </Avatar>
+                      <Box>
+                        <Text fontSize="lg" fontWeight="semibold">
+                          {business.name}
                         </Text>
+                        <Text fontSize="sm" color="gray.600">
+                          {business.type} • {business.address}
+                        </Text>
+                      </Box>
+                    </HStack>
+                    <HStack spacing={2}>
+                      {business.isDefault && (
+                        <Badge colorScheme="green" variant="subtle">
+                          Default
+                        </Badge>
                       )}
+                      <Badge
+                        colorScheme={business.isActive ? 'green' : 'gray'}
+                        variant="subtle"
+                      >
+                        {business.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </HStack>
+                  </HStack>
+                </CardHeader>
+                <CardBody pt={0}>
+                  <VStack spacing={3} align="stretch">
+                    <HStack justify="space-between">
+                      <Text fontSize="sm" color="gray.600">
+                        Registration: {business.registrationNumber || 'Not specified'}
+                      </Text>
+                      <Text fontSize="sm" color="gray.600">
+                        GST: {business.gstNumber || 'Not specified'}
+                      </Text>
+                    </HStack>
+                    
+                    <HStack justify="space-between">
+                      <Text fontSize="sm" color="gray.600">
+                        Phone: {business.phone || 'Not specified'}
+                      </Text>
+                      <Text fontSize="sm" color="gray.600">
+                        Email: {business.email || 'Not specified'}
+                      </Text>
+                    </HStack>
+
+                    <HStack justify="end" spacing={2}>
+                      <IconButton
+                        icon={<ViewIcon />}
+                        variant="ghost"
+                        size="sm"
+                        aria-label="View details"
+                        onClick={() => handleEdit(business)}
+                      />
+                      <IconButton
+                        icon={<DeleteIcon />}
+                        variant="ghost"
+                        size="sm"
+                        colorScheme="red"
+                        aria-label="Delete business"
+                        onClick={() => handleDelete(business.id)}
+                        isDisabled={business.isDefault}
+                      />
                     </HStack>
                   </VStack>
-                  <HStack spacing={2}>
-                    <IconButton
-                      icon={<InfoIcon />}
-                      aria-label="View users"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleViewUsers(business)}
-                    />
-                    <IconButton
-                      icon={<EditIcon />}
-                      aria-label="Edit business"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEdit(business)}
-                    />
-                    <IconButton
-                      icon={<DeleteIcon />}
-                      aria-label="Delete business"
-                      size="sm"
-                      variant="ghost"
-                      colorScheme="red"
-                      onClick={() => handleDelete(business)}
-                    />
-                  </HStack>
-                </HStack>
-              </CardHeader>
-              <CardBody pt={0}>
-                <VStack align="start" spacing={3}>
-                  {business.description && (
-                    <Text color="gray.600">{business.description}</Text>
-                  )}
-                  
-                  <HStack spacing={6} fontSize="sm" color="gray.500">
-                    {business.incorporationDate && (
-                      <Text>Incorporated: {formatDate(business.incorporationDate)}</Text>
-                    )}
-                    {business.fiscalYearStart && business.fiscalYearEnd && (
-                      <Text>
-                        Fiscal Year: {formatDate(business.fiscalYearStart)} - {formatDate(business.fiscalYearEnd)}
-                      </Text>
-                    )}
-                  </HStack>
+                </CardBody>
+              </Card>
+            ))}
+          </VStack>
+        )}
+      </VStack>
 
-                  {business.address && (
-                    <Text fontSize="sm" color="gray.500">
-                      📍 {business.address}
-                      {business.city && `, ${business.city}`}
-                      {business.state && `, ${business.state}`}
-                    </Text>
-                  )}
-
-                  {business.Users && business.Users.length > 0 && (
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium" mb={2}>
-                        Team Members ({business.Users.length})
-                      </Text>
-                      <AvatarGroup size="sm" max={3}>
-                        {business.Users.map((userBusiness) => (
-                          <Avatar
-                            key={userBusiness.User.id}
-                            name={userBusiness.User.name}
-                            src={userBusiness.User.avatar}
-                            title={`${userBusiness.User.name} (${userBusiness.role})`}
-                          />
-                        ))}
-                      </AvatarGroup>
-                    </Box>
-                  )}
-                </VStack>
-              </CardBody>
-            </Card>
-          ))}
-        </VStack>
-      )}
-
-      <Modal isOpen={isOpen} onClose={onClose} size="xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            {selectedBusiness ? 'Edit Business' : 'Create New Business'}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <BusinessForm
-              business={selectedBusiness}
-              onSuccess={handleFormSuccess}
-              onCancel={onClose}
-            />
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      {/* Business Form Modal */}
+      <BusinessForm
+        isOpen={isOpen}
+        onClose={handleFormClose}
+        business={selectedBusiness}
+        onSuccess={handleFormSuccess}
+      />
     </Box>
   );
 };

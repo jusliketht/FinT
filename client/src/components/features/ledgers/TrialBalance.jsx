@@ -1,201 +1,179 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Heading,
+  VStack,
+  HStack,
   Text,
+  Button,
   Table,
   Thead,
   Tbody,
   Tr,
   Th,
   Td,
-  Button,
-  HStack,
-  useToast,
-  Spinner,
+  Badge,
   Alert,
   AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Spinner,
+  useToast,
 } from '@chakra-ui/react';
-import ledgerService from '../../../services/ledgerService';
-import { useToast } from '../../../contexts/ToastContext';
+import { useBusiness } from '../../../contexts/BusinessContext';
 
 const TrialBalance = () => {
-  const [trialBalanceData, setTrialBalanceData] = useState([]);
-  const [totals, setTotals] = useState({
-    debitTotal: 0,
-    creditTotal: 0,
-    difference: 0
-  });
-  const [loading, setLoading] = useState(false);
+  const { selectedBusiness } = useBusiness();
+  const toast = useToast();
+  const [trialBalance, setTrialBalance] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [asOfDate] = useState(new Date()); // Date picker not implemented
-  const [includeZeroBalances, setIncludeZeroBalances] = useState(false);
-  const { showToast } = useToast();
 
-  const fetchTrialBalance = async () => {
-    setLoading(true);
+  const fetchTrialBalance = useCallback(async () => {
     try {
-      // Date filter not implemented, just use current date
-      const filters = {
-        asOfDate: asOfDate.toISOString().split('T')[0],
-        includeZeroBalances: includeZeroBalances.toString()
-      };
-      const response = await ledgerService.getTrialBalance(filters);
-      setTrialBalanceData(response.data);
-      setTotals(response.totals);
+      setLoading(true);
       setError(null);
+      const response = await fetch(`/api/businesses/${selectedBusiness.id}/reports/trial-balance`);
+      if (response.ok) {
+        const data = await response.json();
+        setTrialBalance(data.data || []);
+      } else {
+        throw new Error('Failed to fetch trial balance');
+      }
     } catch (err) {
-      setError('Failed to fetch trial balance data');
-      showToast('Failed to fetch trial balance data', 'error');
+      setError(err.message);
+      toast({
+        title: 'Error',
+        description: 'Failed to load trial balance',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedBusiness, toast]);
 
   useEffect(() => {
-    fetchTrialBalance();
-    // eslint-disable-next-line
-  }, []);
-
-  const handleIncludeZeroBalancesChange = (e) => {
-    setIncludeZeroBalances(e.target.checked);
-  };
-
-  const handleApplyFilters = () => {
-    fetchTrialBalance();
-  };
+    if (selectedBusiness) {
+      fetchTrialBalance();
+    }
+  }, [selectedBusiness, fetchTrialBalance]);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
+      currency: 'INR'
     }).format(amount);
   };
 
-  const handleDownloadCSV = () => {
-    const headers = ['Account Code', 'Account Name', 'Account Type', 'Debit Balance', 'Credit Balance'];
-    const csvData = [
-      headers.join(','),
-      ...trialBalanceData.map(row => [
-        row.accountCode,
-        `"${row.accountName}"`,
-        row.accountType,
-        row.debitBalance.toFixed(2),
-        row.creditBalance.toFixed(2)
-      ].join(','))
-    ];
-    csvData.push([
-      '', 'TOTALS', '',
-      totals.debitTotal.toFixed(2),
-      totals.creditTotal.toFixed(2)
-    ].join(','));
-    const csvContent = csvData.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `trial_balance_${asOfDate.toISOString().split('T')[0].replace(/-/g, '')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const getAccountTypeColor = (type) => {
+    const colors = {
+      asset: 'green',
+      liability: 'red',
+      equity: 'blue',
+      revenue: 'purple',
+      expense: 'orange'
+    };
+    return colors[type] || 'gray';
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  if (loading) {
+    return (
+      <Box textAlign="center" py={8}>
+        <Spinner size="lg" />
+        <Text mt={4}>Loading trial balance...</Text>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert status="error" borderRadius="lg">
+        <AlertIcon />
+        <Box>
+          <AlertTitle>Error loading trial balance</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Box>
+      </Alert>
+    );
+  }
+
+  const totalDebits = trialBalance.reduce((sum, account) => sum + (account.debit || 0), 0);
+  const totalCredits = trialBalance.reduce((sum, account) => sum + (account.credit || 0), 0);
 
   return (
-    <Box p={6} className="printable-content">
-      <Heading as="h1" size="lg" mb={6}>
-        Trial Balance
-      </Heading>
-
-      <Box bg="white" p={4} borderRadius="lg" boxShadow="sm" mb={6}>
-        <HStack spacing={6} align="center" mb={2} flexWrap="wrap">
-          {/* Date picker not implemented */}
-          <HStack>
-            <Switch
-              isChecked={includeZeroBalances}
-              onChange={handleIncludeZeroBalancesChange}
-              colorScheme="blue"
-              id="include-zero-balances"
-            />
-            <Text htmlFor="include-zero-balances">Include Zero Balances</Text>
-          </HStack>
-          <Button
-            colorScheme="blue"
-            onClick={handleApplyFilters}
-            isLoading={loading}
-          >
-            Apply Filters
+    <Box>
+      <VStack spacing={6} align="stretch">
+        <HStack justify="space-between" align="center">
+          <Box>
+            <Text fontSize="2xl" fontWeight="bold">
+              Trial Balance
+            </Text>
+            <Text color="gray.600">
+              As of {new Date().toLocaleDateString()}
+            </Text>
+          </Box>
+          <Button colorScheme="blue" onClick={fetchTrialBalance}>
+            Refresh
           </Button>
-          <IconButton
-            icon={<span role="img" aria-label="refresh">🔄</span>}
-            onClick={fetchTrialBalance}
-            isDisabled={loading}
-            aria-label="Refresh"
-          />
-          <IconButton
-            icon={<span role="img" aria-label="download">⬇️</span>}
-            onClick={handleDownloadCSV}
-            isDisabled={loading || trialBalanceData.length === 0}
-            aria-label="Download as CSV"
-          />
-          <IconButton
-            icon={<span role="img" aria-label="print">🖨️</span>}
-            onClick={handlePrint}
-            isDisabled={loading || trialBalanceData.length === 0}
-            aria-label="Print"
-          />
         </HStack>
-      </Box>
 
-      {error && (
-        <Alert status="error" mb={6}>
-          {error}
-        </Alert>
-      )}
-      {loading ? (
-        <Box textAlign="center" py={12}>
-          <Spinner size="xl" />
-          <Text mt={4}>Loading trial balance...</Text>
+        <Table variant="simple">
+          <Thead>
+            <Tr>
+              <Th>Account</Th>
+              <Th>Type</Th>
+              <Th isNumeric>Debit</Th>
+              <Th isNumeric>Credit</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {trialBalance.map((account) => (
+              <Tr key={account.id}>
+                <Td>
+                  <Text fontWeight="medium">{account.name}</Text>
+                  <Text fontSize="sm" color="gray.500">{account.code}</Text>
+                </Td>
+                <Td>
+                  <Badge colorScheme={getAccountTypeColor(account.type)}>
+                    {account.type}
+                  </Badge>
+                </Td>
+                <Td isNumeric>
+                  {account.debit > 0 ? formatCurrency(account.debit) : '-'}
+                </Td>
+                <Td isNumeric>
+                  {account.credit > 0 ? formatCurrency(account.credit) : '-'}
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+
+        {/* Totals */}
+        <Box borderTop="2px" borderColor="gray.200" pt={4}>
+          <HStack justify="space-between">
+            <Text fontSize="lg" fontWeight="bold">
+              Total Debits: {formatCurrency(totalDebits)}
+            </Text>
+            <Text fontSize="lg" fontWeight="bold">
+              Total Credits: {formatCurrency(totalCredits)}
+            </Text>
+          </HStack>
+          
+          {totalDebits !== totalCredits && (
+            <Alert status="warning" mt={4}>
+              <AlertIcon />
+              <Box>
+                <AlertTitle>Unbalanced Trial Balance</AlertTitle>
+                <AlertDescription>
+                  Total debits and credits do not match. Please review your journal entries.
+                </AlertDescription>
+              </Box>
+            </Alert>
+          )}
         </Box>
-      ) : (
-        <Box overflowX="auto" borderWidth="1px" borderRadius="lg" bg="white">
-          <table style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse' }}>
-            <thead style={{ backgroundColor: '#f7fafc' }}>
-              <tr>
-                <th style={{ textAlign: 'left', padding: '12px', fontWeight: 'bold' }}>Account Code</th>
-                <th style={{ textAlign: 'left', padding: '12px', fontWeight: 'bold' }}>Account Name</th>
-                <th style={{ textAlign: 'left', padding: '12px', fontWeight: 'bold' }}>Account Type</th>
-                <th style={{ textAlign: 'right', padding: '12px', fontWeight: 'bold' }}>Debit Balance</th>
-                <th style={{ textAlign: 'right', padding: '12px', fontWeight: 'bold' }}>Credit Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trialBalanceData.map((row, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td style={{ padding: '12px' }}>{row.accountCode}</td>
-                  <td style={{ padding: '12px' }}>{row.accountName}</td>
-                  <td style={{ padding: '12px' }}>{row.accountType}</td>
-                  <td style={{ textAlign: 'right', padding: '12px' }}>{formatCurrency(row.debitBalance)}</td>
-                  <td style={{ textAlign: 'right', padding: '12px' }}>{formatCurrency(row.creditBalance)}</td>
-                </tr>
-              ))}
-              {/* Totals row */}
-              <tr style={{ fontWeight: 'bold', backgroundColor: '#f7fafc' }}>
-                <td style={{ padding: '12px' }}></td>
-                <td style={{ padding: '12px' }}>TOTALS</td>
-                <td style={{ padding: '12px' }}></td>
-                <td style={{ textAlign: 'right', padding: '12px' }}>{formatCurrency(totals.debitTotal)}</td>
-                <td style={{ textAlign: 'right', padding: '12px' }}>{formatCurrency(totals.creditTotal)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </Box>
-      )}
+      </VStack>
     </Box>
   );
 };

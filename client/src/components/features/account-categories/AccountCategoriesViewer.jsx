@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Heading,
@@ -16,11 +16,7 @@ const AccountCategoriesViewer = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get('/account-categories');
@@ -30,7 +26,11 @@ const AccountCategoriesViewer = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, showToast]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   if (loading) {
     return <Text>Loading account categories...</Text>;

@@ -5,8 +5,8 @@ import {
 import { AddIcon, DownloadIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import { formatCurrency } from '../../utils/formatters';
 import { useApi } from '../../hooks/useApi';
-import { useBusiness } from '../../hooks/useBusiness';
-import inventoryService from '../../services/inventoryService';
+import { useBusiness } from '../../contexts/BusinessContext';
+import { inventoryService } from '../../services/inventoryService';
 
 const InventoryDashboard = () => {
   const [inventoryData, setInventoryData] = useState(null);

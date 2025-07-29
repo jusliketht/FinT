@@ -1,9 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Button,
   VStack,
   HStack,
+  Text,
+  Heading,
+  Button,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Badge,
+  IconButton,
   useDisclosure,
   Modal,
   ModalOverlay,
@@ -11,235 +21,415 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
-  useToast,
-  SimpleGrid,
-  Skeleton,
+  Spinner,
   Alert,
   AlertIcon,
+  useToast,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Select,
 } from '@chakra-ui/react';
-import { AddIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, DeleteIcon, SearchIcon } from '@chakra-ui/icons';
+import { useBusiness } from '../../../contexts/BusinessContext';
+import { useToast as useToastContext } from '../../../contexts/ToastContext';
 import accountService from '../../../services/accountService';
 
 const AccountsManager = () => {
-  const [accounts, setAccounts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedAccount, setSelectedAccount] = useState(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { selectedBusiness } = useBusiness();
+  const { showToast } = useToastContext();
   const toast = useToast();
+  
+  const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [accountTypeFilter, setAccountTypeFilter] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editingAccount, setEditingAccount] = useState(null);
+  const [isOpen, onOpen, onClose] = useDisclosure();
 
   const fetchAccounts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await accountService.getAll();
+      
+      if (!selectedBusiness?.id) {
+        setAccounts([]);
+        return;
+      }
+
+      const response = await accountService.getAll({
+        businessId: selectedBusiness.id,
+        search: searchTerm,
+        type: accountTypeFilter
+      });
+      
       setAccounts(response.data || response);
     } catch (err) {
       setError('Failed to fetch accounts');
-      toast({
-        title: 'Error',
-        description: 'Failed to load accounts',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      showToast('error', 'Failed to fetch accounts');
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [selectedBusiness?.id, searchTerm, accountTypeFilter, showToast]);
 
   useEffect(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
-
-  const handleSave = async (accountData) => {
-    try {
-      if (selectedAccount) {
-        await accountService.update(selectedAccount.id, accountData);
-        toast({
-          title: 'Account updated',
-          description: 'Account updated successfully',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
-      } else {
-        await accountService.create(accountData);
-        toast({
-          title: 'Account created',
-          description: 'Account created successfully',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
-      }
+    if (selectedBusiness) {
       fetchAccounts();
-      onClose();
-      setSelectedAccount(null);
-    } catch (error) {
-      toast({
-        title: 'Error saving account',
-        description: 'Failed to save account',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
+    }
+  }, [selectedBusiness, fetchAccounts]);
+
+  const handleCreateAccount = async (accountData) => {
+    try {
+      const newAccount = await accountService.create({
+        ...accountData,
+        businessId: selectedBusiness.id
       });
+      
+      setAccounts([...accounts, newAccount]);
+      setShowForm(false);
+      setEditingAccount(null);
+      showToast('success', 'Account created successfully');
+    } catch (err) {
+      showToast('error', 'Failed to create account');
     }
   };
 
-  const handleDelete = async (accountId) => {
-    if (window.confirm('Are you sure you want to delete this account?')) {
-      try {
-        await api.delete(`/api/accounts/${accountId}`);
-        showToast('Account deleted successfully', 'success');
-        fetchAccounts();
-      } catch (error) {
-        showToast('Error deleting account', 'error');
-      }
+  const handleUpdateAccount = async (accountId, accountData) => {
+    try {
+      const updatedAccount = await accountService.update(accountId, accountData);
+      
+      setAccounts(accounts.map(acc => 
+        acc.id === accountId ? updatedAccount : acc
+      ));
+      
+      setShowForm(false);
+      setEditingAccount(null);
+      showToast('success', 'Account updated successfully');
+    } catch (err) {
+      showToast('error', 'Failed to update account');
     }
   };
 
-  const handleEdit = (account) => {
-    setEditingAccount(account);
-    setShowForm(true);
+  const handleDeleteAccount = async (accountId) => {
+    if (!window.confirm('Are you sure you want to delete this account?')) {
+      return;
+    }
+
+    try {
+      await accountService.delete(accountId);
+      
+      setAccounts(accounts.filter(acc => acc.id !== accountId));
+      showToast('success', 'Account deleted successfully');
+    } catch (err) {
+      showToast('error', 'Failed to delete account');
+    }
   };
 
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingAccount(null);
+  const getAccountTypeColor = (type) => {
+    switch (type?.toLowerCase()) {
+      case 'asset': return 'blue';
+      case 'liability': return 'red';
+      case 'equity': return 'green';
+      case 'revenue': return 'purple';
+      case 'expense': return 'orange';
+      default: return 'gray';
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+    }).format(amount || 0);
   };
 
   const filteredAccounts = accounts.filter(account => {
     const matchesSearch = account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          account.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = !filterType || account.type === filterType;
-    const matchesCategory = !filterCategory || account.category === filterCategory;
-    return matchesSearch && matchesType && matchesCategory;
+    const matchesType = !accountTypeFilter || account.type === accountTypeFilter;
+    return matchesSearch && matchesType;
   });
 
-  const accountTypes = ['asset', 'liability', 'equity', 'revenue', 'expense'];
-
-  if (showForm) {
+  if (!selectedBusiness) {
     return (
       <Box p={6}>
-        <Heading size="lg" mb={6}>
-          {editingAccount ? 'Edit Account' : 'Create New Account'}
-        </Heading>
-        
-        <AccountForm
-          account={editingAccount}
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
+        <Alert status="info">
+          <AlertIcon />
+          Please select a business to manage accounts.
+        </Alert>
       </Box>
     );
   }
 
   return (
     <Box p={6}>
-      <HStack justify="space-between" mb={6}>
-        <Heading size="lg">Accounts Management</Heading>
-        <Button
-          leftIcon={<AddIcon />}
-          colorScheme="blue"
-          onClick={() => setShowForm(true)}
-        >
-          Add Account
-        </Button>
-      </HStack>
+      <VStack spacing={6} align="stretch">
+        {/* Header */}
+        <HStack justify="space-between">
+          <Box>
+            <Heading size="lg">Chart of Accounts</Heading>
+            <Text color="gray.600">Manage your business accounts</Text>
+          </Box>
+          <Button
+            leftIcon={<AddIcon />}
+            colorScheme="blue"
+            onClick={() => {
+              setEditingAccount(null);
+              setShowForm(true);
+              onOpen();
+            }}
+          >
+            Add Account
+          </Button>
+        </HStack>
 
-      {/* Filters */}
-      <Card mb={6}>
-        <CardBody>
-          <HStack spacing={4}>
-            <Box mb={4}>
-              <Text fontWeight="medium" mb={2}>Search</Text>
-              <Input
-                placeholder="Search accounts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                pr="2.5rem"
-              />
-            </Box>
+        {/* Filters */}
+        <HStack spacing={4}>
+          <InputGroup maxW="300px">
+            <InputLeftElement pointerEvents="none">
+              <SearchIcon color="gray.300" />
+            </InputLeftElement>
+            <Input
+              placeholder="Search accounts..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </InputGroup>
+          
+          <Select
+            placeholder="Filter by type"
+            value={accountTypeFilter}
+            onChange={(e) => setAccountTypeFilter(e.target.value)}
+            maxW="200px"
+          >
+            <option value="ASSET">Assets</option>
+            <option value="LIABILITY">Liabilities</option>
+            <option value="EQUITY">Equity</option>
+            <option value="REVENUE">Revenue</option>
+            <option value="EXPENSE">Expenses</option>
+          </Select>
+        </HStack>
 
-            <Box mb={4}>
-              <Text fontWeight="medium" mb={2}>Type</Text>
-              <Select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                placeholder="All types"
-              >
-                {accountTypes.map(type => (
-                  <option key={type} value={type}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </option>
+        {/* Accounts Table */}
+        {loading ? (
+          <Box textAlign="center" py={10}>
+            <Spinner size="xl" />
+            <Text mt={4}>Loading accounts...</Text>
+          </Box>
+        ) : error ? (
+          <Alert status="error">
+            <AlertIcon />
+            {error}
+          </Alert>
+        ) : (
+          <Box overflowX="auto">
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Code</Th>
+                  <Th>Name</Th>
+                  <Th>Type</Th>
+                  <Th>Balance</Th>
+                  <Th>Status</Th>
+                  <Th>Actions</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {filteredAccounts.map((account) => (
+                  <Tr key={account.id}>
+                    <Td fontWeight="bold">{account.code}</Td>
+                    <Td>{account.name}</Td>
+                    <Td>
+                      <Badge colorScheme={getAccountTypeColor(account.type)}>
+                        {account.type}
+                      </Badge>
+                    </Td>
+                    <Td>{formatCurrency(account.balance)}</Td>
+                    <Td>
+                      <Badge colorScheme={account.isActive ? 'green' : 'red'}>
+                        {account.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      <HStack spacing={2}>
+                        <IconButton
+                          size="sm"
+                          icon={<EditIcon />}
+                          aria-label="Edit account"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingAccount(account);
+                            setShowForm(true);
+                            onOpen();
+                          }}
+                        />
+                        <IconButton
+                          size="sm"
+                          icon={<DeleteIcon />}
+                          aria-label="Delete account"
+                          variant="ghost"
+                          colorScheme="red"
+                          onClick={() => handleDeleteAccount(account.id)}
+                        />
+                      </HStack>
+                    </Td>
+                  </Tr>
                 ))}
-              </Select>
-            </Box>
+              </Tbody>
+            </Table>
+          </Box>
+        )}
 
-            <Box mb={4}>
-              <Text fontWeight="medium" mb={2}>Category</Text>
-              <Select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                placeholder="All categories"
-              >
-                <option value="current">Current</option>
-                <option value="non-current">Non-Current</option>
-              </Select>
-            </Box>
-          </HStack>
-        </CardBody>
-      </Card>
-
-      {/* Accounts List */}
-      {loading ? (
-        <Text>Loading accounts...</Text>
-      ) : filteredAccounts.length === 0 ? (
-        <Alert status="info">
-          No accounts found.
-        </Alert>
-      ) : (
-        <VStack spacing={4}>
-          {filteredAccounts.map(account => (
-            <Card key={account.id} w="100%">
-              <CardBody>
-                <HStack justify="space-between">
-                  <Box>
-                    <HStack spacing={2} mb={2}>
-                      <Text fontWeight="bold">{account.name}</Text>
-                      <Badge colorScheme="blue">{account.code}</Badge>
-                      <Badge colorScheme="green">{account.type}</Badge>
-                    </HStack>
-                    {account.description && (
-                      <Text color="gray.600" fontSize="sm">
-                        {account.description}
-                      </Text>
-                    )}
-                  </Box>
-                  <HStack spacing={2}>
-                    <IconButton
-                      icon={<EditIcon />}
-                      onClick={() => handleEdit(account)}
-                      variant="ghost"
-                      colorScheme="blue"
-                      size="sm"
-                    />
-                    <IconButton
-                      icon={<DeleteIcon />}
-                      onClick={() => handleDelete(account.id)}
-                      variant="ghost"
-                      colorScheme="red"
-                      size="sm"
-                    />
-                  </HStack>
-                </HStack>
-              </CardBody>
-            </Card>
-          ))}
-        </VStack>
-      )}
+        {/* Account Form Modal */}
+        {showForm && (
+          <AccountForm
+            isOpen={isOpen}
+            onClose={() => {
+              onClose();
+              setShowForm(false);
+              setEditingAccount(null);
+            }}
+            account={editingAccount}
+            onSubmit={editingAccount ? handleUpdateAccount : handleCreateAccount}
+          />
+        )}
+      </VStack>
     </Box>
+  );
+};
+
+// Account Form Component
+const AccountForm = ({ isOpen, onClose, account, onSubmit }) => {
+  const [formData, setFormData] = useState({
+    code: '',
+    name: '',
+    type: '',
+    category: '',
+    description: '',
+    isActive: true
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (account) {
+      setFormData({
+        code: account.code || '',
+        name: account.name || '',
+        type: account.type || '',
+        category: account.category || '',
+        description: account.description || '',
+        isActive: account.isActive !== false
+      });
+    } else {
+      setFormData({
+        code: '',
+        name: '',
+        type: '',
+        category: '',
+        description: '',
+        isActive: true
+      });
+    }
+  }, [account]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      if (account) {
+        await onSubmit(account.id, formData);
+      } else {
+        await onSubmit(formData);
+      }
+      onClose();
+    } catch (error) {
+      console.error('Form submission error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>
+          {account ? 'Edit Account' : 'Create New Account'}
+        </ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <form onSubmit={handleSubmit}>
+            <VStack spacing={4}>
+              <Input
+                placeholder="Account Code (e.g., 1000)"
+                value={formData.code}
+                onChange={(e) => setFormData({...formData, code: e.target.value})}
+                required
+              />
+              
+              <Input
+                placeholder="Account Name"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                required
+              />
+              
+              <Select
+                placeholder="Select Account Type"
+                value={formData.type}
+                onChange={(e) => setFormData({...formData, type: e.target.value})}
+                required
+              >
+                <option value="ASSET">Asset</option>
+                <option value="LIABILITY">Liability</option>
+                <option value="EQUITY">Equity</option>
+                <option value="REVENUE">Revenue</option>
+                <option value="EXPENSE">Expense</option>
+              </Select>
+              
+              <Select
+                placeholder="Select Category"
+                value={formData.category}
+                onChange={(e) => setFormData({...formData, category: e.target.value})}
+              >
+                <option value="CURRENT_ASSET">Current Asset</option>
+                <option value="FIXED_ASSET">Fixed Asset</option>
+                <option value="CURRENT_LIABILITY">Current Liability</option>
+                <option value="LONG_TERM_LIABILITY">Long Term Liability</option>
+                <option value="OWNERS_EQUITY">Owner's Equity</option>
+                <option value="OPERATING_REVENUE">Operating Revenue</option>
+                <option value="OPERATING_EXPENSE">Operating Expense</option>
+              </Select>
+              
+              <Input
+                placeholder="Description (optional)"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+              />
+              
+              <HStack spacing={4} w="full">
+                <Button
+                  type="submit"
+                  colorScheme="blue"
+                  isLoading={loading}
+                  loadingText="Saving..."
+                  w="full"
+                >
+                  {account ? 'Update Account' : 'Create Account'}
+                </Button>
+                <Button onClick={onClose} w="full">
+                  Cancel
+                </Button>
+              </HStack>
+            </VStack>
+          </form>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 };
 

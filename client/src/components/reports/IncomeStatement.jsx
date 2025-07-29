@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Heading,
@@ -33,7 +33,7 @@ const IncomeStatement = () => {
   const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
 
-  const fetchIncomeStatement = async () => {
+  const fetchIncomeStatement = useCallback(async () => {
     if (!selectedBusiness) {
       showToast('Please select a business first', 'error');
       return;
@@ -53,13 +53,13 @@ const IncomeStatement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedBusiness, fromDate, toDate, showToast]);
 
   useEffect(() => {
     if (selectedBusiness) {
       fetchIncomeStatement();
     }
-  }, [selectedBusiness, fromDate, toDate]);
+  }, [selectedBusiness, fromDate, toDate, fetchIncomeStatement]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {

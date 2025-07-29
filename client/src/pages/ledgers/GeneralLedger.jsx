@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -47,16 +47,16 @@ const GeneralLedger = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
-  const fetchAccounts = async () => {
+  const fetchAccounts = useCallback(async () => {
     try {
       const response = await api.get('/accounting/accounts');
       setAccounts(response.data);
     } catch (error) {
       console.error('Error fetching accounts:', error);
     }
-  };
+  }, [api]);
 
-  const fetchLedger = async () => {
+  const fetchLedger = useCallback(async () => {
     if (!selectedAccount) return;
     
     setLoading(true);
@@ -84,17 +84,17 @@ const GeneralLedger = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedAccount, dateRange, currentPage, pageSize, searchTerm, api, toast]);
 
   useEffect(() => {
     fetchAccounts();
-  }, []);
+  }, [fetchAccounts]);
 
   useEffect(() => {
     if (selectedAccount) {
       fetchLedger();
     }
-  }, [selectedAccount, dateRange, currentPage, pageSize, searchTerm]);
+  }, [selectedAccount, dateRange, currentPage, pageSize, searchTerm, fetchLedger]);
 
   const handleGenerate = () => {
     fetchLedger();

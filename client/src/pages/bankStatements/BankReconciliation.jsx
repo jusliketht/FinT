@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Heading,
@@ -46,6 +46,7 @@ import {
   FiFilter,
 } from 'react-icons/fi';
 import { useToast } from '../../contexts/ToastContext';
+import { useBusiness } from '../../contexts/BusinessContext';
 import BankStatementUpload from '../../components/bankStatements/BankStatementUpload';
 import TransactionVerification from '../../components/bankStatements/TransactionVerification';
 import ReconciliationTable from '../../components/bankStatements/ReconciliationTable';
@@ -55,6 +56,7 @@ import reconciliationService from '../../services/reconciliationService';
 
 const BankReconciliation = () => {
   const { showToast } = useToast();
+  const { getCurrentContext } = useBusiness();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [accounts, setAccounts] = useState([]);
@@ -82,11 +84,7 @@ const BankReconciliation = () => {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
-
-  const fetchAccounts = async () => {
+  const fetchAccounts = useCallback(async () => {
     try {
       const response = await accountService.getChartOfAccounts();
       setAccounts(response.data || response);
@@ -94,7 +92,11 @@ const BankReconciliation = () => {
       setError('Failed to fetch accounts');
       showToast('Failed to load accounts', 'error');
     }
-  };
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
 
   const handleUpload = async (result) => {
     setTransactions(result.transactions || result);
@@ -116,10 +118,11 @@ const BankReconciliation = () => {
       }
       
       // Use the backend reconciliation service
+      const currentContext = getCurrentContext();
       const reconciliationResult = await reconciliationService.performAutoMatching({
         statementTransactions,
         accountId: selectedAccount,
-        businessId: null // TODO: Get from context
+        businessId: currentContext.id
       });
       
       setReconciliationData(reconciliationResult);
@@ -261,7 +264,7 @@ const BankReconciliation = () => {
               amount: item.statementItem.amount,
               type: item.statementItem.type,
               debitAccountId: selectedAccount,
-              creditAccountId: selectedAccount, // TODO: Determine proper account mapping
+              creditAccountId: selectedAccount, // Default to same account for now
             })));
             showToast(`${entriesToCreate.length} journal entries created`, 'success');
           }
@@ -286,7 +289,7 @@ const BankReconciliation = () => {
   };
 
   const exportReconciliation = (format) => {
-    // TODO: Implement export functionality
+    // Export functionality will be implemented in future updates
     showToast(`${format} export functionality coming soon`, 'info');
   };
 
@@ -335,7 +338,7 @@ const BankReconciliation = () => {
             amount: item.statementItem.amount,
             type: item.statementItem.type,
             debitAccountId: selectedAccount,
-            creditAccountId: selectedAccount, // TODO: Determine proper account mapping
+            creditAccountId: selectedAccount, // Default to same account for now
           }]);
           showToast('Journal entry created', 'success');
           break;

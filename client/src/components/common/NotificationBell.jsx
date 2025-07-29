@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box,
   IconButton,
-  Badge,
   Popover,
   PopoverTrigger,
   PopoverContent,
@@ -10,137 +8,149 @@ import {
   VStack,
   HStack,
   Text,
+  Badge,
+  Box,
+  Divider,
   Button,
-  useColorModeValue,
-  useToast,
+  useDisclosure,
+  Spinner,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
 import { BellIcon } from '@chakra-ui/icons';
-import { FiCheckCircle, FiAlertCircle, FiInfo } from 'react-icons/fi';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import notificationService from '../../services/notificationService';
 
 const NotificationBell = () => {
-  const [notifications] = useState([
-    {
-      id: 1,
-      type: 'success',
-      title: 'Transaction Posted',
-      message: 'Journal entry #JE-001 has been successfully posted.',
-      time: '2 minutes ago',
-      read: false,
-    },
-    {
-      id: 2,
-      type: 'warning',
-      title: 'Reconciliation Due',
-      message: 'Bank reconciliation is due for SBI Account.',
-      time: '1 hour ago',
-      read: false,
-    },
-    {
-      id: 3,
-      type: 'info',
-      title: 'System Update',
-      message: 'New features have been added to the dashboard.',
-      time: '2 hours ago',
-      read: true,
-    },
-  ]);
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const { isOpen, onToggle, onClose } = useDisclosure();
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const textColor = useColorModeValue('gray.600', 'gray.400');
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (!user?.id) {
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+      }
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+      const response = await notificationService.getNotifications();
+      const notificationsData = response.data || response;
+      
+      setNotifications(notificationsData);
+      setUnreadCount(notificationsData.filter(n => !n.isRead).length);
+    } catch (err) {
+      setError('Failed to fetch notifications');
+      showToast('error', 'Failed to fetch notifications');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, showToast]);
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+    }
+  }, [user, fetchNotifications]);
+
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await notificationService.markAsRead(notificationId);
+      
+      setNotifications(notifications.map(notification => 
+        notification.id === notificationId 
+          ? { ...notification, isRead: true }
+          : notification
+      ));
+      
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      showToast('error', 'Failed to mark notification as read');
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      
+      setNotifications(notifications.map(notification => ({
+        ...notification,
+        isRead: true
+      })));
+      
+      setUnreadCount(0);
+      showToast('success', 'All notifications marked as read');
+    } catch (err) {
+      showToast('error', 'Failed to mark all notifications as read');
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId) => {
+    try {
+      await notificationService.deleteNotification(notificationId);
+      
+      const notification = notifications.find(n => n.id === notificationId);
+      setNotifications(notifications.filter(n => n.id !== notificationId));
+      
+      if (!notification?.isRead) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+      
+      showToast('success', 'Notification deleted');
+    } catch (err) {
+      showToast('error', 'Failed to delete notification');
+    }
+  };
 
   const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'success':
-        return FiCheckCircle;
-      case 'warning':
-        return FiAlertCircle;
-      case 'info':
-        return FiInfo;
-      default:
-        return FiInfo;
+    switch (type?.toLowerCase()) {
+      case 'success': return '✅';
+      case 'warning': return '⚠️';
+      case 'error': return '❌';
+      case 'info': return 'ℹ️';
+      default: return '📢';
     }
   };
 
   const getNotificationColor = (type) => {
-    switch (type) {
-      case 'success':
-        return 'green';
-      case 'warning':
-        return 'orange';
-      case 'info':
-        return 'blue';
-      default:
-        return 'gray';
+    switch (type?.toLowerCase()) {
+      case 'success': return 'green';
+      case 'warning': return 'orange';
+      case 'error': return 'red';
+      case 'info': return 'blue';
+      default: return 'gray';
     }
   };
 
-  const NotificationItem = ({ notification }) => {
-    const icon = getNotificationIcon(notification.type);
-    const color = getNotificationColor(notification.type);
-
-    return (
-      <Box
-        p={4}
-        borderBottom="1px"
-        borderColor={borderColor}
-        bg={!notification.read ? `${color}.50` : 'transparent'}
-        _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }}
-        cursor="pointer"
-        transition="all 0.2s"
-      >
-        <HStack spacing={3} align="start">
-          <Box
-            p={2}
-            borderRadius="full"
-            bg={`${color}.100`}
-            color={`${color}.600`}
-            flexShrink={0}
-          >
-            <Box as={icon} boxSize={4} />
-          </Box>
-          
-          <VStack align="start" spacing={1} flex="1">
-            <Text fontSize="sm" fontWeight="medium">
-              {notification.title}
-            </Text>
-            <Text fontSize="xs" color={textColor} lineHeight="1.4">
-              {notification.message}
-            </Text>
-            <Text fontSize="xs" color={textColor}>
-              {notification.time}
-            </Text>
-          </VStack>
-          
-          {!notification.read && (
-            <Box
-              w={2}
-              h={2}
-              borderRadius="full"
-              bg={`${color}.500`}
-              flexShrink={0}
-            />
-          )}
-        </HStack>
-      </Box>
-    );
+  const formatNotificationTime = (timestamp) => {
+    const now = new Date();
+    const notificationTime = new Date(timestamp);
+    const diffInMinutes = Math.floor((now - notificationTime) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
   return (
-    <Popover isOpen={isOpen} onClose={onClose} placement="bottom-end">
+    <Popover isOpen={isOpen} onOpen={onOpen} onClose={onClose} placement="bottom-end">
       <PopoverTrigger>
         <Box position="relative">
           <IconButton
-            aria-label="Notifications"
             icon={<BellIcon />}
             variant="ghost"
+            aria-label="Notifications"
             size="md"
-            onClick={onToggle}
-            color={useColorModeValue('white', 'gray.100')}
-            _hover={{ bg: useColorModeValue('primary.800', 'gray.700') }}
           />
           {unreadCount > 0 && (
             <Badge
@@ -149,66 +159,120 @@ const NotificationBell = () => {
               right="-1"
               colorScheme="red"
               borderRadius="full"
-              fontSize="xs"
               minW="20px"
               h="20px"
               display="flex"
               alignItems="center"
               justifyContent="center"
+              fontSize="xs"
             >
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Box>
       </PopoverTrigger>
       
-      <PopoverContent
-        bg={bgColor}
-        borderColor={borderColor}
-        boxShadow="xl"
-        w="400px"
-        maxH="500px"
-        overflow="hidden"
-      >
+      <PopoverContent w="400px" maxH="500px" overflow="hidden">
         <PopoverBody p={0}>
-          <Box p={4} borderBottom="1px" borderColor={borderColor}>
+          <Box p={4} borderBottom="1px" borderColor="gray.200">
             <HStack justify="space-between">
-              <Text fontSize="lg" fontWeight="bold">
+              <Text fontWeight="bold" fontSize="lg">
                 Notifications
               </Text>
               {unreadCount > 0 && (
-                <Badge colorScheme="red" variant="subtle">
-                  {unreadCount} new
-                </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleMarkAllAsRead}
+                >
+                  Mark all as read
+                </Button>
               )}
             </HStack>
           </Box>
           
-          <VStack spacing={0} align="stretch" maxH="400px" overflow="auto">
-            {notifications.length > 0 ? (
-              notifications.map((notification) => (
-                <NotificationItem key={notification.id} notification={notification} />
-              ))
-            ) : (
-              <Box p={6} textAlign="center">
-                <Text color={textColor} fontSize="sm">
-                  No notifications
-                </Text>
+          <Box maxH="400px" overflowY="auto">
+            {loading ? (
+              <Box p={4} textAlign="center">
+                <Spinner size="sm" />
+                <Text mt={2} fontSize="sm">Loading notifications...</Text>
               </Box>
+            ) : error ? (
+              <Alert status="error" m={4}>
+                <AlertIcon />
+                {error}
+              </Alert>
+            ) : notifications.length === 0 ? (
+              <Box p={4} textAlign="center">
+                <Text color="gray.500">No notifications</Text>
+              </Box>
+            ) : (
+              <VStack spacing={0} align="stretch">
+                {notifications.map((notification, index) => (
+                  <Box key={notification.id}>
+                    <Box
+                      p={4}
+                      bg={notification.isRead ? 'transparent' : 'blue.50'}
+                      _hover={{ bg: 'gray.50' }}
+                      cursor="pointer"
+                      onClick={() => handleMarkAsRead(notification.id)}
+                    >
+                      <HStack spacing={3} align="start">
+                        <Text fontSize="lg">
+                          {getNotificationIcon(notification.type)}
+                        </Text>
+                        <VStack align="start" spacing={1} flex={1}>
+                          <Text fontWeight="medium" fontSize="sm">
+                            {notification.title}
+                          </Text>
+                          <Text fontSize="xs" color="gray.600">
+                            {notification.message}
+                          </Text>
+                          <HStack spacing={2}>
+                            <Text fontSize="xs" color="gray.500">
+                              {formatNotificationTime(notification.createdAt)}
+                            </Text>
+                            <Badge
+                              size="sm"
+                              colorScheme={getNotificationColor(notification.type)}
+                            >
+                              {notification.type}
+                            </Badge>
+                          </HStack>
+                        </VStack>
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          colorScheme="red"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteNotification(notification.id);
+                          }}
+                        >
+                          ×
+                        </Button>
+                      </HStack>
+                    </Box>
+                    {index < notifications.length - 1 && <Divider />}
+                  </Box>
+                ))}
+              </VStack>
             )}
-          </VStack>
+          </Box>
           
           {notifications.length > 0 && (
-            <Box p={3} borderTop="1px" borderColor={borderColor}>
-              <Text
-                fontSize="sm"
-                color="blue.600"
-                textAlign="center"
-                cursor="pointer"
-                _hover={{ color: 'blue.700' }}
+            <Box p={4} borderTop="1px" borderColor="gray.200">
+              <Button
+                size="sm"
+                variant="ghost"
+                w="full"
+                onClick={() => {
+                  // Navigate to notifications page
+                  window.location.href = '/notifications';
+                }}
               >
-                Mark all as read
-              </Text>
+                View all notifications
+              </Button>
             </Box>
           )}
         </PopoverBody>

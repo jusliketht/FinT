@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import businessService from '../services/businessService';
 
 const BusinessContext = createContext();
@@ -18,18 +18,7 @@ export const BusinessProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    
-    if (!isDevelopment) {
-      fetchBusinesses();
-    } else {
-      setLoading(false);
-    }
-    loadSavedContext();
-  }, []);
-
-  const loadSavedContext = () => {
+  const loadSavedContext = useCallback(() => {
     // Load saved context from localStorage
     const savedBusinessId = localStorage.getItem('selectedBusinessId');
     const savedMode = localStorage.getItem('isPersonalMode');
@@ -41,9 +30,9 @@ export const BusinessProvider = ({ children }) => {
       setIsPersonalMode(true);
       setSelectedBusiness(null);
     }
-  };
+  }, []);
 
-  const fetchBusinesses = async () => {
+  const fetchBusinesses = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -76,7 +65,18 @@ export const BusinessProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedBusiness, isPersonalMode]);
+
+  useEffect(() => {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    if (!isDevelopment) {
+      fetchBusinesses();
+    } else {
+      setLoading(false);
+    }
+    loadSavedContext();
+  }, [fetchBusinesses, loadSavedContext]);
 
   const selectBusiness = (business) => {
     setSelectedBusiness(business);

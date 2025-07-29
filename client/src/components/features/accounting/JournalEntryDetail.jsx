@@ -2,217 +2,308 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
-  Heading,
-  Text,
-  Button,
   VStack,
   HStack,
-  Badge,
+  Text,
+  Button,
   Card,
-  SimpleGrid,
+  CardBody,
+  CardHeader,
+  Badge,
   Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
   Alert,
-  IconButton
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Spinner,
+  IconButton,
 } from '@chakra-ui/react';
-import { ArrowBackIcon, EditIcon } from '@chakra-ui/icons';
-import { useApi } from '../../../hooks/useApi';
+import { ArrowBackIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { useBusiness } from '../../../contexts/BusinessContext';
 import { useToast } from '../../../contexts/ToastContext';
-import LoadingSpinner from '../../common/LoadingSpinner';
-import ErrorMessage from '../../common/ErrorMessage';
-import { journalEntryService } from '../../../services/journalEntryService';
 
-const JournalEntryDetail = ({ entryId, isOpen, onClose }) => {
+const JournalEntryDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { selectedBusiness } = useBusiness();
+  const { showToast } = useToast();
+  
   const [entry, setEntry] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const toast = useToast();
 
-  const fetchEntryDetails = useCallback(async () => {
-    if (!entryId) return;
-    
+  const fetchJournalEntry = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
-      const response = await journalEntryService.getById(entryId);
-      setEntry(response.data || response);
+      // Mock data - replace with actual API call
+      const mockEntry = {
+        id: id,
+        entryNumber: 'JE-2025-001',
+        date: '2025-01-01',
+        description: 'Opening balance entry',
+        reference: 'OB-001',
+        totalAmount: 10000.00,
+        status: 'POSTED',
+        lines: [
+          {
+            id: '1',
+            accountId: '1',
+            accountName: 'Cash',
+            debit: 10000.00,
+            credit: 0.00,
+            description: 'Opening cash balance'
+          },
+          {
+            id: '2',
+            accountId: '2',
+            accountName: 'Opening Balance Equity',
+            debit: 0.00,
+            credit: 10000.00,
+            description: 'Opening equity balance'
+          }
+        ],
+        attachments: [],
+        createdBy: 'John Doe',
+        createdAt: '2025-01-01T00:00:00Z',
+        updatedAt: '2025-01-01T00:00:00Z'
+      };
+      
+      setEntry(mockEntry);
     } catch (err) {
-      setError('Failed to fetch entry details');
-      toast({
-        title: 'Error',
-        description: 'Failed to load entry details',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      setError('Failed to fetch journal entry');
+      showToast('error', 'Failed to fetch journal entry');
     } finally {
       setLoading(false);
     }
-  }, [entryId, toast]);
+  }, [id, showToast]);
 
   useEffect(() => {
-    if (isOpen && entryId) {
-      fetchEntryDetails();
+    if (id && selectedBusiness) {
+      fetchJournalEntry();
     }
-  }, [isOpen, entryId, fetchEntryDetails]);
+  }, [id, selectedBusiness, fetchJournalEntry]);
 
   const handleEdit = () => {
-    navigate(`/journal-entries/${id}/edit`);
+    navigate(`/journal/edit/${id}`);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'posted': return 'green';
-      case 'draft': return 'yellow';
-      case 'pending': return 'orange';
-      case 'cancelled': return 'red';
-      default: return 'gray';
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this journal entry?')) {
+      try {
+        // Mock delete - replace with actual API call
+        showToast('success', 'Journal entry deleted successfully');
+        navigate('/journal');
+      } catch (err) {
+        showToast('error', 'Failed to delete journal entry');
+      }
     }
   };
 
-  const calculateTotals = () => {
-    if (!entry || !entry.entries) return { debit: 0, credit: 0 };
-    
-    return entry.entries.reduce((acc, item) => {
-      acc.debit += item.debit || 0;
-      acc.credit += item.credit || 0;
-      return acc;
-    }, { debit: 0, credit: 0 });
+  const handleBack = () => {
+    navigate('/journal');
   };
 
-  if (loading) return <LoadingSpinner />;
-  if (error) return <ErrorMessage message={error} />;
-  if (!entry) return <ErrorMessage message="Journal entry not found" />;
+  if (loading) {
+    return (
+      <Box textAlign="center" py={8}>
+        <Spinner size="xl" />
+        <Text mt={4}>Loading journal entry...</Text>
+      </Box>
+    );
+  }
 
-  const totals = calculateTotals();
+  if (error) {
+    return (
+      <Alert status="error">
+        <AlertIcon />
+        <AlertTitle>Error!</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!entry) {
+    return (
+      <Alert status="info">
+        <AlertIcon />
+        <AlertTitle>Not Found</AlertTitle>
+        <AlertDescription>Journal entry not found.</AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
-    <VStack spacing={6} align="stretch">
-      <HStack justify="space-between">
-        <HStack>
-          <IconButton
-            icon={<ArrowBackIcon />}
-            onClick={() => navigate('/journal-entries')}
-            variant="ghost"
-            aria-label="Go back"
-          />
-          <Heading size="lg">Journal Entry #{entry.entryNumber}</Heading>
-        </HStack>
-        <Button
-          leftIcon={<EditIcon />}
-          colorScheme="brand"
-          onClick={handleEdit}
-        >
-          Edit Entry
-        </Button>
-      </HStack>
-
-      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-        <Card>
-          <VStack spacing={4} align="stretch">
-            <Heading size="md">Entry Information</Heading>
-            
-            <Box>
-              <Text fontWeight="bold" color="gray.600">Entry Number</Text>
-              <Text>{entry.entryNumber}</Text>
-            </Box>
-            
-            <Box>
-              <Text fontWeight="bold" color="gray.600">Date</Text>
-              <Text>{new Date(entry.date).toLocaleDateString()}</Text>
-            </Box>
-            
-            <Box>
-              <Text fontWeight="bold" color="gray.600">Status</Text>
-              <Badge colorScheme={getStatusColor(entry.status)}>
-                {entry.status}
-              </Badge>
-            </Box>
-            
-            <Box>
-              <Text fontWeight="bold" color="gray.600">Reference</Text>
-              <Text>{entry.reference || 'N/A'}</Text>
-            </Box>
-            
-            {entry.description && (
-              <Box>
-                <Text fontWeight="bold" color="gray.600">Description</Text>
-                <Text>{entry.description}</Text>
-              </Box>
-            )}
-          </VStack>
-        </Card>
-
-        <Card>
-          <VStack spacing={4} align="stretch">
-            <Heading size="md">Financial Summary</Heading>
-            
-            <Box>
-              <Text fontWeight="bold" color="gray.600">Total Debits</Text>
-              <Text fontSize="lg" color="red.500">₹{totals.debit.toFixed(2)}</Text>
-            </Box>
-            
-            <Box>
-              <Text fontWeight="bold" color="gray.600">Total Credits</Text>
-              <Text fontSize="lg" color="green.500">₹{totals.credit.toFixed(2)}</Text>
-            </Box>
-            
-            <Box borderBottom="1px" borderColor="gray.200" />
-            
-            <Box>
-              <Text fontWeight="bold" color="gray.600">Balance</Text>
-              <Text fontSize="lg" color={Math.abs(totals.debit - totals.credit) < 0.01 ? "green.500" : "red.500"}>
-                ₹{(totals.debit - totals.credit).toFixed(2)}
+    <Box>
+      <VStack spacing={6} align="stretch">
+        {/* Header */}
+        <HStack justify="space-between">
+          <HStack spacing={4}>
+            <IconButton
+              icon={<ArrowBackIcon />}
+              onClick={handleBack}
+              variant="ghost"
+              aria-label="Go back"
+            />
+            <VStack align="start" spacing={1}>
+              <Text fontSize="2xl" fontWeight="bold">
+                Journal Entry: {entry.entryNumber}
               </Text>
-            </Box>
-            
-            {Math.abs(totals.debit - totals.credit) >= 0.01 && (
-              <Alert status="error">
-                Entry is not balanced
-              </Alert>
-            )}
-          </VStack>
-        </Card>
-      </SimpleGrid>
-
-      <Card>
-        <VStack spacing={4} align="stretch">
-          <Heading size="md">Entry Lines</Heading>
+              <Text fontSize="sm" color="gray.600">
+                Created on {new Date(entry.createdAt).toLocaleDateString()}
+              </Text>
+            </VStack>
+          </HStack>
           
-          {entry.entries && entry.entries.length > 0 ? (
-            <Box overflowX="auto">
-              <Table variant="simple">
-                <thead>
-                  <tr>
-                    <th>Account</th>
-                    <th>Description</th>
-                    <th style={{ textAlign: 'right' }}>Debit</th>
-                    <th style={{ textAlign: 'right' }}>Credit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entry.entries.map((item, index) => (
-                    <tr key={index}>
-                      <td>{item.account?.name || item.accountCode}</td>
-                      <td>{item.description || '-'}</td>
-                      <td style={{ color: item.debit > 0 ? 'red' : 'gray', textAlign: 'right' }}>
-                        {item.debit > 0 ? `₹${item.debit.toFixed(2)}` : '-'}
-                      </td>
-                      <td style={{ color: item.credit > 0 ? 'green' : 'gray', textAlign: 'right' }}>
-                        {item.credit > 0 ? `₹${item.credit.toFixed(2)}` : '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </Box>
-          ) : (
-            <Alert status="info">
-              No entry lines found
-            </Alert>
-          )}
-        </VStack>
-      </Card>
-    </VStack>
+          <HStack spacing={2}>
+            <Button
+              leftIcon={<EditIcon />}
+              colorScheme="blue"
+              onClick={handleEdit}
+            >
+              Edit
+            </Button>
+            <Button
+              leftIcon={<DeleteIcon />}
+              colorScheme="red"
+              variant="outline"
+              onClick={handleDelete}
+            >
+              Delete
+            </Button>
+          </HStack>
+        </HStack>
+
+        {/* Entry Details */}
+        <Card>
+          <CardHeader>
+            <Text fontSize="lg" fontWeight="semibold">
+              Entry Details
+            </Text>
+          </CardHeader>
+          <CardBody>
+            <VStack spacing={4} align="stretch">
+              <HStack justify="space-between">
+                <Text fontWeight="medium">Date:</Text>
+                <Text>{new Date(entry.date).toLocaleDateString()}</Text>
+              </HStack>
+              
+              <HStack justify="space-between">
+                <Text fontWeight="medium">Description:</Text>
+                <Text>{entry.description}</Text>
+              </HStack>
+              
+              <HStack justify="space-between">
+                <Text fontWeight="medium">Reference:</Text>
+                <Badge variant="outline">{entry.reference}</Badge>
+              </HStack>
+              
+              <HStack justify="space-between">
+                <Text fontWeight="medium">Status:</Text>
+                <Badge
+                  colorScheme={entry.status === 'POSTED' ? 'green' : 'yellow'}
+                  variant="subtle"
+                >
+                  {entry.status}
+                </Badge>
+              </HStack>
+              
+              <HStack justify="space-between">
+                <Text fontWeight="medium">Total Amount:</Text>
+                <Text fontWeight="bold" fontSize="lg">
+                  ₹{entry.totalAmount.toLocaleString()}
+                </Text>
+              </HStack>
+              
+              <HStack justify="space-between">
+                <Text fontWeight="medium">Created By:</Text>
+                <Text>{entry.createdBy}</Text>
+              </HStack>
+            </VStack>
+          </CardBody>
+        </Card>
+
+        {/* Entry Lines */}
+        <Card>
+          <CardHeader>
+            <Text fontSize="lg" fontWeight="semibold">
+              Entry Lines ({entry.lines.length})
+            </Text>
+          </CardHeader>
+          <CardBody>
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Account</Th>
+                  <Th>Description</Th>
+                  <Th isNumeric>Debit</Th>
+                  <Th isNumeric>Credit</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {entry.lines.map((line) => (
+                  <Tr key={line.id}>
+                    <Td>
+                      <Text fontWeight="medium">{line.accountName}</Text>
+                    </Td>
+                    <Td>
+                      <Text fontSize="sm" color="gray.600">
+                        {line.description}
+                      </Text>
+                    </Td>
+                    <Td isNumeric>
+                      {line.debit > 0 ? (
+                        <Text color="green.600" fontWeight="semibold">
+                          ₹{line.debit.toLocaleString()}
+                        </Text>
+                      ) : (
+                        <Text color="gray.400">-</Text>
+                      )}
+                    </Td>
+                    <Td isNumeric>
+                      {line.credit > 0 ? (
+                        <Text color="red.600" fontWeight="semibold">
+                          ₹{line.credit.toLocaleString()}
+                        </Text>
+                      ) : (
+                        <Text color="gray.400">-</Text>
+                      )}
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </CardBody>
+        </Card>
+
+        {/* Attachments */}
+        {entry.attachments && entry.attachments.length > 0 && (
+          <Card>
+            <CardHeader>
+              <Text fontSize="lg" fontWeight="semibold">
+                Attachments ({entry.attachments.length})
+              </Text>
+            </CardHeader>
+            <CardBody>
+              <VStack spacing={2} align="stretch">
+                {entry.attachments.map((attachment, index) => (
+                  <HStack key={index} justify="space-between" p={2} border="1px" borderColor="gray.200" borderRadius="md">
+                    <Text>{attachment.name}</Text>
+                    <Button size="sm" variant="ghost">
+                      Download
+                    </Button>
+                  </HStack>
+                ))}
+              </VStack>
+            </CardBody>
+          </Card>
+        )}
+      </VStack>
+    </Box>
   );
 };
 

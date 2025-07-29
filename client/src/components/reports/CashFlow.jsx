@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -41,7 +41,7 @@ const CashFlow = () => {
     endDate: new Date().toISOString().split('T')[0]
   });
 
-  const fetchCashFlow = async () => {
+  const fetchCashFlow = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.get('/accounting/reports/cash-flow', {
@@ -63,11 +63,11 @@ const CashFlow = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, dateRange, toast]);
 
   useEffect(() => {
     fetchCashFlow();
-  }, [dateRange]);
+  }, [dateRange, fetchCashFlow]);
 
   const handleExport = async (format) => {
     try {

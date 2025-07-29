@@ -11,10 +11,12 @@ import {
   HStack,
   VStack,
   Divider,
-  useDisclosure
+  useDisclosure,
+  Icon,
+  Avatar,
 } from '@chakra-ui/react';
 import { ChevronDownIcon } from '@chakra-ui/icons';
-import { FiUser, FiBriefcase } from 'react-icons/fi';
+import { FiUser, FiBriefcase, FiHome } from 'react-icons/fi';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -46,99 +48,103 @@ const ContextSwitcher = () => {
     navigate('/');
   };
 
+  const getContextIcon = () => {
+    if (isPersonalMode) {
+      return FiUser;
+    }
+    return FiBriefcase;
+  };
+
+  const getContextColor = () => {
+    if (isPersonalMode) {
+      return 'blue';
+    }
+    return 'green';
+  };
+
   return (
-    <Box>
-      <Menu isOpen={isOpen} onOpen={onOpen} onClose={onClose}>
-        <MenuButton
-          as={Button}
-          rightIcon={<ChevronDownIcon />}
-          variant="outline"
-          size="sm"
-          minW="200px"
-          justifyContent="space-between"
-        >
-          <HStack spacing={2}>
-            {isPersonalMode ? (
-              <FiUser color="blue.500" />
-            ) : (
-              <FiBriefcase color="green.500" />
-            )}
-            <VStack spacing={0} align="start">
-              <Text fontSize="sm" fontWeight="medium">
-                {currentContext.name}
-              </Text>
-              <Badge 
-                size="sm" 
-                colorScheme={isPersonalMode ? "blue" : "green"}
-                variant="subtle"
-              >
-                {isPersonalMode ? "Personal" : "Business"}
-              </Badge>
-            </VStack>
-          </HStack>
-        </MenuButton>
+    <Menu isOpen={isOpen} onOpen={onOpen} onClose={onClose}>
+      <MenuButton
+        as={Button}
+        rightIcon={<ChevronDownIcon />}
+        leftIcon={<Icon as={getContextIcon()} />}
+        variant="ghost"
+        size="sm"
+        colorScheme={getContextColor()}
+        _hover={{ bg: `${getContextColor()}.100` }}
+        _active={{ bg: `${getContextColor()}.200` }}
+      >
+        <VStack spacing={0} align="start">
+          <Text fontSize="xs" color="gray.500">
+            {isPersonalMode ? 'Personal' : 'Business'}
+          </Text>
+          <Text fontSize="sm" fontWeight="medium">
+            {currentContext?.name || 'Select Context'}
+          </Text>
+        </VStack>
+      </MenuButton>
+      
+      <MenuList>
+        <Box px={3} py={2}>
+          <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">
+            Switch Context
+          </Text>
+        </Box>
         
-        <MenuList>
-          <Box px={3} py={2}>
-            <Text fontSize="sm" fontWeight="medium" color="gray.600">
-              Switch Context
-            </Text>
-          </Box>
-          
-          <Divider />
-          
-          <MenuItem 
-            onClick={handleSwitchToPersonal}
-            icon={<FiUser />}
-            isDisabled={isPersonalMode}
+        <Divider />
+        
+        {/* Personal Mode Option */}
+        <MenuItem
+          onClick={handleSwitchToPersonal}
+          icon={<Icon as={FiUser} />}
+          bg={isPersonalMode ? 'blue.50' : 'transparent'}
+          color={isPersonalMode ? 'blue.700' : 'inherit'}
+        >
+          <VStack align="start" spacing={0}>
+            <Text fontWeight="medium">Personal</Text>
+            <Text fontSize="xs" color="gray.500">Personal finances</Text>
+          </VStack>
+        </MenuItem>
+        
+        {businesses.length > 0 && <Divider />}
+        
+        {/* Business Options */}
+        {businesses.map((business) => (
+          <MenuItem
+            key={business.id}
+            onClick={() => handleSwitchToBusiness(business)}
+            icon={<Icon as={FiBriefcase} />}
+            bg={selectedBusiness?.id === business.id ? 'green.50' : 'transparent'}
+            color={selectedBusiness?.id === business.id ? 'green.700' : 'inherit'}
           >
             <VStack align="start" spacing={0}>
-              <Text>Personal</Text>
-              <Text fontSize="xs" color="gray.500">
-                Personal financial management
-              </Text>
+              <Text fontWeight="medium">{business.name}</Text>
+              <Text fontSize="xs" color="gray.500">{business.type}</Text>
             </VStack>
+            {business.isDefault && (
+              <Badge size="sm" colorScheme="green" ml="auto">
+                Default
+              </Badge>
+            )}
           </MenuItem>
-          
-          {businesses.length > 0 && (
-            <>
-              <Divider />
-              <Box px={3} py={1}>
-                <Text fontSize="xs" color="gray.500" fontWeight="medium">
-                  BUSINESSES
-                </Text>
-              </Box>
-              
-              {businesses.map((business) => (
-                <MenuItem
-                  key={business.id}
-                  onClick={() => handleSwitchToBusiness(business)}
-                  icon={<FiBriefcase />}
-                  isDisabled={!isPersonalMode && selectedBusiness?.id === business.id}
-                >
-                  <VStack align="start" spacing={0}>
-                    <Text>{business.name}</Text>
-                    <Text fontSize="xs" color="gray.500">
-                      {business.type}
-                    </Text>
-                  </VStack>
-                </MenuItem>
-              ))}
-            </>
-          )}
-          
-          <Divider />
-          
-          <MenuItem 
-            onClick={() => navigate('/business')}
-            fontSize="sm"
-            color="blue.600"
-          >
-            Manage Businesses
-          </MenuItem>
-        </MenuList>
-      </Menu>
-    </Box>
+        ))}
+        
+        {businesses.length === 0 && (
+          <>
+            <Divider />
+            <MenuItem
+              onClick={() => navigate('/businesses')}
+              icon={<Icon as={FiBriefcase} />}
+            >
+              <VStack align="start" spacing={0}>
+                <Text fontWeight="medium">Add Business</Text>
+                <Text fontSize="xs" color="gray.500">Create or join a business</Text>
+              </VStack>
+            </MenuItem>
+          </>
+        )}
+      </MenuList>
+    </Menu>
   );
 };
 

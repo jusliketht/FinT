@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   VStack,
@@ -9,6 +9,16 @@ import {
   useDisclosure,
   Collapse,
   Button,
+  Flex,
+  Divider,
+  Tooltip,
+  IconButton,
+  Drawer,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  DrawerHeader,
+  DrawerBody,
 } from '@chakra-ui/react';
 import {
   FiHome,
@@ -17,7 +27,7 @@ import {
   FiBarChart2,
   FiSettings,
   FiUser,
-  FiBuilding,
+  FiBriefcase,
   FiCreditCard,
   FiBook,
   FiCalculator,
@@ -26,6 +36,12 @@ import {
   FiUsers,
   FiShield,
 } from 'react-icons/fi';
+import { 
+  ChevronLeftIcon, 
+  ChevronRightIcon, 
+  HamburgerIcon 
+} from '@chakra-ui/icons';
+import { Link, useLocation } from 'react-router-dom';
 
 const navLinks = [
   // Main Navigation
@@ -50,7 +66,7 @@ const navLinks = [
     section: 'Business Operations', 
     items: [
       { label: 'Invoices', to: '/invoices', icon: FiFileText },
-      { label: 'Business', to: '/business', icon: FiBuilding },
+      { label: 'Business', to: '/business', icon: FiBriefcase },
     ]
   },
   // Analytics & Reports

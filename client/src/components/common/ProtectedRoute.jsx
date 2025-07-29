@@ -9,6 +9,8 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
+  Heading,
+  Button,
 } from '@chakra-ui/react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -40,8 +42,8 @@ const ProtectedRoute = ({
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  // Check business selection - only if explicitly required and not in personal mode
-  if (requireBusiness && !isPersonalMode && !selectedBusiness) {
+  // Check business requirement
+  if (requireBusiness && !selectedBusiness && !isPersonalMode) {
     return (
       <Box
         minH="100vh"
@@ -55,20 +57,19 @@ const ProtectedRoute = ({
           <Alert status="warning" borderRadius="lg">
             <AlertIcon />
             <Box>
-              <AlertTitle>Business Required</AlertTitle>
+              <AlertTitle>Business Context Required</AlertTitle>
               <AlertDescription>
-                Please select a business to access this page.
+                This page requires a business context. Please select a business or switch to personal mode.
               </AlertDescription>
             </Box>
           </Alert>
 
           <VStack spacing={4}>
             <Heading size="lg" color="gray.800">
-              Business Selection Required
+              Select Business Context
             </Heading>
             <Text color="gray.600">
-              You need to select a business before accessing this feature. 
-              This helps us organize your financial data properly.
+              You need to select a business or switch to personal mode to access this feature.
             </Text>
           </VStack>
 
@@ -77,19 +78,17 @@ const ProtectedRoute = ({
               colorScheme="blue"
               size="lg"
               w="full"
-              as="a"
-              href="/business"
+              onClick={() => window.location.href = '/'}
             >
-              Select Business
+              Go to Dashboard
             </Button>
             <Button
               variant="outline"
               size="lg"
               w="full"
-              as="a"
-              href="/"
+              onClick={() => window.location.href = '/businesses'}
             >
-              Go to Dashboard
+              Manage Businesses
             </Button>
           </VStack>
         </VStack>
@@ -97,10 +96,10 @@ const ProtectedRoute = ({
     );
   }
 
-  // Check permissions
+  // Check permissions if specified
   if (permissions.length > 0 && user) {
     const userPermissions = user.permissions || [];
-    const hasPermission = permissions.every(permission => 
+    const hasPermission = permissions.some(permission => 
       userPermissions.includes(permission)
     );
 

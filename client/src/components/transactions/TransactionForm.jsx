@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -36,7 +36,7 @@ import {
   IconButton,
   Tooltip,
 } from '@chakra-ui/react';
-import { AddIcon, CalendarIcon, InfoIcon } from '@chakra-ui/icons';
+import { AddIcon, CalendarIcon } from '@chakra-ui/icons';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { transactionSchema, formatCurrency } from '../../utils/validation';
@@ -284,14 +284,7 @@ const TransactionForm = ({ isOpen, onClose, transaction, onSuccess }) => {
     },
   });
 
-  // Load accounts and categories
-  useEffect(() => {
-    if (isOpen) {
-      loadFormData();
-    }
-  }, [isOpen, selectedBusiness]);
-
-  const loadFormData = async () => {
+  const loadFormData = useCallback(async () => {
     setLoading(true);
     try {
       const [accountsData, categoriesData] = await Promise.all([
@@ -312,7 +305,14 @@ const TransactionForm = ({ isOpen, onClose, transaction, onSuccess }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, selectedBusiness, toast]);
+
+  // Load accounts and categories
+  useEffect(() => {
+    if (isOpen) {
+      loadFormData();
+    }
+  }, [isOpen, selectedBusiness, loadFormData]);
 
   // Filter accounts by transaction type
   const filteredAccounts = accounts.filter(acc => {

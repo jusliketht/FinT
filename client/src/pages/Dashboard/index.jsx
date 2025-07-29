@@ -16,7 +16,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
 import journalEntryService from '../../services/journalEntryService';
 import accountService from '../../services/accountService';
-import { analyticsService } from '../../services/analyticsService';
+import analyticsService from '../../services/analyticsService';
 import { useToast } from '../../contexts/ToastContext';
 import MetricCard from '../../components/dashboard/MetricCard';
 import RecentTransactions from '../../components/dashboard/RecentTransactions';

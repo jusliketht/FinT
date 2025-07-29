@@ -12,15 +12,10 @@ import {
   MenuDivider,
   IconButton,
   useColorModeValue,
-  useDisclosure,
-  Drawer,
-  DrawerBody,
-  DrawerHeader,
-  DrawerOverlay,
-  DrawerContent,
-  DrawerCloseButton,
-  Button,
-  useToast,
+  Flex,
+  InputGroup,
+  InputLeftElement,
+  Input,
 } from '@chakra-ui/react';
 import { 
   SearchIcon,
@@ -78,8 +73,8 @@ const Topbar = () => {
           </Text>
         </Flex>
 
-        {/* Search Bar - Center */}
-        <Flex flex="1" justify="center" maxW="400px" mx={8}>
+        {/* Search Bar */}
+        <Flex flex="1" maxW="400px" mx={8}>
           <InputGroup>
             <InputLeftElement pointerEvents="none">
               <SearchIcon color="gray.400" />
@@ -89,45 +84,30 @@ const Topbar = () => {
               bg={inputBg}
               color={inputColor}
               border="none"
-              borderRadius="lg"
+              _placeholder={{ color: 'gray.400' }}
               _focus={{
-                boxShadow: '0 0 0 1px var(--chakra-colors-primary-500)',
+                boxShadow: 'outline',
+                bg: inputBg,
               }}
             />
           </InputGroup>
         </Flex>
 
-        {/* Context Switcher */}
-        <Flex align="center" mr={4}>
+        {/* Right Side Actions */}
+        <Flex align="center" spacing={4}>
           <ContextSwitcher />
-        </Flex>
-
-        {/* Right Side - Notifications and User Menu */}
-        <HStack spacing={3} align="center">
           <NotificationBell />
           
+          {/* User Menu */}
           <Menu>
             <MenuButton
               as={IconButton}
+              icon={<Avatar size="sm" name={user?.name || user?.email} />}
               variant="ghost"
               color={textColor}
               _hover={{ bg: hoverBg }}
-              _active={{ bg: hoverBg }}
-              size="md"
-            >
-              <HStack spacing={2}>
-                <Avatar size="sm" name={user?.name} bg="primary.600" />
-                <VStack spacing={0} align="start" display={{ base: 'none', md: 'flex' }}>
-                  <Text fontSize="sm" fontWeight="medium">
-                    {user?.name || 'User'}
-                  </Text>
-                  <Text fontSize="xs" opacity={0.8}>
-                    {user?.email}
-                  </Text>
-                </VStack>
-                <ChevronDownIcon />
-              </HStack>
-            </MenuButton>
+              ml={2}
+            />
             <MenuList>
               <MenuItem icon={<FiUser />} onClick={() => navigate('/profile')}>
                 Profile
@@ -137,11 +117,11 @@ const Topbar = () => {
               </MenuItem>
               <MenuDivider />
               <MenuItem icon={<FiLogOut />} onClick={handleLogout}>
-                Sign Out
+                Logout
               </MenuItem>
             </MenuList>
           </Menu>
-        </HStack>
+        </Flex>
       </Flex>
     </Box>
   );

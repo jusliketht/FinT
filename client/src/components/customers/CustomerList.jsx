@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -39,7 +39,7 @@ const CustomerList = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     if (!selectedBusiness) return;
 
     setLoading(true);
@@ -58,13 +58,13 @@ const CustomerList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedBusiness, searchTerm]);
 
   useEffect(() => {
     if (selectedBusiness) {
       fetchCustomers();
     }
-  }, [selectedBusiness, searchTerm]);
+  }, [selectedBusiness, fetchCustomers]);
 
   const handleEdit = (customer) => {
     setSelectedCustomer(customer);

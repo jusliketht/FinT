@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -47,13 +47,7 @@ const BalanceSheet = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [accountTypeFilter, setAccountTypeFilter] = useState('');
 
-  useEffect(() => {
-    if (selectedBusiness) {
-      fetchBalanceSheet();
-    }
-  }, [selectedBusiness, asOfDate]);
-
-  const fetchBalanceSheet = async () => {
+  const fetchBalanceSheet = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -66,7 +60,13 @@ const BalanceSheet = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [asOfDate, showToast]);
+
+  useEffect(() => {
+    if (selectedBusiness) {
+      fetchBalanceSheet();
+    }
+  }, [selectedBusiness, asOfDate, fetchBalanceSheet]);
 
   const exportBalanceSheet = async () => {
     try {

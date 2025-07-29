@@ -20,15 +20,15 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-// import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AccountsService } from '../services/accounts.service';
 import { CreateAccountDto } from '../dto/account/create-account.dto';
 import { UpdateAccountDto } from '../dto/account/update-account.dto';
 
 @ApiTags('Accounts')
-@Controller('accounts')
-// @UseGuards(JwtAuthGuard)
-// @ApiBearerAuth()
+@Controller('businesses/:businessId/accounts')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
 
@@ -36,11 +36,17 @@ export class AccountsController {
   @ApiOperation({ summary: 'Create a new account' })
   @ApiResponse({ status: 201, description: 'Account created successfully' })
   @ApiResponse({ status: 400, description: 'Bad request - validation error' })
-  async createAccount(@Request() req, @Body() createAccountDto: CreateAccountDto) {
+  @ApiParam({ name: 'businessId', description: 'Business ID' })
+  async createAccount(
+    @Param('businessId') businessId: string,
+    @Request() req, 
+    @Body() createAccountDto: CreateAccountDto
+  ) {
     try {
       return await this.accountsService.createAccount({
         ...createAccountDto,
-        userId: req.user?.id || 'test-user-id',
+        businessId,
+        userId: req.user.id,
       });
     } catch (error) {
       throw new HttpException(
@@ -51,13 +57,22 @@ export class AccountsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all accounts' })
+  @ApiOperation({ summary: 'Get chart of accounts for a business' })
   @ApiResponse({ status: 200, description: 'Return all accounts' })
-  @ApiQuery({ name: 'businessId', required: false, description: 'Business ID filter' })
-  async getAllAccounts(@Request() req, @Query('businessId') businessId?: string) {
+  @ApiParam({ name: 'businessId', description: 'Business ID' })
+  @ApiQuery({ name: 'type', required: false, description: 'Filter by account type' })
+  @ApiQuery({ name: 'active', required: false, description: 'Filter by active status' })
+  @ApiQuery({ name: 'search', required: false, description: 'Search by account name or code' })
+  async getAllAccounts(
+    @Param('businessId') businessId: string,
+    @Request() req, 
+    @Query('type') type?: string,
+    @Query('active') active?: string,
+    @Query('search') search?: string
+  ) {
     try {
       return await this.accountsService.getAccounts(
-        req.user?.id || 'test-user-id',
+        req.user.id,
         businessId,
         true
       );
@@ -73,10 +88,15 @@ export class AccountsController {
   @ApiOperation({ summary: 'Get account by ID' })
   @ApiResponse({ status: 200, description: 'Return account details' })
   @ApiResponse({ status: 404, description: 'Account not found' })
+  @ApiParam({ name: 'businessId', description: 'Business ID' })
   @ApiParam({ name: 'id', description: 'Account ID' })
-  async getAccountById(@Param('id') id: string, @Request() req) {
+  async getAccountById(
+    @Param('businessId') businessId: string,
+    @Param('id') id: string, 
+    @Request() req
+  ) {
     try {
-      return await this.accountsService.getAccount(id, req.user?.id || 'test-user-id');
+      return await this.accountsService.getAccount(id, req.user.id);
     } catch (error) {
       throw new HttpException(
         error.message || 'Failed to retrieve account',
@@ -89,8 +109,10 @@ export class AccountsController {
   @ApiOperation({ summary: 'Update account' })
   @ApiResponse({ status: 200, description: 'Account updated successfully' })
   @ApiResponse({ status: 404, description: 'Account not found' })
+  @ApiParam({ name: 'businessId', description: 'Business ID' })
   @ApiParam({ name: 'id', description: 'Account ID' })
   async updateAccount(
+    @Param('businessId') businessId: string,
     @Param('id') id: string,
     @Body() updateAccountDto: UpdateAccountDto,
     @Request() req
@@ -99,7 +121,7 @@ export class AccountsController {
       return await this.accountsService.updateAccount(
         id,
         updateAccountDto,
-        req.user?.id || 'test-user-id'
+        req.user.id
       );
     } catch (error) {
       throw new HttpException(
@@ -113,10 +135,15 @@ export class AccountsController {
   @ApiOperation({ summary: 'Delete account' })
   @ApiResponse({ status: 200, description: 'Account deleted successfully' })
   @ApiResponse({ status: 404, description: 'Account not found' })
+  @ApiParam({ name: 'businessId', description: 'Business ID' })
   @ApiParam({ name: 'id', description: 'Account ID' })
-  async deleteAccount(@Param('id') id: string, @Request() req) {
+  async deleteAccount(
+    @Param('businessId') businessId: string,
+    @Param('id') id: string, 
+    @Request() req
+  ) {
     try {
-      return await this.accountsService.deleteAccount(id, req.user?.id || 'test-user-id');
+      return await this.accountsService.deleteAccount(id, req.user.id);
     } catch (error) {
       throw new HttpException(
         error.message || 'Failed to delete account',
@@ -128,36 +155,13 @@ export class AccountsController {
   @Get('types')
   @ApiOperation({ summary: 'Get all account types' })
   @ApiResponse({ status: 200, description: 'Return account types' })
-  async getAccountTypes() {
+  @ApiParam({ name: 'businessId', description: 'Business ID' })
+  async getAccountTypes(@Param('businessId') businessId: string) {
     try {
       return await this.accountsService.getAccountTypes();
     } catch (error) {
       throw new HttpException(
         error.message || 'Failed to retrieve account types',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  @Get('by-type')
-  @ApiOperation({ summary: 'Get accounts by type' })
-  @ApiResponse({ status: 200, description: 'Return accounts filtered by type' })
-  @ApiQuery({ name: 'type', required: false, description: 'Account type filter' })
-  @ApiQuery({ name: 'businessId', required: false, description: 'Business ID filter' })
-  async getAccountsByType(
-    @Request() req,
-    @Query('type') type?: string,
-    @Query('businessId') businessId?: string
-  ) {
-    try {
-      return await this.accountsService.getAccountsByType(
-        req.user?.id || 'test-user-id',
-        businessId,
-        type
-      );
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Failed to retrieve accounts by type',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

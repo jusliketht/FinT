@@ -1,65 +1,67 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Button,
-  Heading,
-  Text,
   VStack,
   HStack,
-  Card,
-  CardBody,
-  Badge,
+  Text,
+  Button,
+  InputGroup,
+  InputLeftElement,
+  Input,
+  Select,
   IconButton,
+  TableContainer,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Badge,
   useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-  useToast,
-  SimpleGrid,
-  Skeleton,
   Alert,
   AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Spinner,
+  SettingsIcon,
+  EmailIcon,
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
-import invoiceService from '../../services/invoiceService';
+import { SearchIcon, DownloadIcon } from '@chakra-ui/icons';
 import { useBusiness } from '../../contexts/BusinessContext';
-import LoadingSpinner from '../common/LoadingSpinner';
-import ErrorMessage from '../common/ErrorMessage';
+import { useToast } from '../../contexts/ToastContext';
 import InvoiceForm from './InvoiceForm';
 
 const InvoiceList = () => {
   const { selectedBusiness } = useBusiness();
-  const toast = useToast();
+  const { showToast } = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
   const fetchInvoices = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await invoiceService.getAll();
-      setInvoices(response.data || response);
+      // Replace with actual API call
+      const response = await fetch(`/api/businesses/${selectedBusiness.id}/invoices`);
+      if (response.ok) {
+        const data = await response.json();
+        setInvoices(data.data || []);
+      } else {
+        throw new Error('Failed to fetch invoices');
+      }
     } catch (err) {
-      setError('Failed to fetch invoices');
-      toast({
-        title: 'Error',
-        description: 'Failed to load invoices',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      setError(err.message);
+      showToast('Failed to load invoices', 'error');
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [selectedBusiness, showToast]);
 
   useEffect(() => {
     if (selectedBusiness) {
@@ -67,275 +69,232 @@ const InvoiceList = () => {
     }
   }, [selectedBusiness, fetchInvoices]);
 
-  const handleEdit = (invoice) => {
-    setSelectedInvoice(invoice);
-    onOpen();
-  };
-
   const handleCreate = () => {
     setSelectedInvoice(null);
     onOpen();
   };
 
-  const handleFormSubmit = () => {
-    onClose();
-    fetchInvoices();
-    toast({
-      title: 'Success',
-      description: 'Invoice saved successfully',
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    });
+  const handleEdit = (invoice) => {
+    setSelectedInvoice(invoice);
+    onOpen();
   };
 
-  const handleSendEmail = (invoice) => {
-    toast({
-      title: 'Email Sent',
-      description: `Invoice ${invoice.invoiceNumber} sent to ${invoice.customer}`,
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    });
+  const handleDelete = async (invoiceId) => {
+    try {
+      const response = await fetch(`/api/businesses/${selectedBusiness.id}/invoices/${invoiceId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        showToast('Invoice deleted successfully', 'success');
+        fetchInvoices();
+      } else {
+        throw new Error('Failed to delete invoice');
+      }
+    } catch (error) {
+      showToast('Failed to delete invoice', 'error');
+    }
   };
 
-  const handleDownloadPDF = (invoice) => {
-    toast({
-      title: 'PDF Downloaded',
-      description: `Invoice ${invoice.invoiceNumber} downloaded as PDF`,
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    });
+  const handleSendEmail = async (invoiceId) => {
+    try {
+      const response = await fetch(`/api/businesses/${selectedBusiness.id}/invoices/${invoiceId}/send`, {
+        method: 'POST',
+      });
+      if (response.ok) {
+        showToast('Invoice sent successfully', 'success');
+      } else {
+        throw new Error('Failed to send invoice');
+      }
+    } catch (error) {
+      showToast('Failed to send invoice', 'error');
+    }
   };
+
+  const handleDownload = async (invoiceId) => {
+    try {
+      const response = await fetch(`/api/businesses/${selectedBusiness.id}/invoices/${invoiceId}/pdf`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `invoice-${invoiceId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        throw new Error('Failed to download invoice');
+      }
+    } catch (error) {
+      showToast('Failed to download invoice', 'error');
+    }
+  };
+
+  const filteredInvoices = invoices.filter(invoice => {
+    const matchesSearch = invoice.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         invoice.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'PAID':
-        return 'green';
-      case 'SENT':
-        return 'blue';
-      case 'OVERDUE':
-        return 'red';
-      case 'DRAFT':
-        return 'gray';
-      default:
-        return 'gray';
-    }
+    const colors = {
+      draft: 'gray',
+      sent: 'blue',
+      paid: 'green',
+      overdue: 'red',
+      cancelled: 'gray'
+    };
+    return colors[status] || 'gray';
   };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'INR',
+      currency: 'INR'
     }).format(amount);
   };
 
-  // Calculate summary stats
-  const totalInvoices = invoices.length;
-  const totalAmount = invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
-  const totalPaid = invoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.totalAmount, 0);
-  const totalOutstanding = totalAmount - totalPaid;
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString();
+  };
 
-  if (loading) return <LoadingSpinner />;
-  if (error) return <ErrorMessage message={error} />;
+  if (loading) {
+    return (
+      <Box textAlign="center" py={8}>
+        <Spinner size="lg" />
+        <Text mt={4}>Loading invoices...</Text>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert status="error" borderRadius="lg">
+        <AlertIcon />
+        <Box>
+          <AlertTitle>Error loading invoices</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Box>
+      </Alert>
+    );
+  }
 
   return (
-    <Box p={6}>
+    <Box>
       <VStack spacing={6} align="stretch">
-        {/* Header */}
         <HStack justify="space-between" align="center">
           <Box>
-            <Heading size="lg" mb={2}>Invoice Management</Heading>
+            <Text fontSize="2xl" fontWeight="bold">
+              Invoices
+            </Text>
             <Text color="gray.600">
-              Create, manage, and track your invoices
+              Manage customer invoices and payments
             </Text>
           </Box>
-          <Button
-            leftIcon={<AddIcon />}
-            colorScheme="blue"
-            size="lg"
-            onClick={handleCreate}
-          >
+          <Button colorScheme="blue" onClick={handleCreate}>
             Create Invoice
           </Button>
         </HStack>
 
-        {/* Summary Stats */}
-        <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6}>
-          <Card>
-            <CardBody>
-              <Badge
-                colorScheme="blue"
-                size="sm"
-                mb={2}
-              >
-                Total Invoices
-              </Badge>
-              <Heading size="md">{totalInvoices}</Heading>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Badge
-                colorScheme="purple"
-                size="sm"
-                mb={2}
-              >
-                Total Amount
-              </Badge>
-              <Heading size="md">{formatCurrency(totalAmount)}</Heading>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Badge
-                colorScheme="green"
-                size="sm"
-                mb={2}
-              >
-                Total Paid
-              </Badge>
-              <Heading size="md" color="green.500">{formatCurrency(totalPaid)}</Heading>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Badge
-                colorScheme="red"
-                size="sm"
-                mb={2}
-              >
-                Outstanding
-              </Badge>
-              <Heading size="md" color="red.500">{formatCurrency(totalOutstanding)}</Heading>
-            </CardBody>
-          </Card>
-        </SimpleGrid>
+        {/* Filters */}
+        <HStack spacing={4}>
+          <InputGroup maxW="300px">
+            <InputLeftElement pointerEvents="none">
+              <SearchIcon color="gray.400" />
+            </InputLeftElement>
+            <Input
+              placeholder="Search invoices..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </InputGroup>
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            maxW="200px"
+          >
+            <option value="all">All Status</option>
+            <option value="draft">Draft</option>
+            <option value="sent">Sent</option>
+            <option value="paid">Paid</option>
+            <option value="overdue">Overdue</option>
+            <option value="cancelled">Cancelled</option>
+          </Select>
+        </HStack>
 
-        {/* Invoice List */}
-        <Card>
-          <CardBody>
-            <VStack spacing={4} align="stretch">
-              {/* Search and Filter */}
-              <HStack spacing={4}>
-                <Box maxW="400px">
-                  <Badge
-                    colorScheme="blue"
-                    size="sm"
-                    mb={2}
-                  >
-                    Search Invoices
-                  </Badge>
-                  <InputGroup maxW="400px">
-                    <InputLeftElement pointerEvents="none">
-                      <SearchIcon color="gray.400" />
-                    </InputLeftElement>
-                    <Input
-                      placeholder="Search invoices by number, customer..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </InputGroup>
-                </Box>
-
-                <Select
-                  placeholder="All Status"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  maxW="200px"
-                >
-                  <option value="DRAFT">Draft</option>
-                  <option value="SENT">Sent</option>
-                  <option value="PAID">Paid</option>
-                  <option value="OVERDUE">Overdue</option>
-                </Select>
-
-                <Button
-                  leftIcon={<SettingsIcon />}
-                  variant="outline"
-                  size="md"
-                >
-                  More Filters
-                </Button>
-              </HStack>
-
-              {/* Invoice Table */}
-              <TableContainer>
-                <Table variant="simple">
-                  <Thead>
-                    <Tr>
-                      <Th>Invoice #</Th>
-                      <Th>Customer</Th>
-                      <Th>Issue Date</Th>
-                      <Th>Due Date</Th>
-                      <Th>Total Amount</Th>
-                      <Th>Balance</Th>
-                      <Th>Status</Th>
-                      <Th>Actions</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {invoices.map((invoice) => (
-                      <Tr key={invoice.id}>
-                        <Td fontWeight="medium">{invoice.invoiceNumber}</Td>
-                        <Td>{invoice.customer}</Td>
-                        <Td>{new Date(invoice.issueDate).toLocaleDateString()}</Td>
-                        <Td>{new Date(invoice.dueDate).toLocaleDateString()}</Td>
-                        <Td fontFamily="mono">{formatCurrency(invoice.totalAmount)}</Td>
-                        <Td fontFamily="mono">{formatCurrency(invoice.balanceAmount)}</Td>
-                        <Td>
-                          <Badge
-                            colorScheme={getStatusColor(invoice.status)}
-                            size="sm"
-                          >
-                            {invoice.status}
-                          </Badge>
-                        </Td>
-                        <Td>
-                          <HStack spacing={2}>
-                            <IconButton
-                              icon={<ViewIcon />}
-                              size="sm"
-                              variant="ghost"
-                              colorScheme="blue"
-                              aria-label="View invoice"
-                              onClick={() => handleEdit(invoice)}
-                            />
-                            <IconButton
-                              icon={<EditIcon />}
-                              size="sm"
-                              variant="ghost"
-                              colorScheme="green"
-                              aria-label="Edit invoice"
-                              onClick={() => handleEdit(invoice)}
-                            />
-                            <IconButton
-                              icon={<EmailIcon />}
-                              size="sm"
-                              variant="ghost"
-                              colorScheme="purple"
-                              aria-label="Send email"
-                              onClick={() => handleSendEmail(invoice)}
-                            />
-                            <IconButton
-                              icon={<DownloadIcon />}
-                              size="sm"
-                              variant="ghost"
-                              colorScheme="orange"
-                              aria-label="Download PDF"
-                              onClick={() => handleDownloadPDF(invoice)}
-                            />
-                          </HStack>
-                        </Td>
-                      </Tr>
-                    ))}
-                  </Tbody>
-                </Table>
-              </TableContainer>
-            </VStack>
-          </CardBody>
-        </Card>
+        {/* Invoice Table */}
+        <TableContainer>
+          <Table variant="simple">
+            <Thead>
+              <Tr>
+                <Th>Invoice #</Th>
+                <Th>Customer</Th>
+                <Th>Date</Th>
+                <Th>Due Date</Th>
+                <Th>Amount</Th>
+                <Th>Status</Th>
+                <Th>Actions</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {filteredInvoices.length === 0 ? (
+                <Tr>
+                  <Td colSpan={7} textAlign="center" py={8}>
+                    <Text color="gray.500">No invoices found</Text>
+                  </Td>
+                </Tr>
+              ) : (
+                filteredInvoices.map((invoice) => (
+                  <Tr key={invoice.id}>
+                    <Td>
+                      <Text fontWeight="medium">{invoice.invoiceNumber}</Text>
+                    </Td>
+                    <Td>{invoice.customerName}</Td>
+                    <Td>{formatDate(invoice.date)}</Td>
+                    <Td>{formatDate(invoice.dueDate)}</Td>
+                    <Td>
+                      <Text fontWeight="medium">
+                        {formatCurrency(invoice.totalAmount)}
+                      </Text>
+                    </Td>
+                    <Td>
+                      <Badge colorScheme={getStatusColor(invoice.status)}>
+                        {invoice.status}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      <HStack spacing={1}>
+                        <IconButton
+                          icon={<SettingsIcon />}
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Edit invoice"
+                          onClick={() => handleEdit(invoice)}
+                        />
+                        <IconButton
+                          icon={<EmailIcon />}
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Send invoice"
+                          onClick={() => handleSendEmail(invoice.id)}
+                        />
+                        <IconButton
+                          icon={<DownloadIcon />}
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Download invoice"
+                          onClick={() => handleDownload(invoice.id)}
+                        />
+                      </HStack>
+                    </Td>
+                  </Tr>
+                ))
+              )}
+            </Tbody>
+          </Table>
+        </TableContainer>
       </VStack>
 
       {/* Invoice Form Modal */}
@@ -343,7 +302,10 @@ const InvoiceList = () => {
         isOpen={isOpen}
         onClose={onClose}
         invoice={selectedInvoice}
-        onSuccess={handleFormSubmit}
+        onSuccess={() => {
+          onClose();
+          fetchInvoices();
+        }}
       />
     </Box>
   );

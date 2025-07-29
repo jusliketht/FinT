@@ -57,13 +57,47 @@ const businessService = {
   },
 
   /**
+   * Get users for a business
+   * @param {string} businessId - Business ID
+   * @returns {Promise<Array>} - List of business users
+   */
+  getUsers: async (businessId) => {
+    const response = await api.get(`${RESOURCE_URL}/${businessId}/users`);
+    return response.data;
+  },
+
+  /**
    * Add a user to a business
    * @param {string} businessId - Business ID
-   * @param {Object} data - User data (userId, role)
+   * @param {Object} data - User data (email, role, permissions)
    * @returns {Promise<Object>} - Added user business relationship
    */
   addUser: async (businessId, data) => {
     const response = await api.post(`${RESOURCE_URL}/${businessId}/users`, data);
+    return response.data;
+  },
+
+  /**
+   * Update a user in a business
+   * @param {string} businessId - Business ID
+   * @param {string} userId - User ID
+   * @param {Object} data - Updated user data
+   * @returns {Promise<Object>} - Updated user business relationship
+   */
+  updateUser: async (businessId, userId, data) => {
+    const response = await api.put(`${RESOURCE_URL}/${businessId}/users/${userId}`, data);
+    return response.data;
+  },
+
+  /**
+   * Update user role in a business
+   * @param {string} businessId - Business ID
+   * @param {string} userId - User ID
+   * @param {Object} data - Role data
+   * @returns {Promise<Object>} - Updated user role
+   */
+  updateUserRole: async (businessId, userId, data) => {
+    const response = await api.patch(`${RESOURCE_URL}/${businessId}/users/${userId}/role`, data);
     return response.data;
   },
 
@@ -79,44 +113,51 @@ const businessService = {
   },
 
   /**
-   * Get all users for a business
+   * Get business settings
    * @param {string} businessId - Business ID
-   * @returns {Promise<Array>} - List of business users
+   * @returns {Promise<Object>} - Business settings
    */
-  getUsers: async (businessId) => {
-    const response = await api.get(`${RESOURCE_URL}/${businessId}/users`);
+  getSettings: async (businessId) => {
+    const response = await api.get(`${RESOURCE_URL}/${businessId}/settings`);
     return response.data;
   },
 
   /**
-   * Get business accounts
+   * Update business settings
    * @param {string} businessId - Business ID
-   * @returns {Promise<Array>} - List of business accounts
+   * @param {Object} data - Updated settings
+   * @returns {Promise<Object>} - Updated settings
    */
-  getAccounts: async (businessId) => {
-    const response = await api.get(`${RESOURCE_URL}/${businessId}/accounts`);
+  updateSettings: async (businessId, data) => {
+    const response = await api.put(`${RESOURCE_URL}/${businessId}/settings`, data);
     return response.data;
   },
 
   /**
-   * Get chart of accounts for a business
+   * Get business statistics
    * @param {string} businessId - Business ID
-   * @returns {Promise<Object>} - Chart of accounts hierarchy
+   * @param {string} period - Time period (month, quarter, year)
+   * @returns {Promise<Object>} - Business statistics
    */
-  getChartOfAccounts: async (businessId) => {
-    const response = await api.get(`${RESOURCE_URL}/${businessId}/chart-of-accounts`);
+  getStats: async (businessId, period = 'month') => {
+    const response = await api.get(`${RESOURCE_URL}/${businessId}/stats`, {
+      params: { period }
+    });
     return response.data;
   },
 
   /**
-   * Get trial balance for a business
+   * Export business data
    * @param {string} businessId - Business ID
-   * @param {string} asOfDate - Optional date for trial balance
-   * @returns {Promise<Object>} - Trial balance data
+   * @param {string} format - Export format (pdf, excel, csv)
+   * @param {Object} filters - Export filters
+   * @returns {Promise<Blob>} - Exported data
    */
-  getTrialBalance: async (businessId, asOfDate) => {
-    const params = asOfDate ? { asOfDate } : {};
-    const response = await api.get(`${RESOURCE_URL}/${businessId}/trial-balance`, { params });
+  exportData: async (businessId, format = 'pdf', filters = {}) => {
+    const response = await api.get(`${RESOURCE_URL}/${businessId}/export`, {
+      params: { format, ...filters },
+      responseType: 'blob'
+    });
     return response.data;
   }
 };

@@ -1,14 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-// import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AccountTypesService } from '../services/account-types.service';
 import { CreateAccountTypeDto } from '../dto/account-type/create-account-type.dto';
 import { UpdateAccountTypeDto } from '../dto/account-type/update-account-type.dto';
 
 @ApiTags('Account Types')
 @Controller('account-types')
-// @UseGuards(JwtAuthGuard)
-// @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class AccountTypesController {
   constructor(private readonly accountTypesService: AccountTypesService) {}
 

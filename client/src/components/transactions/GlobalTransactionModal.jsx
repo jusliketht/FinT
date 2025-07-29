@@ -199,11 +199,11 @@ const GlobalTransactionModal = () => {
       
       const response = await api.post('/accounts', accountData);
       
-      if (response && response.id) {
+      if (response && response.data) {
         // Add the new account to the accounts list
-        setAccounts(prev => [...prev, response]);
+        setAccounts(prev => [...prev, response.data]);
         // Set the new account as selected
-        formik.setFieldValue('accountId', response.id);
+        formik.setFieldValue('accountId', response.data.id);
         // Close the add account form
         setShowAddAccount(false);
         // Reset the new account form
@@ -221,7 +221,7 @@ const GlobalTransactionModal = () => {
       console.error('Error creating account:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create account',
+        description: error.response?.data?.message || 'Failed to create account',
         status: 'error',
         duration: 3000,
         isClosable: true,

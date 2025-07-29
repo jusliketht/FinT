@@ -6,6 +6,7 @@ import BankReconciliation from '../pages/bankStatements/BankReconciliation';
 import BankStatementUpload from '../components/bankStatements/BankStatementUpload';
 import { AuthProvider } from '../contexts/AuthContext';
 import { BusinessProvider } from '../contexts/BusinessContext';
+import { ToastProvider } from '../contexts/ToastContext';
 import { theme } from '../theme/theme';
 
 // Mock the API service
@@ -31,7 +32,9 @@ const renderBankReconciliation = () => {
       <BrowserRouter>
         <AuthProvider>
           <BusinessProvider>
-            <BankReconciliation />
+            <ToastProvider>
+              <BankReconciliation />
+            </ToastProvider>
           </BusinessProvider>
         </AuthProvider>
       </BrowserRouter>
@@ -45,7 +48,9 @@ const renderBankStatementUpload = () => {
       <BrowserRouter>
         <AuthProvider>
           <BusinessProvider>
-            <BankStatementUpload />
+            <ToastProvider>
+              <BankStatementUpload />
+            </ToastProvider>
           </BusinessProvider>
         </AuthProvider>
       </BrowserRouter>

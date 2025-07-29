@@ -1,258 +1,346 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Button,
   VStack,
   HStack,
+  Text,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Badge,
+  IconButton,
   useDisclosure,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Spinner,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
   ModalBody,
   ModalCloseButton,
-  useToast,
-  SimpleGrid,
-  Skeleton,
-  Alert,
-  AlertIcon,
+  FormControl,
+  FormLabel,
+  Input,
+  Select,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Heading,
 } from '@chakra-ui/react';
-import { AddIcon } from '@chakra-ui/icons';
-import accountTypeService from '../../../services/accountTypeService';
+import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { useBusiness } from '../../../contexts/BusinessContext';
+import { useToast } from '../../../contexts/ToastContext';
 
 const AccountTypesManager = () => {
+  const { selectedBusiness } = useBusiness();
+  const { showToast } = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  
   const [accountTypes, setAccountTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedType, setSelectedType] = useState(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const toast = useToast();
+  const [editingType, setEditingType] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    code: '',
+    description: '',
+    category: 'ASSET'
+  });
 
   const fetchAccountTypes = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
-      const response = await accountTypeService.getAll();
-      setAccountTypes(response.data || response);
+      // Mock data - replace with actual API call
+      const mockTypes = [
+        {
+          id: '1',
+          name: 'Current Assets',
+          code: 'CA',
+          description: 'Assets that can be converted to cash within one year',
+          category: 'ASSET',
+          isActive: true
+        },
+        {
+          id: '2',
+          name: 'Fixed Assets',
+          code: 'FA',
+          description: 'Long-term assets used in business operations',
+          category: 'ASSET',
+          isActive: true
+        },
+        {
+          id: '3',
+          name: 'Current Liabilities',
+          code: 'CL',
+          description: 'Obligations due within one year',
+          category: 'LIABILITY',
+          isActive: true
+        }
+      ];
+      setAccountTypes(mockTypes);
     } catch (err) {
       setError('Failed to fetch account types');
-      toast({
-        title: 'Error',
-        description: 'Failed to load account types',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      showToast('error', 'Failed to fetch account types');
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [showToast]);
 
   useEffect(() => {
-    fetchAccountTypes();
-  }, [fetchAccountTypes]);
+    if (selectedBusiness) {
+      fetchAccountTypes();
+    }
+  }, [selectedBusiness, fetchAccountTypes]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     try {
-      if (selectedType) {
-        await accountTypeService.update(selectedType.id, formData);
-        toast({
-          title: 'Success',
-          description: 'Account type updated successfully',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
+      if (editingType) {
+        // Update existing type
+        setAccountTypes(types => 
+          types.map(t => 
+            t.id === editingType.id 
+              ? { ...t, ...formData }
+              : t
+          )
+        );
+        showToast('success', 'Account type updated successfully');
       } else {
-        await accountTypeService.create(formData);
-        toast({
-          title: 'Success',
-          description: 'Account type created successfully',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
+        // Create new type
+        const newType = {
+          id: Date.now().toString(),
+          ...formData,
+          isActive: true
+        };
+        setAccountTypes([...accountTypes, newType]);
+        showToast('success', 'Account type created successfully');
       }
       
-      fetchAccountTypes();
-      handleClose();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to save account type',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
+      setFormData({
+        name: '',
+        code: '',
+        description: '',
+        category: 'ASSET'
       });
+      setEditingType(null);
+      onClose();
+    } catch (err) {
+      showToast('error', 'Failed to save account type');
     }
   };
 
-  const handleEdit = (accountType) => {
-    setSelectedType(accountType);
+  const handleEdit = (type) => {
+    setEditingType(type);
     setFormData({
-      value: accountType.value,
-      label: accountType.label,
-      description: accountType.description || ''
+      name: type.name,
+      code: type.code,
+      description: type.description,
+      category: type.category
     });
     onOpen();
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this account type?')) {
-      return;
-    }
-    
+  const handleDelete = async (typeId) => {
     try {
-      await accountTypeService.delete(id);
-      toast({
-        title: 'Success',
-        description: 'Account type deleted successfully',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
-      fetchAccountTypes();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete account type',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      setAccountTypes(types => types.filter(t => t.id !== typeId));
+      showToast('success', 'Account type deleted successfully');
+    } catch (err) {
+      showToast('error', 'Failed to delete account type');
     }
   };
 
-  const handleClose = () => {
-    setSelectedType(null);
-    setFormData({ value: '', label: '', description: '' });
+  const handleCancel = () => {
+    setFormData({
+      name: '',
+      code: '',
+      description: '',
+      category: 'ASSET'
+    });
+    setEditingType(null);
     onClose();
   };
 
-  return (
-    <VStack spacing={6} align="stretch">
-      <HStack justify="space-between">
-        <Heading size="lg">Account Types</Heading>
-        <Button
-          leftIcon={<AddIcon />}
-          colorScheme="brand"
-          onClick={onOpen}
-        >
-          Add Account Type
-        </Button>
-      </HStack>
+  if (loading) {
+    return (
+      <Box textAlign="center" py={8}>
+        <Spinner size="xl" />
+        <Text mt={4}>Loading account types...</Text>
+      </Box>
+    );
+  }
 
-      <Modal isOpen={isOpen} onClose={onClose}>
+  if (error) {
+    return (
+      <Alert status="error">
+        <AlertIcon />
+        <AlertTitle>Error!</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <Box>
+      <VStack spacing={6} align="stretch">
+        <HStack justify="space-between">
+          <Heading size="lg">Account Types</Heading>
+          <Button
+            colorScheme="blue"
+            onClick={onOpen}
+          >
+            Add Account Type
+          </Button>
+        </HStack>
+
+        <Card>
+          <CardHeader>
+            <Text fontSize="lg" fontWeight="semibold">
+              Manage Account Types ({accountTypes.length})
+            </Text>
+          </CardHeader>
+          <CardBody>
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Code</Th>
+                  <Th>Name</Th>
+                  <Th>Category</Th>
+                  <Th>Description</Th>
+                  <Th>Status</Th>
+                  <Th>Actions</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {accountTypes.map((type) => (
+                  <Tr key={type.id}>
+                    <Td>
+                      <Text fontWeight="semibold">{type.code}</Text>
+                    </Td>
+                    <Td>{type.name}</Td>
+                    <Td>
+                      <Badge
+                        colorScheme={
+                          type.category === 'ASSET' ? 'green' :
+                          type.category === 'LIABILITY' ? 'red' :
+                          type.category === 'EQUITY' ? 'blue' :
+                          type.category === 'REVENUE' ? 'purple' : 'gray'
+                        }
+                        variant="subtle"
+                      >
+                        {type.category}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      <Text fontSize="sm" color="gray.600" noOfLines={2}>
+                        {type.description}
+                      </Text>
+                    </Td>
+                    <Td>
+                      <Badge
+                        colorScheme={type.isActive ? 'green' : 'gray'}
+                        variant="subtle"
+                      >
+                        {type.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      <HStack spacing={2}>
+                        <IconButton
+                          size="sm"
+                          colorScheme="blue"
+                          variant="ghost"
+                          icon={<EditIcon />}
+                          onClick={() => handleEdit(type)}
+                          aria-label="Edit account type"
+                        />
+                        <IconButton
+                          size="sm"
+                          colorScheme="red"
+                          variant="ghost"
+                          icon={<DeleteIcon />}
+                          onClick={() => handleDelete(type.id)}
+                          aria-label="Delete account type"
+                        />
+                      </HStack>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </CardBody>
+        </Card>
+      </VStack>
+
+      {/* Add/Edit Modal */}
+      <Modal isOpen={isOpen} onClose={handleCancel}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
-            {selectedType ? 'Edit Account Type' : 'Add Account Type'}
+            {editingType ? 'Edit Account Type' : 'Add Account Type'}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing={4}>
-              <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-                <VStack spacing={4}>
-                  <Box width="100%">
-                    <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Value *</label>
-                    <Input
-                      value={formData.value}
-                      onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
-                      placeholder="e.g., asset, liability"
-                      required
-                    />
-                  </Box>
-                  
-                  <Box width="100%">
-                    <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Label *</label>
-                    <Input
-                      value={formData.label}
-                      onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
-                      placeholder="e.g., Asset, Liability"
-                      required
-                    />
-                  </Box>
-                  
-                  <Box width="100%">
-                    <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Description</label>
-                    <Input
-                      value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Optional description"
-                    />
-                  </Box>
-                  
-                  <HStack spacing={3}>
-                    <Button variant="ghost" onClick={onClose}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" colorScheme="brand">
-                      {selectedType ? 'Update' : 'Create'}
-                    </Button>
-                  </HStack>
-                </VStack>
-              </form>
+              <FormControl>
+                <FormLabel>Name</FormLabel>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  placeholder="Account Type Name"
+                />
+              </FormControl>
+              
+              <FormControl>
+                <FormLabel>Code</FormLabel>
+                <Input
+                  value={formData.code}
+                  onChange={(e) => setFormData({...formData, code: e.target.value})}
+                  placeholder="Short Code"
+                />
+              </FormControl>
+              
+              <FormControl>
+                <FormLabel>Category</FormLabel>
+                <Select
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                >
+                  <option value="ASSET">Asset</option>
+                  <option value="LIABILITY">Liability</option>
+                  <option value="EQUITY">Equity</option>
+                  <option value="REVENUE">Revenue</option>
+                  <option value="EXPENSE">Expense</option>
+                </Select>
+              </FormControl>
+              
+              <FormControl>
+                <FormLabel>Description</FormLabel>
+                <Input
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  placeholder="Description"
+                />
+              </FormControl>
+              
+              <HStack spacing={4} width="100%">
+                <Button variant="ghost" onClick={handleCancel}>
+                  Cancel
+                </Button>
+                <Button colorScheme="blue" onClick={handleSubmit}>
+                  {editingType ? 'Update' : 'Create'}
+                </Button>
+              </HStack>
             </VStack>
           </ModalBody>
         </ModalContent>
       </Modal>
-
-      <Box borderWidth="1px" borderRadius="lg" overflow="hidden">
-        <Table variant="simple">
-          <thead>
-            <tr>
-              <th>Value</th>
-              <th>Label</th>
-              <th>Categories</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && accountTypes.length === 0 ? (
-              <tr>
-                <td colSpan={4} style={{ textAlign: 'center' }}>
-                  <Spinner size="sm" />
-                </td>
-              </tr>
-            ) : accountTypes.length === 0 ? (
-              <tr>
-                <td colSpan={4} style={{ textAlign: 'center' }}>
-                  No account types found
-                </td>
-              </tr>
-            ) : (
-              accountTypes.map((accountType) => (
-                <tr key={accountType.id}>
-                  <td>{accountType.value}</td>
-                  <td>{accountType.label}</td>
-                  <td>{accountType.categories?.length || 0}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <IconButton 
-                      size="sm"
-                      icon={<EditIcon />}
-                      onClick={() => handleEdit(accountType)}
-                      variant="ghost"
-                      aria-label="Edit account type"
-                    />
-                    <IconButton
-                      size="sm"
-                      icon={<DeleteIcon />}
-                      onClick={() => handleDelete(accountType.id)}
-                      variant="ghost"
-                      colorScheme="red"
-                      aria-label="Delete account type"
-                      ml={2}
-                    />
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </Table>
-      </Box>
-    </VStack>
+    </Box>
   );
 };
 

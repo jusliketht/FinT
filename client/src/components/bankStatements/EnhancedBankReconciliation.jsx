@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Heading,
@@ -56,12 +56,7 @@ const EnhancedBankReconciliation = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const api = useApi();
 
-  useEffect(() => {
-    fetchAccounts();
-    fetchBankStatements();
-  }, []);
-
-  const fetchAccounts = async () => {
+  const fetchAccounts = useCallback(async () => {
     try {
       const response = await api.get('/accounts');
       setAccounts(response.data);
@@ -72,9 +67,9 @@ const EnhancedBankReconciliation = () => {
         status: 'error'
       });
     }
-  };
+  }, [api, toast]);
 
-  const fetchBankStatements = async () => {
+  const fetchBankStatements = useCallback(async () => {
     try {
       const response = await api.get('/bank-statements');
       setBankStatements(response.data);
@@ -85,7 +80,12 @@ const EnhancedBankReconciliation = () => {
         status: 'error'
       });
     }
-  };
+  }, [api, toast]);
+
+  useEffect(() => {
+    fetchAccounts();
+    fetchBankStatements();
+  }, [fetchAccounts, fetchBankStatements]);
 
   const performAutoReconciliation = async () => {
     if (!selectedAccount || !selectedBankStatement) {

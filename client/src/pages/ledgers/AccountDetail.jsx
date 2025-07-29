@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -42,7 +42,7 @@ const AccountDetail = () => {
   const [account, setAccount] = useState(null);
   const [recentTransactions, setRecentTransactions] = useState([]);
 
-  const fetchAccountDetails = async () => {
+  const fetchAccountDetails = useCallback(async () => {
     if (!accountId) return;
     
     setLoading(true);
@@ -68,11 +68,11 @@ const AccountDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [accountId, api, toast]);
 
   useEffect(() => {
     fetchAccountDetails();
-  }, [accountId]);
+  }, [accountId, fetchAccountDetails]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {

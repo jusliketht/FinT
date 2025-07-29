@@ -28,8 +28,8 @@ const Login = () => {
       setRememberMe(true);
     } else if (isDevelopment) {
       // Auto-fill demo credentials in development
-      setEmail('demo@fint.com');
-      setPassword('demo123');
+      setEmail('test@example.com');
+      setPassword('password123');
       setRememberMe(true);
     }
   }, [isDevelopment]);
@@ -88,6 +88,9 @@ const Login = () => {
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-xs text-blue-700">
                   🚀 Development Mode: Demo credentials auto-filled
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Email: test@example.com | Password: password123
                 </p>
               </div>
             )}

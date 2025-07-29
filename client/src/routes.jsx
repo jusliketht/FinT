@@ -6,6 +6,7 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import NotFound from './components/common/NotFound';
 import BusinessSelector from './components/business/BusinessSelector';
+import Layout from './components/layout/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -59,7 +60,7 @@ const ProtectedRoute = ({ children, requireBusiness = true }) => {
     return <BusinessSelector />;
   }
 
-  return children;
+  return <Layout>{children}</Layout>;
 };
 
 const AppRoutes = () => {

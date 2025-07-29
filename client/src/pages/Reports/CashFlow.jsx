@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -47,13 +47,7 @@ const CashFlow = () => {
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [period, setPeriod] = useState('ytd');
 
-  useEffect(() => {
-    if (selectedBusiness) {
-      fetchCashFlow();
-    }
-  }, [selectedBusiness, startDate, endDate]);
-
-  const fetchCashFlow = async () => {
+  const fetchCashFlow = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -66,7 +60,13 @@ const CashFlow = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate, showToast]);
+
+  useEffect(() => {
+    if (selectedBusiness) {
+      fetchCashFlow();
+    }
+  }, [selectedBusiness, startDate, endDate, fetchCashFlow]);
 
   const handlePeriodChange = (newPeriod) => {
     setPeriod(newPeriod);

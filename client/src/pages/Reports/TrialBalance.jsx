@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -46,13 +46,7 @@ const TrialBalance = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [accountTypeFilter, setAccountTypeFilter] = useState('');
 
-  useEffect(() => {
-    if (selectedBusiness) {
-      fetchTrialBalance();
-    }
-  }, [selectedBusiness, asOfDate]);
-
-  const fetchTrialBalance = async () => {
+  const fetchTrialBalance = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -65,7 +59,13 @@ const TrialBalance = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [asOfDate, showToast]);
+
+  useEffect(() => {
+    if (selectedBusiness) {
+      fetchTrialBalance();
+    }
+  }, [selectedBusiness, asOfDate, fetchTrialBalance]);
 
   const exportTrialBalance = async () => {
     try {

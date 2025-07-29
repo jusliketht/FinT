@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -42,7 +42,7 @@ const ProfitAndLoss = () => {
     endDate: new Date().toISOString().split('T')[0]
   });
 
-  const fetchProfitAndLoss = async () => {
+  const fetchProfitAndLoss = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.get('/accounting/reports/profit-and-loss', {
@@ -64,11 +64,11 @@ const ProfitAndLoss = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, dateRange, toast]);
 
   useEffect(() => {
     fetchProfitAndLoss();
-  }, [dateRange]);
+  }, [dateRange, fetchProfitAndLoss]);
 
   const handleExport = async (format) => {
     try {

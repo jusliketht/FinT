@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Heading,
@@ -20,11 +20,7 @@ const JournalEntries = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  useEffect(() => {
-    fetchEntries();
-  }, []);
-
-  const fetchEntries = async () => {
+  const fetchEntries = useCallback(async () => {
     setLoading(true);
     try {
       const data = await journalEntryService.getAll();
@@ -34,7 +30,11 @@ const JournalEntries = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {

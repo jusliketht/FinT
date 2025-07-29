@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -56,7 +56,7 @@ const CreditCards = () => {
     statementDate: ''
   });
 
-  const fetchCreditCards = async () => {
+  const fetchCreditCards = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.get('/credit-cards');
@@ -73,11 +73,11 @@ const CreditCards = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, toast]);
 
   useEffect(() => {
     fetchCreditCards();
-  }, []);
+  }, [fetchCreditCards]);
 
   const handleAddCard = () => {
     setSelectedCard(null);

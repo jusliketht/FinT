@@ -34,7 +34,7 @@ import {
 import { useBusiness } from '../contexts/BusinessContext';
 import { useTransaction } from '../contexts/TransactionContext';
 import TransactionList from '../components/transactions/TransactionList';
-import { analyticsService } from '../services/analyticsService';
+import analyticsService from '../services/analyticsService';
 import transactionService from '../services/transactionService';
 
 const TransactionsPage = () => {

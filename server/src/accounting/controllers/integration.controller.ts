@@ -1,39 +1,84 @@
-import { Controller, Post, Get, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { IntegrationService } from '../services/integration.service';
 
-@Controller('integrations')
+@ApiTags('Integrations')
+@Controller('businesses/:businessId/integrations')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class IntegrationController {
   constructor(private integrationService: IntegrationService) {}
 
   @Post('bank/connect')
-  async connectBankAPI(@Body() data: { businessId: string; bankCredentials: any }) {
-    return this.integrationService.connectBankAPI(data.businessId, data.bankCredentials);
+  @ApiOperation({ summary: 'Connect bank API' })
+  @ApiResponse({ status: 201, description: 'Bank API connected successfully' })
+  @ApiParam({ name: 'businessId', description: 'Business ID' })
+  async connectBankAPI(
+    @Param('businessId') businessId: string,
+    @Request() req,
+    @Body() data: { bankCredentials: any }
+  ) {
+    return this.integrationService.connectBankAPI(businessId, data.bankCredentials);
   }
 
   @Post('bank/sync')
-  async syncBankTransactions(@Body() data: { businessId: string; connectionId: string }) {
-    return this.integrationService.syncBankTransactions(data.businessId);
+  @ApiOperation({ summary: 'Sync bank transactions' })
+  @ApiResponse({ status: 200, description: 'Bank transactions synced successfully' })
+  @ApiParam({ name: 'businessId', description: 'Business ID' })
+  async syncBankTransactions(
+    @Param('businessId') businessId: string,
+    @Request() req,
+    @Body() data: { connectionId: string }
+  ) {
+    return this.integrationService.syncBankTransactions(businessId);
   }
 
   @Delete('bank/disconnect/:connectionId')
-  async disconnectBankAPI(@Param('connectionId') connectionId: string) {
+  @ApiOperation({ summary: 'Disconnect bank API' })
+  @ApiResponse({ status: 200, description: 'Bank API disconnected successfully' })
+  @ApiParam({ name: 'businessId', description: 'Business ID' })
+  @ApiParam({ name: 'connectionId', description: 'Connection ID' })
+  async disconnectBankAPI(
+    @Param('businessId') businessId: string,
+    @Param('connectionId') connectionId: string,
+    @Request() req
+  ) {
     return this.integrationService.disconnectBankAPI(connectionId);
   }
 
   @Post('payment/process')
-  async processPayment(@Body() paymentData: any) {
+  @ApiOperation({ summary: 'Process payment' })
+  @ApiResponse({ status: 200, description: 'Payment processed successfully' })
+  @ApiParam({ name: 'businessId', description: 'Business ID' })
+  async processPayment(
+    @Param('businessId') businessId: string,
+    @Request() req,
+    @Body() paymentData: any
+  ) {
     return this.integrationService.processPayment(paymentData);
   }
 
   @Post('email/send')
-  async sendEmailNotification(@Body() notificationData: any) {
+  @ApiOperation({ summary: 'Send email notification' })
+  @ApiResponse({ status: 200, description: 'Email notification sent successfully' })
+  @ApiParam({ name: 'businessId', description: 'Business ID' })
+  async sendEmailNotification(
+    @Param('businessId') businessId: string,
+    @Request() req,
+    @Body() notificationData: any
+  ) {
     return this.integrationService.sendEmailNotification(notificationData);
   }
 
   @Get('status')
-  async getIntegrationStatus(@Body() data: { businessId: string }) {
-    return this.integrationService.getIntegrationStatus(data.businessId);
+  @ApiOperation({ summary: 'Get integration status' })
+  @ApiResponse({ status: 200, description: 'Integration status retrieved successfully' })
+  @ApiParam({ name: 'businessId', description: 'Business ID' })
+  async getIntegrationStatus(
+    @Param('businessId') businessId: string,
+    @Request() req
+  ) {
+    return this.integrationService.getIntegrationStatus(businessId);
   }
 }
