@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import InitializeUser from './pages/InitializeUser';
+import api from './services/api';
 
 // Lazy load components for better performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -70,20 +71,8 @@ const AppRoutes = () => {
   useEffect(() => {
     (async () => {
       try {
-        // Use proxy configuration for this endpoint
-        const res = await fetch('/api/users/check', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setNeedsInit(data.needsInit);
-        } else {
-          console.error("Error checking user existence:", res.status);
-          setNeedsInit(false); // fallback
-        }
+        const response = await api.get('/users/check');
+        setNeedsInit(response.data.needsInit);
       } catch (err) {
         console.error("Error checking user existence:", err);
         setNeedsInit(false); // fallback

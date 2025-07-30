@@ -51,7 +51,7 @@ const AddJournalEntry = () => {
   }, []);
 
   const fetchAccounts = () => {
-    axios.get('/api/v1/accounts')
+    axios.get('/accounts')
       .then(res => setAccounts(res.data.data || []))
       .catch(() => setAccounts([]));
   };
@@ -112,7 +112,7 @@ const AddJournalEntry = () => {
       return;
     }
     try {
-      await axios.post('/api/v1/accounts', newAccount);
+      await axios.post('/accounts', newAccount);
       fetchAccounts();
       onClose();
     } catch (err) {

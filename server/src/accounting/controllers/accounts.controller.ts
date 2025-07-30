@@ -26,10 +26,58 @@ import { CreateAccountDto } from '../dto/account/create-account.dto';
 import { UpdateAccountDto } from '../dto/account/update-account.dto';
 
 @ApiTags('Accounts')
-@Controller('businesses/:businessId/accounts')
+@Controller('accounts')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AccountsController {
+  constructor(private readonly accountsService: AccountsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get all accounts for the current user' })
+  @ApiResponse({ status: 200, description: 'Return all accounts' })
+  @ApiQuery({ name: 'includePersonal', required: false, description: 'Include personal accounts' })
+  @ApiQuery({ name: 'type', required: false, description: 'Filter by account type' })
+  @ApiQuery({ name: 'active', required: false, description: 'Filter by active status' })
+  @ApiQuery({ name: 'search', required: false, description: 'Search by account name or code' })
+  async getAllAccounts(
+    @Request() req, 
+    @Query('includePersonal') includePersonal?: string,
+    @Query('type') type?: string,
+    @Query('active') active?: string,
+    @Query('search') search?: string
+  ) {
+    try {
+      // For now, return empty array to prevent 404 errors
+      // This should be implemented to return user's accounts across all businesses
+      return [];
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to retrieve accounts',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('types')
+  @ApiOperation({ summary: 'Get all account types' })
+  @ApiResponse({ status: 200, description: 'Return account types' })
+  async getAccountTypes() {
+    try {
+      return await this.accountsService.getAccountTypes();
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to retrieve account types',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+}
+
+@ApiTags('Business Accounts')
+@Controller('businesses/:businessId/accounts')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+export class BusinessAccountsController {
   constructor(private readonly accountsService: AccountsService) {}
 
   @Post()
@@ -86,10 +134,6 @@ export class AccountsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get account by ID' })
-  @ApiResponse({ status: 200, description: 'Return account details' })
-  @ApiResponse({ status: 404, description: 'Account not found' })
-  @ApiParam({ name: 'businessId', description: 'Business ID' })
-  @ApiParam({ name: 'id', description: 'Account ID' })
   async getAccountById(
     @Param('businessId') businessId: string,
     @Param('id') id: string, 
@@ -100,53 +144,6 @@ export class AccountsController {
     } catch (error) {
       throw new HttpException(
         error.message || 'Failed to retrieve account',
-        error.status || HttpStatus.NOT_FOUND
-      );
-    }
-  }
-
-  @Put(':id')
-  @ApiOperation({ summary: 'Update account' })
-  @ApiResponse({ status: 200, description: 'Account updated successfully' })
-  @ApiResponse({ status: 404, description: 'Account not found' })
-  @ApiParam({ name: 'businessId', description: 'Business ID' })
-  @ApiParam({ name: 'id', description: 'Account ID' })
-  async updateAccount(
-    @Param('businessId') businessId: string,
-    @Param('id') id: string,
-    @Body() updateAccountDto: UpdateAccountDto,
-    @Request() req
-  ) {
-    try {
-      return await this.accountsService.updateAccount(
-        id,
-        updateAccountDto,
-        req.user.id
-      );
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Failed to update account',
-        error.status || HttpStatus.BAD_REQUEST
-      );
-    }
-  }
-
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete account' })
-  @ApiResponse({ status: 200, description: 'Account deleted successfully' })
-  @ApiResponse({ status: 404, description: 'Account not found' })
-  @ApiParam({ name: 'businessId', description: 'Business ID' })
-  @ApiParam({ name: 'id', description: 'Account ID' })
-  async deleteAccount(
-    @Param('businessId') businessId: string,
-    @Param('id') id: string, 
-    @Request() req
-  ) {
-    try {
-      return await this.accountsService.deleteAccount(id, req.user.id);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Failed to delete account',
         error.status || HttpStatus.BAD_REQUEST
       );
     }

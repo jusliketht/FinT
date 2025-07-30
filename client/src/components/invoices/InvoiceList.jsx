@@ -24,10 +24,8 @@ import {
   AlertTitle,
   AlertDescription,
   Spinner,
-  SettingsIcon,
-  EmailIcon,
 } from '@chakra-ui/react';
-import { SearchIcon, DownloadIcon } from '@chakra-ui/icons';
+import { SearchIcon, DownloadIcon, EmailIcon, SettingsIcon } from '@chakra-ui/icons';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useToast } from '../../contexts/ToastContext';
 import InvoiceForm from './InvoiceForm';

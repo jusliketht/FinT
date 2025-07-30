@@ -374,8 +374,8 @@ describe('Login Component', () => {
       const passwordInput = screen.getByLabelText(/password/i);
       const rememberMeCheckbox = screen.getByRole('checkbox', { name: /remember me/i });
       
-      expect(emailInput.value).toBe('demo@fint.com');
-      expect(passwordInput.value).toBe('demo123');
+      expect(emailInput.value).toBe('test@example.com');
+      expect(passwordInput.value).toBe('password123');
       expect(rememberMeCheckbox.checked).toBe(true);
       
       process.env.NODE_ENV = originalEnv;

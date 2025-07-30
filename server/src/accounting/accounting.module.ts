@@ -14,11 +14,12 @@ import { AnalyticsController } from './controllers/analytics.controller';
 import { IntegrationController } from './controllers/integration.controller';
 import { TaxCalculationController } from './controllers/tax-calculation.controller';
 import { BusinessController } from './controllers/business.controller';
-import { AccountsController } from './controllers/accounts.controller';
+import { AccountsController, BusinessAccountsController } from './controllers/accounts.controller';
 import { JournalEntryController } from './controllers/journal-entry.controller';
 import { ChartOfAccountsController } from './controllers/chart-of-accounts.controller';
 import { ReportsController } from './controllers/reports.controller';
 import { AccountTypesController } from './controllers/account-types.controller';
+import { AccountCategoriesController } from './controllers/account-categories.controller';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
@@ -29,10 +30,12 @@ import { PrismaService } from '../prisma/prisma.service';
     TaxCalculationController,
     BusinessController,
     AccountsController,
+    BusinessAccountsController,
     JournalEntryController,
     ChartOfAccountsController,
     ReportsController,
     AccountTypesController,
+    AccountCategoriesController,
   ],
   providers: [
     InventoryService,

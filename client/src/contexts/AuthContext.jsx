@@ -26,7 +26,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.get('/auth/me');
       if (response.status === 200) {
-        setUser(response.data);
+        // Handle the wrapped response structure
+        const userData = response.data.data || response.data;
+        setUser(userData);
       } else {
         // Token is invalid, remove it
         localStorage.removeItem('authToken');
@@ -41,7 +43,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const data = await userService.login({ email, password });
+      const response = await userService.login({ email, password });
+      
+      // Handle the wrapped response structure from the API interceptor
+      const data = response.data || response;
       
       // Check if the response has the expected structure
       if (data && data.user && data.access_token) {
@@ -78,7 +83,8 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const data = await userService.createUser(userData);
+      const response = await userService.createUser(userData);
+      const data = response.data || response;
       setUser(data.user);
       localStorage.setItem('authToken', data.access_token);
       return { success: true, data };

@@ -4,10 +4,6 @@ import {
   VStack,
   HStack,
   Text,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
   Badge,
   IconButton,
   useDisclosure,
@@ -17,14 +13,20 @@ import {
   AlertDescription,
   Spinner,
   Avatar,
-  AvatarGroup,
   AvatarBadge,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
 } from '@chakra-ui/react';
-import { DeleteIcon } from '@chakra-ui/icons';
+import { DeleteIcon, ViewIcon, AddIcon } from '@chakra-ui/icons';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import BusinessForm from './BusinessForm';
+import Button from '../common/Button';
 
 const BusinessList = () => {
   const { businesses, loading, error, fetchBusinesses, deleteBusiness } = useBusiness();
@@ -94,119 +96,132 @@ const BusinessList = () => {
               Manage your business accounts and settings
             </Text>
           </Box>
-          <Button colorScheme="blue" onClick={onOpen}>
+          <Button 
+            colorScheme="blue" 
+            onClick={onOpen}
+            leftIcon={<AddIcon />}
+            size="md"
+          >
             Add Business
           </Button>
         </HStack>
 
         {businesses.length === 0 ? (
-          <Card>
-            <CardBody textAlign="center" py={12}>
-              <Text fontSize="lg" color="gray.500" mb={4}>
-                No businesses found
-              </Text>
-              <Text color="gray.400" mb={6}>
-                Create your first business to get started with financial management
-              </Text>
-              <Button colorScheme="blue" onClick={onOpen}>
-                Create Business
-              </Button>
-            </CardBody>
-          </Card>
+          <Box border="1px" borderColor="gray.200" borderRadius="lg" p={12} bg="white" shadow="sm" textAlign="center">
+            <Text fontSize="lg" color="gray.500" mb={4}>
+              No businesses found
+            </Text>
+            <Text color="gray.400" mb={6}>
+              Create your first business to get started with financial management
+            </Text>
+            <Button colorScheme="blue" onClick={onOpen}>
+              Create Business
+            </Button>
+          </Box>
         ) : (
           <VStack spacing={4} align="stretch">
             {businesses.map((business) => (
-              <Card key={business.id} variant="outline">
-                <CardHeader>
-                  <HStack justify="space-between" align="center">
-                    <HStack spacing={4}>
-                      <Avatar
-                        name={business.name}
-                        bg="blue.500"
-                        size="md"
-                      >
-                        <AvatarBadge
-                          boxSize="1em"
-                          bg={business.isActive ? 'green.500' : 'gray.400'}
-                        />
-                      </Avatar>
-                      <Box>
-                        <Text fontSize="lg" fontWeight="semibold">
-                          {business.name}
-                        </Text>
-                        <Text fontSize="sm" color="gray.600">
-                          {business.type} • {business.address}
-                        </Text>
-                      </Box>
-                    </HStack>
-                    <HStack spacing={2}>
-                      {business.isDefault && (
-                        <Badge colorScheme="green" variant="subtle">
-                          Default
-                        </Badge>
-                      )}
-                      <Badge
-                        colorScheme={business.isActive ? 'green' : 'gray'}
-                        variant="subtle"
-                      >
-                        {business.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </HStack>
+              <Box key={business.id} border="1px" borderColor="gray.200" borderRadius="lg" p={6} bg="white" shadow="sm">
+                <HStack justify="space-between" align="center" mb={4}>
+                  <HStack spacing={4}>
+                    <Avatar
+                      name={business.name}
+                      bg="blue.500"
+                      size="md"
+                    >
+                      <AvatarBadge
+                        boxSize="1em"
+                        bg={business.isActive ? 'green.500' : 'gray.400'}
+                      />
+                    </Avatar>
+                    <Box>
+                      <Text fontSize="lg" fontWeight="semibold">
+                        {business.name}
+                      </Text>
+                      <Text fontSize="sm" color="gray.600">
+                        {business.type} • {business.address}
+                      </Text>
+                    </Box>
                   </HStack>
-                </CardHeader>
-                <CardBody pt={0}>
-                  <VStack spacing={3} align="stretch">
-                    <HStack justify="space-between">
-                      <Text fontSize="sm" color="gray.600">
-                        Registration: {business.registrationNumber || 'Not specified'}
-                      </Text>
-                      <Text fontSize="sm" color="gray.600">
-                        GST: {business.gstNumber || 'Not specified'}
-                      </Text>
-                    </HStack>
-                    
-                    <HStack justify="space-between">
-                      <Text fontSize="sm" color="gray.600">
-                        Phone: {business.phone || 'Not specified'}
-                      </Text>
-                      <Text fontSize="sm" color="gray.600">
-                        Email: {business.email || 'Not specified'}
-                      </Text>
-                    </HStack>
+                  <HStack spacing={2}>
+                    {business.isDefault && (
+                      <Badge colorScheme="green" variant="subtle">
+                        Default
+                      </Badge>
+                    )}
+                    <Badge
+                      colorScheme={business.isActive ? 'green' : 'gray'}
+                      variant="subtle"
+                    >
+                      {business.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </HStack>
+                </HStack>
+                
+                <VStack spacing={3} align="stretch">
+                  <HStack justify="space-between">
+                    <Text fontSize="sm" color="gray.600">
+                      Registration: {business.registrationNumber || 'Not specified'}
+                    </Text>
+                    <Text fontSize="sm" color="gray.600">
+                      GST: {business.gstNumber || 'Not specified'}
+                    </Text>
+                  </HStack>
+                  
+                  <HStack justify="space-between">
+                    <Text fontSize="sm" color="gray.600">
+                      Phone: {business.phone || 'Not specified'}
+                    </Text>
+                    <Text fontSize="sm" color="gray.600">
+                      Email: {business.email || 'Not specified'}
+                    </Text>
+                  </HStack>
 
-                    <HStack justify="end" spacing={2}>
-                      <IconButton
-                        icon={<ViewIcon />}
-                        variant="ghost"
-                        size="sm"
-                        aria-label="View details"
-                        onClick={() => handleEdit(business)}
-                      />
-                      <IconButton
-                        icon={<DeleteIcon />}
-                        variant="ghost"
-                        size="sm"
-                        colorScheme="red"
-                        aria-label="Delete business"
-                        onClick={() => handleDelete(business.id)}
-                        isDisabled={business.isDefault}
-                      />
-                    </HStack>
-                  </VStack>
-                </CardBody>
-              </Card>
+                  <HStack justify="end" spacing={2}>
+                    <IconButton
+                      icon={<ViewIcon />}
+                      variant="ghost"
+                      size="sm"
+                      colorScheme="blue"
+                      aria-label="View details"
+                      onClick={() => handleEdit(business)}
+                      _hover={{ bg: 'blue.50' }}
+                    />
+                    <IconButton
+                      icon={<DeleteIcon />}
+                      variant="ghost"
+                      size="sm"
+                      colorScheme="red"
+                      aria-label="Delete business"
+                      onClick={() => handleDelete(business.id)}
+                      isDisabled={business.isDefault}
+                      _hover={{ bg: 'red.50' }}
+                    />
+                  </HStack>
+                </VStack>
+              </Box>
             ))}
           </VStack>
         )}
       </VStack>
 
       {/* Business Form Modal */}
-      <BusinessForm
-        isOpen={isOpen}
-        onClose={handleFormClose}
-        business={selectedBusiness}
-        onSuccess={handleFormSuccess}
-      />
+      <Modal isOpen={isOpen} onClose={handleFormClose} size="xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            {selectedBusiness ? 'Edit Business' : 'Create New Business'}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <BusinessForm
+              business={selectedBusiness}
+              onSuccess={handleFormSuccess}
+              onCancel={handleFormClose}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

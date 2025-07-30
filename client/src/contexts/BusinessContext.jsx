@@ -68,13 +68,7 @@ export const BusinessProvider = ({ children }) => {
   }, [selectedBusiness, isPersonalMode]);
 
   useEffect(() => {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    
-    if (!isDevelopment) {
-      fetchBusinesses();
-    } else {
-      setLoading(false);
-    }
+    fetchBusinesses();
     loadSavedContext();
   }, [fetchBusinesses, loadSavedContext]);
 

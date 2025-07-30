@@ -44,7 +44,7 @@ const Settings = () => {
   const fetchAccounts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/v1/accounts');
+      const response = await axios.get('/accounts');
       setAccounts(response.data.data || []);
       // Expand all nodes by default
       setExpanded(response.data.data.map(acc => acc._id));
@@ -76,10 +76,10 @@ const Settings = () => {
 
     try {
       if (editingAccount) {
-        await axios.put(`/api/v1/accounts/${editingAccount._id}`, values);
+        await axios.put(`/accounts/${editingAccount._id}`, values);
         setSuccess('Account updated successfully');
       } else {
-        await axios.post('/api/v1/accounts', values);
+        await axios.post('/accounts', values);
         setSuccess('Account added successfully');
       }
       fetchAccounts();
@@ -95,7 +95,7 @@ const Settings = () => {
     if (window.confirm('Are you sure you want to delete this account?')) {
       try {
         setLoading(true);
-        await axios.delete(`/api/v1/accounts/${accountId}`);
+        await axios.delete(`/accounts/${accountId}`);
         setSuccess('Account deleted successfully');
         fetchAccounts();
       } catch (err) {

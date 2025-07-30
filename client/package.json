@@ -92,7 +92,7 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:5000",
+  "proxy": null,
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"

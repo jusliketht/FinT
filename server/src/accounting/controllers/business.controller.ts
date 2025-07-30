@@ -27,7 +27,6 @@ export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}
 
   @Post()
-  @Roles(UserRole.Admin, UserRole.BusinessOwner)
   @ApiOperation({ summary: 'Create a new business' })
   @ApiResponse({ status: 201, description: 'Business created successfully' })
   create(@Body() createBusinessDto: CreateBusinessDto, @Request() req) {

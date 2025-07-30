@@ -3,7 +3,7 @@ import apiService from './api';
 class UserService {
   async createUser(userData) {
     const response = await apiService.post('/users', userData);
-    return response;
+    return response.data;
   }
 
   async getAllUsers() {
@@ -13,7 +13,7 @@ class UserService {
 
   async getCurrentUser() {
     const response = await apiService.get('/users/me');
-    return response;
+    return response.data;
   }
 
   async getUser(id) {
@@ -58,7 +58,7 @@ class UserService {
 
   async login(credentials) {
     const response = await apiService.post('/auth/login', credentials);
-    return response;
+    return response.data;
   }
 
   async logout() {
